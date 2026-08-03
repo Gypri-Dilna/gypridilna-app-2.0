@@ -40,7 +40,7 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
     ];
 
     if (isDesktop) {
-      // Extended Desktop & Web Sidebar Navigation Menu (220px wide)
+      // 100% Reliable Custom Desktop & Web Sidebar Drawer Menu
       return Scaffold(
         body: Column(
           children: [
@@ -48,61 +48,26 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
             Expanded(
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 220,
-                    child: NavigationRail(
-                      extended: true,
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _onItemTapped,
-                      backgroundColor: AppColors.graphiteCoreSurface,
-                      indicatorColor: AppColors.circuitMint.withOpacity(0.2),
-                      selectedIconTheme: const IconThemeData(color: AppColors.circuitMintLight),
-                      unselectedIconTheme: const IconThemeData(color: AppColors.cloudPaperMuted),
-                      selectedLabelTextStyle: const TextStyle(
-                        color: AppColors.circuitMintLight,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      unselectedLabelTextStyle: const TextStyle(
-                        color: AppColors.cloudPaperMuted,
-                        fontSize: 14,
-                      ),
-                      minExtendedWidth: 220,
-                      destinations: const [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.dashboard_outlined),
-                          selectedIcon: Icon(Icons.dashboard),
-                          label: Text('Dashboard'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.lock_clock_outlined),
-                          selectedIcon: Icon(Icons.lock),
-                          label: Text('Access Control'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.inventory_2_outlined),
-                          selectedIcon: Icon(Icons.inventory_2),
-                          label: Text('Inventory Catalog'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.admin_panel_settings_outlined),
-                          selectedIcon: Icon(Icons.admin_panel_settings),
-                          label: Text('User Management'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.print_outlined),
-                          selectedIcon: Icon(Icons.print),
-                          label: Text('Print Label'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.qr_code_scanner),
-                          selectedIcon: Icon(Icons.qr_code_scanner),
-                          label: Text('Mobile Scanner'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.web_outlined),
-                          selectedIcon: Icon(Icons.web),
-                          label: Text('WebConnect'),
+                  // Permanent 240px Custom Sidebar Menu
+                  Container(
+                    width: 240,
+                    color: AppColors.graphiteCoreSurface,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            children: [
+                              _buildSidebarTile(0, Icons.dashboard, 'Dashboard'),
+                              _buildSidebarTile(1, Icons.lock, 'Access Control'),
+                              _buildSidebarTile(2, Icons.inventory_2, 'Inventory Catalog'),
+                              _buildSidebarTile(3, Icons.admin_panel_settings, 'User Management'),
+                              _buildSidebarTile(4, Icons.print, 'Print Label'),
+                              _buildSidebarTile(5, Icons.qr_code_scanner, 'Mobile Scanner'),
+                              _buildSidebarTile(6, Icons.web, 'WebConnect'),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -149,5 +114,37 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
         ),
       );
     }
+  }
+
+  Widget _buildSidebarTile(int index, IconData icon, String title) {
+    final isSelected = _selectedIndex == index;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.circuitMint.withOpacity(0.18) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isSelected ? AppColors.circuitMint : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(
+          icon,
+          color: isSelected ? AppColors.circuitMintLight : AppColors.cloudPaperMuted,
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? AppColors.cloudPaper : AppColors.cloudPaperMuted,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
+          ),
+        ),
+        onTap: () => _onItemTapped(index),
+      ),
+    );
   }
 }
