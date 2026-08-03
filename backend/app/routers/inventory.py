@@ -16,9 +16,13 @@ from app.schemas.inventory import (
 router = APIRouter(prefix="/api/inventory", tags=["Inventory System"])
 
 def auto_sequence_location_code(location_code: str, db: Session) -> str:
-    match = re.match(r"^(\d)(\d)-(\d)(\d{3})$", location_code.strip())
+    if not location_code:
+        return "11-0001"
+        
+    clean_code = location_code.strip()
+    match = re.match(r"^(\d)(\d)-(\d)(\d{3})$", clean_code)
     if not match:
-        return location_code
+        return clean_code
 
     rack, sector, box, item_id = match.groups()
     prefix = f"{rack}{sector}-{box}"
@@ -29,25 +33,27 @@ def auto_sequence_location_code(location_code: str, db: Session) -> str:
 
     existing_codes = {item[0] for item in existing_items if item[0]}
     
-    if location_code in existing_codes or item_id == "000":
+    if clean_code in existing_codes or item_id == "000":
         max_seq = 0
         for code in existing_codes:
             m = re.match(r"^\d\d-\d(\d{3})$", code)
             if m:
-                seq = int(m.group(1))
-                if seq > max_seq:
-                    max_seq = seq
+                try:
+                    seq = int(m.group(1))
+                    if seq > max_seq:
+                        max_seq = seq
+                except ValueError:
+                    pass
         next_seq = max_seq + 1
         return f"{prefix}{next_seq:03d}"
 
-    return location_code
+    return clean_code
 
 @router.get("", response_model=List[InventoryItemResponse])
 def get_inventory(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     zone: Optional[str] = Query(None),
-    low_stock_only: bool = Query(False),
     db: Session = Depends(get_db)
 ):
     query = db.query(InventoryItem)
@@ -88,12 +94,17 @@ def lookup_by_qr(qr_code: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=InventoryItemResponse, status_code=status.HTTP_201_CREATED)
 def create_inventory_item(item_in: InventoryItemCreate, db: Session = Depends(get_db)):
-    existing_qr = db.query(InventoryItem).filter(InventoryItem.qr_code == item_in.qr_code).first()
-    if existing_qr:
-        raise HTTPException(status_code=400, detail="Item with this QR Code / SKU already exists")
-
     item_data = item_in.model_dump()
-    
+
+    # Ensure unique QR Code
+    if not item_data.get("qr_code"):
+        item_data["qr_code"] = f"GYPRI-{int(datetime.now().timestamp())}"
+    else:
+        existing_qr = db.query(InventoryItem).filter(InventoryItem.qr_code == item_data["qr_code"]).first()
+        if existing_qr:
+            # Auto append timestamp to make QR unique if duplicate
+            item_data["qr_code"] = f"{item_data['qr_code']}-{int(datetime.now().timestamp()) % 10000}"
+
     # Auto-assign sequential AAA location code based on order of registration at location XY-Z
     item_data["location_code"] = auto_sequence_location_code(item_data["location_code"], db)
 
@@ -104,7 +115,7 @@ def create_inventory_item(item_in: InventoryItemCreate, db: Session = Depends(ge
     audit = SystemAuditLog(
         action="ITEM_CREATED",
         performed_by="System User",
-        details=f"Added '{new_item.title}' ({new_item.quantity} {new_item.unit}) at {new_item.location_code}"
+        details=f"Added '{new_item.title}' at {new_item.location_code}"
     )
     db.add(audit)
     
@@ -134,30 +145,6 @@ def update_inventory_item(item_id: int, item_in: InventoryItemUpdate, db: Sessio
     db.commit()
     db.refresh(item)
     return item
-
-@router.post("/{item_id}/adjust-stock")
-def adjust_stock(item_id: int, delta: int = Query(...), performed_by: str = Query("Workshop Staff"), db: Session = Depends(get_db)):
-    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-
-    new_qty = item.quantity + delta
-    if new_qty < 0:
-        raise HTTPException(status_code=400, detail="Stock quantity cannot be negative")
-
-    item.quantity = new_qty
-    item.last_updated = datetime.now(timezone.utc)
-
-    action_type = "STOCK_CHECKOUT" if delta < 0 else "STOCK_CHECKIN"
-    audit = SystemAuditLog(
-        action=action_type,
-        performed_by=performed_by,
-        details=f"Adjusted stock for '{item.title}' by {delta:+d} (New Total: {item.quantity})"
-    )
-    db.add(audit)
-
-    db.commit()
-    return {"message": "Stock adjusted", "new_quantity": item.quantity}
 
 @router.delete("/{item_id}")
 def delete_inventory_item(item_id: int, db: Session = Depends(get_db)):

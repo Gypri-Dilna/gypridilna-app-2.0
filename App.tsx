@@ -12,6 +12,24 @@ import { User, Chip, AccessLog, InventoryItem } from './types';
 
 const API_BASE_URL = '';
 
+// Helper for safe error parsing from HTTP responses
+const parseResponseError = async (res: Response, fallbackMessage: string): Promise<string> => {
+    try {
+        const text = await res.text();
+        if (text) {
+            try {
+                const json = JSON.parse(text);
+                return json.detail || json.message || text;
+            } catch {
+                return text;
+            }
+        }
+    } catch {
+        // empty response
+    }
+    return `${fallbackMessage} (Status ${res.status})`;
+};
+
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -109,11 +127,14 @@ const App: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newChip)
             });
-            if (!res.ok) throw new Error('Failed to add chip');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Failed to add chip');
+                throw new Error(err);
+            }
             showToast(`RFID Chip for ${newChip.name} added.`, 'success');
             fetchAllData();
-        } catch (e) {
-            showToast('Error adding chip.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error adding chip.', 'error');
         }
     };
 
@@ -124,22 +145,28 @@ const App: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedChip)
             });
-            if (!res.ok) throw new Error('Failed to update chip');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Failed to update chip');
+                throw new Error(err);
+            }
             showToast(`Chip for ${updatedChip.name} updated.`, 'success');
             fetchAllData();
-        } catch (e) {
-            showToast('Error updating chip.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error updating chip.', 'error');
         }
     };
 
     const handleDeleteChip = async (chipId: number) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/chips/${chipId}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete chip');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Failed to delete chip');
+                throw new Error(err);
+            }
             showToast('RFID Chip deleted.', 'success');
             fetchAllData();
-        } catch (e) {
-            showToast('Error deleting chip.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error deleting chip.', 'error');
         }
     };
 
@@ -151,11 +178,14 @@ const App: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user.username })
             });
-            if (!res.ok) throw new Error('Door unlock failed');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Door unlock failed');
+                throw new Error(err);
+            }
             showToast('Remote door unlock signal transmitted!', 'success');
             setTimeout(fetchAllData, 1000);
-        } catch (e) {
-            showToast('Error sending remote door unlock signal.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error sending remote door unlock signal.', 'error');
         }
     };
 
@@ -163,10 +193,13 @@ const App: React.FC = () => {
         if (!user) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/service-mode?enabled=${enabled}&username=${user.username}`);
-            if (!res.ok) throw new Error('Service mode command failed');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Service mode command failed');
+                throw new Error(err);
+            }
             showToast(`Door service mode set to ${enabled ? 'ENABLED' : 'DISABLED'}.`, 'success');
-        } catch (e) {
-            showToast('Error setting service mode.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error setting service mode.', 'error');
         }
     };
 
@@ -179,8 +212,8 @@ const App: React.FC = () => {
                 body: JSON.stringify(itemData)
             });
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || 'Failed to add item');
+                const err = await parseResponseError(res, 'Failed to add item');
+                throw new Error(err);
             }
             showToast(`Added item '${itemData.title}'.`, 'success');
             fetchAllData();
@@ -196,33 +229,28 @@ const App: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedItem)
             });
-            if (!res.ok) throw new Error('Failed to update item');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Failed to update item');
+                throw new Error(err);
+            }
             showToast(`Updated '${updatedItem.title}'.`, 'success');
             fetchAllData();
-        } catch (e) {
-            showToast('Error updating item.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error updating item.', 'error');
         }
     };
 
     const handleDeleteInventoryItem = async (id: number) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/inventory/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete item');
+            if (!res.ok) {
+                const err = await parseResponseError(res, 'Failed to delete item');
+                throw new Error(err);
+            }
             showToast('Inventory item deleted.', 'success');
             fetchAllData();
-        } catch (e) {
-            showToast('Error deleting item.', 'error');
-        }
-    };
-
-    const handleAdjustStock = async (id: number, delta: number) => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/inventory/${id}/adjust-stock?delta=${delta}`, { method: 'POST' });
-            if (!res.ok) throw new Error('Stock adjustment failed');
-            showToast(`Stock updated (${delta > 0 ? '+' : ''}${delta})`, 'success');
-            fetchAllData();
-        } catch (e) {
-            showToast('Error adjusting stock.', 'error');
+        } catch (e: any) {
+            showToast(e.message || 'Error deleting item.', 'error');
         }
     };
 
@@ -279,7 +307,6 @@ const App: React.FC = () => {
                         onAddItem={handleAddInventoryItem}
                         onUpdateItem={handleUpdateInventoryItem}
                         onDeleteItem={handleDeleteInventoryItem}
-                        onAdjustStock={handleAdjustStock}
                         showToast={showToast}
                     />
                 );
@@ -287,7 +314,6 @@ const App: React.FC = () => {
                 return (
                     <QrScanner
                         onLookupItem={handleLookupQrItem}
-                        onAdjustStock={handleAdjustStock}
                     />
                 );
             case 'webconnect':
