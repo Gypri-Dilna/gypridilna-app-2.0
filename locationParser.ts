@@ -48,7 +48,7 @@ export function formatLocationCode(rack: number, sector: number, box: number, it
     return `${r}${s}-${b}${numStr}`;
 }
 
-// Automatically calculate next sequential 3-digit AAA item ID for location prefix XY-Z
+// Automatically calculate next available sequential 3-digit AAA item ID (filling in deleted gaps) for location prefix XY-Z
 export function getNextSequenceForItem(
     items: { location_code: string }[],
     rack: number,
@@ -56,21 +56,26 @@ export function getNextSequenceForItem(
     box: number
 ): string {
     const prefix = `${rack}${sector}-${box}`;
-    let maxId = 0;
+    const usedIds = new Set<number>();
 
     for (const item of items) {
         if (item.location_code && item.location_code.startsWith(prefix)) {
             const parsed = parseLocationCode(item.location_code);
             if (parsed) {
                 const idVal = parseInt(parsed.itemId, 10);
-                if (!isNaN(idVal) && idVal > maxId) {
-                    maxId = idVal;
+                if (!isNaN(idVal) && idVal > 0) {
+                    usedIds.add(idVal);
                 }
             }
         }
     }
 
-    const nextId = maxId + 1;
+    // Find the smallest missing integer starting from 1 (reuses deleted IDs)
+    let nextId = 1;
+    while (usedIds.has(nextId)) {
+        nextId++;
+    }
+
     return String(nextId).padStart(3, '0');
 }
 

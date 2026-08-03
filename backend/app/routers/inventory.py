@@ -31,23 +31,22 @@ def auto_sequence_location_code(location_code: str, db: Session) -> str:
         InventoryItem.location_code.like(f"{prefix}%")
     ).all()
 
-    existing_codes = {item[0] for item in existing_items if item[0]}
-    
-    if clean_code in existing_codes or item_id == "000":
-        max_seq = 0
-        for code in existing_codes:
-            m = re.match(r"^\d\d-\d(\d{3})$", code)
+    used_ids = set()
+    for item in existing_items:
+        if item[0]:
+            m = re.match(r"^\d\d-\d(\d{3})$", item[0])
             if m:
                 try:
-                    seq = int(m.group(1))
-                    if seq > max_seq:
-                        max_seq = seq
+                    used_ids.add(int(m.group(1)))
                 except ValueError:
                     pass
-        next_seq = max_seq + 1
-        return f"{prefix}{next_seq:03d}"
 
-    return clean_code
+    # Find the smallest positive integer missing from used_ids (fills deleted gaps)
+    next_seq = 1
+    while next_seq in used_ids:
+        next_seq += 1
+
+    return f"{prefix}{next_seq:03d}"
 
 @router.get("", response_model=List[InventoryItemResponse])
 def get_inventory(
