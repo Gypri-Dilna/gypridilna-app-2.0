@@ -1,9 +1,12 @@
+import os
+import threading
+import time
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, time as time_obj
 from typing import Optional
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.rfid_chip import Chip
 from app.models.user import User
 from app.models.audit_log import AccessLog
@@ -14,6 +17,63 @@ router = APIRouter(prefix="/api", tags=["Hardware & Access Control"])
 REMOTE_OPENING_REQUESTED = False
 SERVICE_MODE_ENABLED = False
 LAST_UNKNOWN_CHIP_ID = None
+
+# Hardware Serial Configuration
+SERIAL_PORT = os.environ.get("SERIAL_PORT", "COM3")
+SERIAL_BAUDRATE = int(os.environ.get("SERIAL_BAUDRATE", "9600"))
+
+# Serial Listener Thread for direct USB/UART RFID Readers
+def serial_reader_thread():
+    global LAST_UNKNOWN_CHIP_ID, SERVICE_MODE_ENABLED
+    try:
+        import serial
+        if not os.path.exists(SERIAL_PORT) and not SERIAL_PORT.startswith("COM"):
+            return
+        ser = serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=1)
+        print(f"Started RFID Serial Listener on {SERIAL_PORT} @ {SERIAL_BAUDRATE} baud")
+        while True:
+            line = ser.readline().decode('utf-8', errors='ignore').strip()
+            if line:
+                chip_id = line.replace(" ", "").upper()
+                db = SessionLocal()
+                try:
+                    if SERVICE_MODE_ENABLED:
+                        log = AccessLog(chip_id=chip_id, name="Service Mode", result="GRANTED (SERVICE)")
+                        db.add(log)
+                        db.commit()
+                        ser.write(b"OPEN\n")
+                    else:
+                        chip = db.query(Chip).filter(Chip.chip_id == chip_id).first()
+                        if not chip:
+                            LAST_UNKNOWN_CHIP_ID = chip_id
+                            log = AccessLog(chip_id=chip_id, name="Unknown", result="DENIED (UNKNOWN_CHIP)")
+                            db.add(log)
+                            db.commit()
+                            ser.write(b"DENIED\n")
+                        elif not chip.is_allowed:
+                            log = AccessLog(chip_id=chip_id, name=chip.name, result="DENIED (BLOCKED)")
+                            db.add(log)
+                            db.commit()
+                            ser.write(b"BLOCKED\n")
+                        else:
+                            if chip.is_one_time:
+                                chip.is_allowed = False
+                            log = AccessLog(chip_id=chip_id, name=chip.name, result="GRANTED")
+                            db.add(log)
+                            db.commit()
+                            ser.write(b"OPEN\n")
+                except Exception as e:
+                    print(f"Serial scan processing error: {e}")
+                finally:
+                    db.close()
+            time.sleep(0.1)
+    except Exception:
+        # Serial port unavailable, fallback silently to HTTP polling API
+        pass
+
+# Start serial thread in background on startup
+thread = threading.Thread(target=serial_reader_thread, daemon=True)
+thread.start()
 
 @router.post("/check-access")
 def check_access(data: dict = Body(...), db: Session = Depends(get_db)):
