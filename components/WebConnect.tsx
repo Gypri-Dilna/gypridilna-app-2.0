@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { WebConnectIcon, ExternalLinkIcon, RefreshIcon, Globe as GlobeIcon } from './icons';
+import { WebConnectIcon, ExternalLinkIcon, RefreshIcon } from './icons';
 
 interface WebConnectProps {
     defaultUrl?: string;
@@ -78,7 +78,7 @@ export const WebConnect: React.FC<WebConnectProps> = ({ defaultUrl = "https://ww
                 {/* URL Input Bar */}
                 <form onSubmit={handleNavigate} className="flex gap-2">
                     <div className="relative flex-1">
-                        <GlobeIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <WebConnectIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                             type="text"
                             value={inputUrl}

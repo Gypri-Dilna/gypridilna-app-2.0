@@ -20,7 +20,7 @@ export {
     Key as KeyIcon,
     Menu,
     X,
-    Package as InventoryIcon,
+    Boxes as InventoryIcon,
     MapPin as MapPinIcon,
     Map as MapIcon,
     QrCode as QrCodeIcon,

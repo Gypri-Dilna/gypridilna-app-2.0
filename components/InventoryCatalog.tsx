@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem, User } from '../types';
 import { 
-    Package as InventoryIcon, SearchIcon, PlusIcon, MinusIcon, 
+    InventoryIcon, SearchIcon, PlusIcon, MinusIcon, 
     PrinterIcon, MapPinIcon, FilterIcon, TrashIcon, EditIcon, 
     WarningIcon, TagIcon, RefreshIcon, BoxesIcon
 } from './icons';

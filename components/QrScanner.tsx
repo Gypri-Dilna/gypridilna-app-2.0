@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { CameraIcon, QrCodeIcon, CloseIcon, SearchIcon, CheckCircle2, AlertTriangle, PlusIcon, MinusIcon } from './icons';
+import { CameraIcon, QrCodeIcon, CloseIcon, SearchIcon, SuccessIcon, WarningIcon, PlusIcon, MinusIcon } from './icons';
 import { InventoryItem } from '../types';
 
 interface QrScannerProps {
@@ -137,7 +137,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStoc
             {/* Error Banner */}
             {errorMsg && (
                 <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                    <WarningIcon className="h-5 w-5 flex-shrink-0" />
                     <span>{errorMsg}</span>
                 </div>
             )}
