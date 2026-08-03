@@ -1,23 +1,31 @@
 import json
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserLogin, UserResponse, ChangePasswordRequest
 
 router = APIRouter(prefix="/api", tags=["Auth"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "rfid_admin_pass"
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
+    try:
+        p_bytes = plain_password.encode('utf-8')[:72]
+        h_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(p_bytes, h_bytes)
+    except Exception:
+        return False
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    p_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(p_bytes, salt).decode('utf-8')
 
 @router.post("/login")
 def login(login_data: UserLogin, db: Session = Depends(get_db)):

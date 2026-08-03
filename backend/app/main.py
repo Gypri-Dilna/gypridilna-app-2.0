@@ -1,9 +1,9 @@
 import os
 import json
+import bcrypt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from passlib.context import CryptContext
 
 from app.database import engine, Base, SessionLocal
 from app.models import User, Chip, InventoryItem, MapZone, AccessLog
@@ -36,7 +36,10 @@ app.include_router(logs.router)
 app.include_router(inventory.router)
 app.include_router(map_router.router)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password: str) -> str:
+    p_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(p_bytes, salt).decode('utf-8')
 
 def seed_initial_data():
     db = SessionLocal()
@@ -53,7 +56,7 @@ def seed_initial_data():
             }
             default_admin = User(
                 username="admin",
-                password_hash=pwd_context.hash("rfid_admin_pass"),
+                password_hash=get_password_hash("rfid_admin_pass"),
                 is_admin=True,
                 permissions=json.dumps(admin_perms),
                 chip_id="CHIP_ADMIN_001"

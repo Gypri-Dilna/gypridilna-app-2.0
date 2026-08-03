@@ -1,15 +1,19 @@
 import json
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from passlib.context import CryptContext
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    p_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(p_bytes, salt).decode('utf-8')
 
 def serialize_user(user: User):
     perms = json.loads(user.permissions) if isinstance(user.permissions, str) and user.permissions else {}
@@ -32,7 +36,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
         
-    hashed = pwd_context.hash(user_in.password)
+    hashed = get_password_hash(user_in.password)
     perms_str = json.dumps(user_in.permissions)
     
     new_user = User(
@@ -56,7 +60,7 @@ def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)
     if user_in.username is not None:
         user.username = user_in.username
     if user_in.password:
-        user.password_hash = pwd_context.hash(user_in.password)
+        user.password_hash = get_password_hash(user_in.password)
     if user_in.is_admin is not None:
         user.is_admin = user_in.is_admin
     if user_in.permissions is not None:
