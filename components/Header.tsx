@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { 
     DashboardIcon, ScanIcon, LogoutIcon, 
     Menu, X, UserManagementIcon, UserIcon, KeyIcon, 
-    InventoryIcon, MapIcon, QrCodeIcon, WebConnectIcon
+    InventoryIcon, QrCodeIcon, WebConnectIcon
 } from './icons';
 import { Logo } from './Logo';
 import { User } from '../types';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
-export type TabType = 'dashboard' | 'access' | 'inventory' | 'minimap' | 'scanner' | 'webconnect' | 'users';
+export type TabType = 'dashboard' | 'access' | 'inventory' | 'scanner' | 'webconnect' | 'users';
 
 interface HeaderProps {
     activeTab: TabType;
@@ -32,7 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
         { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, show: true },
         { id: 'access', label: 'Door Access', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
         { id: 'inventory', label: 'Inventory', icon: InventoryIcon, show: true },
-        { id: 'minimap', label: 'Workshop Map', icon: MapIcon, show: true },
         { id: 'scanner', label: 'QR Scanner', icon: QrCodeIcon, show: true },
         { id: 'webconnect', label: 'WebConnect', icon: WebConnectIcon, show: true },
         { id: 'users', label: 'User Admin', icon: UserManagementIcon, show: user.is_admin },
@@ -40,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     return (
         <>
-            {/* Desktop Sidebar (Permanent 240px, Brand Dark Charcoal #2f353e) */}
+            {/* Desktop Sidebar (Permanent 240px) */}
             <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-screen sticky top-0 font-sans">
                 <div className="p-5 flex flex-col h-full justify-between overflow-y-auto">
                     <div>

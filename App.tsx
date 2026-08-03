@@ -3,17 +3,14 @@ import Login from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { AccessControl } from './components/AccessControl';
 import { InventoryCatalog } from './components/InventoryCatalog';
-import { WorkshopMinimap } from './components/WorkshopMinimap';
 import { QrScanner } from './components/QrScanner';
 import { WebConnect } from './components/WebConnect';
 import { UserManagement } from './components/UserManagement';
 import { Header, TabType } from './components/Header';
 import { Toast } from './components/Toast';
-import { User, Chip, AccessLog, InventoryItem, MapZone } from './types';
+import { User, Chip, AccessLog, InventoryItem } from './types';
 
-export type Theme = 'light' | 'dark' | 'system';
-
-const API_BASE_URL = ''; // Relative path handled by Vite Proxy / Production Server
+const API_BASE_URL = '';
 
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -23,8 +20,6 @@ const App: React.FC = () => {
     const [chips, setChips] = useState<Chip[]>([]);
     const [logs, setLogs] = useState<AccessLog[]>([]);
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-    const [mapZones, setMapZones] = useState<MapZone[]>([]);
-    const [selectedMinimapItemId, setSelectedMinimapItemId] = useState<number | null>(null);
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -54,11 +49,10 @@ const App: React.FC = () => {
         try {
             const canViewLogs = user.is_admin || user.permissions?.view_logs;
 
-            const [chipsRes, logsRes, invRes, mapRes] = await Promise.all([
+            const [chipsRes, logsRes, invRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/chips`),
                 canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
-                fetch(`${API_BASE_URL}/api/inventory`),
-                fetch(`${API_BASE_URL}/api/map/zones`)
+                fetch(`${API_BASE_URL}/api/inventory`)
             ]);
 
             if (chipsRes.ok) {
@@ -74,11 +68,6 @@ const App: React.FC = () => {
             if (invRes.ok) {
                 const invData = await invRes.json();
                 setInventoryItems(invData);
-            }
-
-            if (mapRes.ok) {
-                const mapData = await mapRes.json();
-                setMapZones(mapData);
             }
         } catch (error) {
             console.error('Data sync error:', error);
@@ -162,11 +151,11 @@ const App: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user.username })
             });
-            if (!res.ok) throw new Error('Gate command failed');
-            showToast('Remote gate unlock signal transmitted!', 'success');
+            if (!res.ok) throw new Error('Door unlock failed');
+            showToast('Remote door unlock signal transmitted!', 'success');
             setTimeout(fetchAllData, 1000);
         } catch (e) {
-            showToast('Error sending remote opening signal.', 'error');
+            showToast('Error sending remote door unlock signal.', 'error');
         }
     };
 
@@ -175,7 +164,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/service-mode?enabled=${enabled}&username=${user.username}`);
             if (!res.ok) throw new Error('Service mode command failed');
-            showToast(`Service mode set to ${enabled ? 'ENABLED' : 'DISABLED'}.`, 'success');
+            showToast(`Door service mode set to ${enabled ? 'ENABLED' : 'DISABLED'}.`, 'success');
         } catch (e) {
             showToast('Error setting service mode.', 'error');
         }
@@ -237,18 +226,6 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateItemCoordinates = async (itemId: number, x: number, y: number, zoneName: string) => {
-        const item = inventoryItems.find(i => i.id === itemId);
-        if (!item) return;
-        await handleUpdateInventoryItem({
-            ...item,
-            location_x: x,
-            location_y: y,
-            zone: zoneName
-        });
-        showToast(`Pin coordinates updated to X:${x}%, Y:${y}%`, 'success');
-    };
-
     const handleLookupQrItem = async (qrCode: string): Promise<InventoryItem | null> => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/inventory/lookup/${encodeURIComponent(qrCode)}`);
@@ -261,7 +238,7 @@ const App: React.FC = () => {
         return null;
     };
 
-    // Render Active Module View
+    // Render Active View
     const renderActiveTabContent = () => {
         if (!user) return null;
 
@@ -303,25 +280,8 @@ const App: React.FC = () => {
                         onUpdateItem={handleUpdateInventoryItem}
                         onDeleteItem={handleDeleteInventoryItem}
                         onAdjustStock={handleAdjustStock}
-                        onSelectMinimapItem={(id) => {
-                            setSelectedMinimapItemId(id);
-                            setActiveTab('minimap');
-                        }}
                         showToast={showToast}
                     />
-                );
-            case 'minimap':
-                return (
-                    <div className="space-y-6">
-                        <WorkshopMinimap
-                            items={inventoryItems}
-                            zones={mapZones}
-                            selectedItemId={selectedMinimapItemId}
-                            onSelectItem={(item) => setSelectedMinimapItemId(item.id)}
-                            onUpdateItemCoordinates={handleUpdateItemCoordinates}
-                            readOnly={!user.is_admin && user.permissions?.inventory_edit === false}
-                        />
-                    </div>
                 );
             case 'scanner':
                 return (
@@ -340,7 +300,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-bg text-gray-100 font-sans">
+        <div className="min-h-screen bg-brand-bg text-brand-light font-sans">
             {isAuthenticated && user ? (
                 <div className="flex flex-col md:flex-row min-h-screen">
                     <Header
