@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem, User } from '../types';
 import { 
-    InventoryIcon, SearchIcon, PlusIcon, MinusIcon, 
+    InventoryIcon, SearchIcon, PlusIcon, 
     PrinterIcon, MapPinIcon, FilterIcon, TrashIcon, EditIcon, 
     CloseIcon
 } from './icons';
 import { LabelPrinterModal } from './LabelPrinterModal';
 import { DilnaFloorplanOutline } from './DilnaFloorplanOutline';
-import { parseLocationCode, formatLocationCode } from '../locationParser';
+import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
 
 interface InventoryCatalogProps {
     items: InventoryItem[];
@@ -15,7 +15,7 @@ interface InventoryCatalogProps {
     onAddItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDeleteItem: (id: number) => Promise<void>;
-    onAdjustStock: (id: number, delta: number) => Promise<void>;
+    onAdjustStock?: (id: number, delta: number) => Promise<void>;
     showToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -25,7 +25,6 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
-    onAdjustStock,
     showToast
 }) => {
     const [search, setSearch] = useState('');
@@ -68,8 +67,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         <InventoryIcon className="h-6 w-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Workshop Inventory</h1>
-                        <p className="text-xs text-gray-300">Tool, Part & Consumables Catalog (XY-ZAAA Scheme)</p>
+                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Workshop Inventory Catalog</h1>
+                        <p className="text-xs text-gray-300">Tools & Workshop Items (XY-ZAAA Scheme)</p>
                     </div>
                 </div>
 
@@ -95,7 +94,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search title, location code (XY-ZAAA e.g. 12-0123), SKU..."
+                        placeholder="Search title, location code (XY-ZAAA e.g. 12-0001), SKU..."
                         className="w-full pl-10 pr-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal"
                     />
                 </div>
@@ -117,7 +116,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 </div>
             </div>
 
-            {/* Inventory Table */}
+            {/* Inventory Table (Simplified without quantity) */}
             <div className="bg-brand-dark border border-brand-border rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -126,7 +125,6 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 <th className="px-5 py-3.5">Item Name & SKU</th>
                                 <th className="px-5 py-3.5">Category</th>
                                 <th className="px-5 py-3.5">Location Code (XY-ZAAA)</th>
-                                <th className="px-5 py-3.5">Quantity</th>
                                 <th className="px-5 py-3.5 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -144,7 +142,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                         {item.qr_code}
                                                     </span>
                                                     {item.notes && (
-                                                        <span className="text-[10px] text-gray-400 truncate max-w-[200px]">
+                                                        <span className="text-[10px] text-gray-400 truncate max-w-[250px]">
                                                             {item.notes}
                                                         </span>
                                                     )}
@@ -171,34 +169,6 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                         Rack #{parsedLoc.rack}, Sector #{parsedLoc.sector}, Box #{parsedLoc.box}
                                                     </div>
                                                 )}
-                                            </td>
-
-                                            {/* Quantity & Increment Buttons */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-base font-bold font-mono text-emerald-400">
-                                                        {item.quantity} <span className="text-xs font-normal text-gray-400">{item.unit}</span>
-                                                    </span>
-
-                                                    {canEdit && (
-                                                        <div className="flex items-center gap-1">
-                                                            <button
-                                                                onClick={() => onAdjustStock(item.id, -1)}
-                                                                className="p-1 bg-brand-darker hover:bg-rose-500/20 hover:text-rose-400 text-gray-300 rounded border border-brand-border transition"
-                                                                title="Decrease 1"
-                                                            >
-                                                                <MinusIcon className="h-3.5 w-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => onAdjustStock(item.id, 1)}
-                                                                className="p-1 bg-brand-darker hover:bg-emerald-500/20 hover:text-emerald-400 text-gray-300 rounded border border-brand-border transition"
-                                                                title="Increase 1"
-                                                            >
-                                                                <PlusIcon className="h-3.5 w-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
                                             </td>
 
                                             {/* Action Buttons */}
@@ -240,7 +210,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={5} className="px-5 py-12 text-center text-gray-400 font-mono">
+                                    <td colSpan={4} className="px-5 py-12 text-center text-gray-400 font-mono">
                                         No inventory items found matching search criteria.
                                     </td>
                                 </tr>
@@ -309,7 +279,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     );
 };
 
-// Form Modal Component for Inventory Items with XY-ZAAA Auto-Sequencer
+// Form Modal Component for Inventory Items with XY-ZAAA Auto-Sequencer (Without Quantity)
 interface FormModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -321,8 +291,6 @@ interface FormModalProps {
 const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
     const [title, setTitle] = useState(item?.title || '');
     const [category, setCategory] = useState(item?.category || 'Power Tools');
-    const [quantity, setQuantity] = useState(item?.quantity ?? 1);
-    const [unit, setUnit] = useState(item?.unit || 'pcs');
 
     // XY-ZAAA Fields
     const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
@@ -358,15 +326,15 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
         const validated = parseLocationCode(computedLocationCode);
         if (!validated) {
-            setCodeError('Location code must strictly follow XY-ZAAA scheme (e.g. 12-0123, 34-5674)');
+            setCodeError('Location code must strictly follow XY-ZAAA scheme (e.g. 12-0001, 34-5012)');
             return;
         }
 
         onSave({
             title,
             category,
-            quantity: Number(quantity),
-            unit,
+            quantity: 1,
+            unit: "pcs",
             min_quantity: 0,
             location_code: validated.formatted,
             zone: `Rack ${validated.rack}`,
@@ -474,7 +442,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     maxLength={3}
                                     value={itemNum}
                                     onChange={(e) => setItemNum(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="123"
+                                    placeholder="001"
                                     className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
                                 />
                             </div>
@@ -482,31 +450,6 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         <p className="text-[10px] text-gray-400 font-mono">
                             Auto-assigned sequence ID based on registration order at location <strong>{rack}{sector}-{box}</strong> (e.g. 12-0001, 12-0002).
                         </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Current Quantity *</label>
-                            <input
-                                type="number"
-                                required
-                                min="0"
-                                value={quantity}
-                                onChange={(e) => setQuantity(Number(e.target.value))}
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white font-mono focus:outline-none focus:border-brand-teal"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Unit *</label>
-                            <input
-                                type="text"
-                                required
-                                value={unit}
-                                onChange={(e) => setUnit(e.target.value)}
-                                placeholder="pcs, kg, meters"
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal"
-                            />
-                        </div>
                     </div>
 
                     <div>

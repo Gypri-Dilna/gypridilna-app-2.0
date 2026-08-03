@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { CameraIcon, QrCodeIcon, CloseIcon, SearchIcon, SuccessIcon, WarningIcon, PlusIcon, MinusIcon } from './icons';
+import { CameraIcon, QrCodeIcon, CloseIcon, SearchIcon, WarningIcon } from './icons';
 import { InventoryItem } from '../types';
 
 interface QrScannerProps {
     onLookupItem: (qrPayload: string) => Promise<InventoryItem | null>;
-    onAdjustStock: (itemId: number, delta: number) => Promise<void>;
     onClose?: () => void;
 }
 
-export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStock, onClose }) => {
+export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onClose }) => {
     const [scannedResult, setScannedResult] = useState<string | null>(null);
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -73,25 +72,17 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStoc
         }
     };
 
-    const handleStockChange = async (delta: number) => {
-        if (!scannedItem) return;
-        await onAdjustStock(scannedItem.id, delta);
-        // Refresh item quantity locally
-        const updated = await onLookupItem(scannedItem.qr_code);
-        if (updated) setScannedItem(updated);
-    };
-
     return (
-        <div className="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-2xl max-w-2xl mx-auto space-y-6">
+        <div className="bg-brand-dark border border-brand-border rounded-2xl p-6 max-w-2xl mx-auto space-y-6 font-sans">
             {/* Title */}
             <div className="flex justify-between items-center pb-4 border-b border-brand-border">
                 <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-cyan-500/10 text-brand-cyan rounded-xl">
+                    <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
                         <CameraIcon className="h-6 w-6" />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-white">Browser Camera QR Code Scanner</h2>
-                        <p className="text-xs text-gray-400">Instant Workshop Inventory Lookup & Quick Stock Adjustment</p>
+                        <p className="text-xs text-gray-300">Instant Workshop Inventory Lookup</p>
                     </div>
                 </div>
                 {onClose && (
@@ -102,14 +93,14 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStoc
             </div>
 
             {/* Video Viewport Area */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-brand-border bg-slate-950 flex flex-col items-center justify-center min-h-[300px]">
+            <div className="relative rounded-2xl overflow-hidden border-2 border-brand-border bg-brand-darker flex flex-col items-center justify-center min-h-[300px]">
                 <div id="reader" className="w-full max-w-sm rounded-xl overflow-hidden" />
 
                 {!isScanning && (
                     <div className="p-8 text-center space-y-3">
-                        <QrCodeIcon className="h-12 w-12 text-gray-500 mx-auto animate-pulse" />
+                        <QrCodeIcon className="h-12 w-12 text-gray-500 mx-auto" />
                         <p className="text-sm font-semibold text-gray-300">Camera Feed Initializing or Unavailable</p>
-                        <p className="text-xs text-gray-500 max-w-md">Ensure camera permissions are granted in your web browser or use manual SKU lookup below.</p>
+                        <p className="text-xs text-gray-400 max-w-md">Ensure camera permissions are granted in your web browser or use manual SKU lookup below.</p>
                     </div>
                 )}
             </div>
@@ -123,12 +114,12 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStoc
                         value={manualCode}
                         onChange={(e) => setManualCode(e.target.value)}
                         placeholder="Enter QR payload or SKU (e.g. GYPRI-TOOL-001)..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-brand-border rounded-xl text-sm text-white focus:outline-none focus:border-brand-cyan"
+                        className="w-full pl-10 pr-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-sm text-white focus:outline-none focus:border-brand-teal"
                     />
                 </div>
                 <button
                     type="submit"
-                    className="px-5 py-2.5 bg-brand-cyan hover:bg-cyan-300 text-black font-bold rounded-xl text-sm transition"
+                    className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold rounded-xl text-sm transition"
                 >
                     Lookup
                 </button>
@@ -144,39 +135,14 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onAdjustStoc
 
             {/* Scanned Item Result Card */}
             {scannedItem && (
-                <div className="bg-slate-900 border-2 border-brand-cyan/50 rounded-2xl p-5 shadow-xl space-y-4 animate-fadeIn">
+                <div className="bg-brand-darker border-2 border-brand-teal/50 rounded-2xl p-5 space-y-3">
                     <div className="flex justify-between items-start">
                         <div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded border border-brand-teal/30">
                                 {scannedItem.category}
                             </span>
                             <h3 className="text-lg font-bold text-white mt-1">{scannedItem.title}</h3>
-                            <p className="text-xs text-gray-400 font-mono mt-0.5">Location: <span className="text-amber-400 font-semibold">{scannedItem.location_code}</span> ({scannedItem.zone})</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs text-gray-400">Current Stock</p>
-                            <p className={`text-2xl font-black ${scannedItem.quantity <= scannedItem.min_quantity ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                {scannedItem.quantity} <span className="text-xs font-normal text-gray-400">{scannedItem.unit}</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Stock Quick Adjustment */}
-                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
-                        <span className="text-xs font-semibold text-gray-300">Quick Stock Adjustment:</span>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleStockChange(-1)}
-                                className="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
-                            >
-                                <MinusIcon className="h-3.5 w-3.5" /> Check-Out 1
-                            </button>
-                            <button
-                                onClick={() => handleStockChange(1)}
-                                className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
-                            >
-                                <PlusIcon className="h-3.5 w-3.5" /> Restock 1
-                            </button>
+                            <p className="text-xs text-gray-300 font-mono mt-1">Location Code: <span className="text-amber-400 font-bold">{scannedItem.location_code}</span></p>
                         </div>
                     </div>
                 </div>
