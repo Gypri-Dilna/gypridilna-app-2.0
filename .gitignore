@@ -1,42 +1,29 @@
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-build/
-*.app/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Android
-.gradle/
-app/build/
-local.properties
-*.apk
-*.aab
+node_modules
+dist
+dist-ssr
+*.local
 
-# Windows
-/*.vcxproj
-/*.vcxproj.filters
-/*.sln
-
-# Python / FastAPI Server
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-env/
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+.antigravity/
+system.db
 *.db
-*.sqlite3
 
-# IDE & OS
-.idea/
-.vscode/
-*.swp
-*.DS_Store
-Thumbs.db
-
-# Sensitive / Local Data
-*.env
-top secret/
