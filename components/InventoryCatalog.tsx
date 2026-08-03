@@ -338,7 +338,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
             min_quantity: 0,
             location_code: validated.formatted,
             zone: `Rack ${validated.rack}`,
-            qr_code: qrCode,
+            qr_code: validated.formatted,
             notes,
             location_x: 50,
             location_y: 50
@@ -379,14 +379,10 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">QR Code / SKU *</label>
-                            <input
-                                type="text"
-                                required
-                                value={qrCode}
-                                onChange={(e) => setQrCode(e.target.value)}
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white font-mono focus:outline-none focus:border-brand-teal"
-                            />
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">QR Payload / Location ID</label>
+                            <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
+                                {computedLocationCode}
+                            </div>
                         </div>
                     </div>
 

@@ -54,7 +54,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                 {/* Left: High-Contrast QR Code */}
                                 <div className="bg-white p-1 rounded flex-shrink-0">
                                     <QRCodeSVG
-                                        value={item.qr_code || `GYPRI-${item.id}`}
+                                        value={item.location_code || item.qr_code}
                                         size={54}
                                         level="M"
                                         includeMargin={false}

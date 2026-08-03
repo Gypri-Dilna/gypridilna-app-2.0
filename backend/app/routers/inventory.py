@@ -96,17 +96,12 @@ def lookup_by_qr(qr_code: str, db: Session = Depends(get_db)):
 def create_inventory_item(item_in: InventoryItemCreate, db: Session = Depends(get_db)):
     item_data = item_in.model_dump()
 
-    # Ensure unique QR Code
-    if not item_data.get("qr_code"):
-        item_data["qr_code"] = f"GYPRI-{int(datetime.now().timestamp())}"
-    else:
-        existing_qr = db.query(InventoryItem).filter(InventoryItem.qr_code == item_data["qr_code"]).first()
-        if existing_qr:
-            # Auto append timestamp to make QR unique if duplicate
-            item_data["qr_code"] = f"{item_data['qr_code']}-{int(datetime.now().timestamp()) % 10000}"
-
     # Auto-assign sequential AAA location code based on order of registration at location XY-Z
-    item_data["location_code"] = auto_sequence_location_code(item_data["location_code"], db)
+    final_location_code = auto_sequence_location_code(item_data["location_code"], db)
+    item_data["location_code"] = final_location_code
+    
+    # QR Code is generated directly from the actual location ID (e.g. 12-0001)
+    item_data["qr_code"] = final_location_code
 
     new_item = InventoryItem(**item_data)
     db.add(new_item)
