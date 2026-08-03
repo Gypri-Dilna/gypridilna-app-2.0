@@ -440,7 +440,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                 <option value="Zone B: Metal & Welding Lab">Zone B: Metal & Welding Lab</option>
                                 <option value="Zone C: Electronics Bench">Zone C: Electronics Bench</option>
                                 <option value="Zone D: 3D Printing Lab">Zone D: 3D Printing Lab</option>
-                                <option value="Zone E: Entrance Gate">Zone E: Entrance Gate</option>
+                                <option value="Zone E: Entrance Door">Zone E: Entrance Door</option>
                             </select>
                         </div>
                     </div>

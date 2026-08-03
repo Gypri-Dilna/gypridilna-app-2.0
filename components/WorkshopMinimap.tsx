@@ -16,7 +16,7 @@ const DEFAULT_ZONES: MapZone[] = [
     { id: 2, name: "Zone B: Metal & Welding Lab", code: "ZONE_B", color: "#F59E0B", x: 52, y: 10, width: 43, height: 38, description: "Welders, Plasma cutter, Drill press" },
     { id: 3, name: "Zone C: Electronics Bench", code: "ZONE_C", color: "#10B981", x: 5, y: 54, width: 42, height: 38, description: "Soldering, Oscilloscopes, RFID" },
     { id: 4, name: "Zone D: 3D Printing Lab", code: "ZONE_D", color: "#EC4899", x: 52, y: 54, width: 26, height: 38, description: "Prusa & Bambu 3D printers" },
-    { id: 5, name: "Zone E: Entrance Gate", code: "ZONE_E", color: "#8B5CF6", x: 80, y: 54, width: 15, height: 38, description: "RFID Door & Check-in" }
+    { id: 5, name: "Zone E: Entrance Door", code: "ZONE_E", color: "#8B5CF6", x: 80, y: 54, width: 15, height: 38, description: "RFID Door & Check-in" }
 ];
 
 export const WorkshopMinimap: React.FC<WorkshopMinimapProps> = ({

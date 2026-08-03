@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Chip, AccessLog, User } from '../types';
 import { ChipManagement } from './ChipManagement';
 import { LogsViewer } from './LogsViewer';
-import { ScanIcon, RemoteIcon, ShieldIcon, RefreshIcon, ClipboardIcon } from './icons';
+import { ScanIcon, RemoteIcon, ClipboardIcon } from './icons';
 
 interface AccessControlProps {
     user: User;
@@ -39,17 +39,17 @@ export const AccessControl: React.FC<AccessControlProps> = ({
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 font-sans">
             {/* Header & Controls */}
-            <div className="bg-brand-card border border-brand-border p-6 rounded-2xl shadow-xl space-y-4">
+            <div className="bg-brand-dark border border-brand-border p-6 rounded-2xl space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-cyan-500/10 text-brand-cyan rounded-xl">
+                        <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
                             <ScanIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-white tracking-tight">RFID Access Control System</h1>
-                            <p className="text-xs text-gray-400">Physical Gate Controller, RFID Chips & Security Logs</p>
+                            <h1 className="text-2xl font-extrabold text-white tracking-tight">RFID Door Access Control</h1>
+                            <p className="text-xs text-gray-300 mt-0.5">RFID Reader Protocol, Door Control & Access Logs</p>
                         </div>
                     </div>
 
@@ -59,21 +59,21 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                 onClick={handleToggleService}
                                 className={`px-4 py-2 text-xs font-bold rounded-xl border transition ${
                                     isServiceMode 
-                                        ? 'bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20' 
-                                        : 'bg-slate-900 border-brand-border text-gray-300 hover:bg-slate-800'
+                                        ? 'bg-amber-500 text-black border-amber-400' 
+                                        : 'bg-brand-darker border-brand-border text-gray-300 hover:bg-slate-800'
                                 }`}
                             >
-                                Service Mode: {isServiceMode ? 'ACTIVE (Door Unlocked)' : 'OFF'}
+                                Door Service Mode: {isServiceMode ? 'ACTIVE (Unlocked)' : 'OFF'}
                             </button>
                         )}
 
                         {(user.is_admin || user.permissions.remote_opening) && (
                             <button
                                 onClick={onRemoteOpening}
-                                className="flex items-center gap-2 px-5 py-2 bg-brand-cyan hover:bg-cyan-300 text-black font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95"
+                                className="flex items-center gap-2 px-5 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl transition"
                             >
                                 <RemoteIcon className="h-4 w-4" />
-                                Remote Gate Unlock
+                                Remote Door Unlock
                             </button>
                         )}
                     </div>
@@ -85,7 +85,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                         onClick={() => setSubTab('chips')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
                             subTab === 'chips' 
-                                ? 'bg-slate-800 text-brand-cyan border border-brand-cyan/40 shadow' 
+                                ? 'bg-brand-darker text-brand-teal border border-brand-teal/40' 
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
@@ -96,7 +96,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                             onClick={() => setSubTab('logs')}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
                                 subTab === 'logs' 
-                                    ? 'bg-slate-800 text-brand-cyan border border-brand-cyan/40 shadow' 
+                                    ? 'bg-brand-darker text-brand-teal border border-brand-teal/40' 
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >

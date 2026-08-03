@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Chip, AccessLog, InventoryItem, MapZone } from '../types';
+import { User, Chip, AccessLog, InventoryItem } from '../types';
 import { 
-    LockOpenIcon, RefreshIcon, RemoteIcon, WarningIcon, 
-    InventoryIcon, MapPinIcon, UsersIcon, ShieldIcon, 
-    CheckCircle2, ArrowUpRight, BoxesIcon, ToolIcon
+    RefreshIcon, RemoteIcon, WarningIcon, 
+    UsersIcon, ShieldIcon, 
+    ArrowUpRight, BoxesIcon
 } from './icons';
 import { WorkshopMinimap } from './WorkshopMinimap';
 
@@ -59,20 +59,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const recentLogs = logs.slice(0, 5);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 font-sans">
             {/* Top Banner & Quick Refresh */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-card border border-brand-border p-6 rounded-2xl shadow-xl">
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-dark border border-brand-border p-6 rounded-2xl">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                        Welcome to Gypri Dílna Platform 2.0
+                    <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                        Gypri Dílna Overview
                     </h1>
-                    <p className="text-xs text-gray-400 mt-1">Unified RFID Access Control & Workshop Inventory System</p>
+                    <p className="text-xs text-gray-300 mt-1">RFID Door Access & Inventory Management</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onRefresh}
-                        className="p-2.5 bg-slate-900 hover:bg-slate-800 text-gray-300 rounded-xl border border-brand-border transition"
+                        className="p-2.5 bg-brand-darker hover:bg-slate-800 text-gray-300 rounded-xl border border-brand-border transition"
                         title="Sync Data"
                     >
                         <RefreshIcon className="h-5 w-5" />
@@ -80,41 +80,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {(user.is_admin || user.permissions.remote_opening) && (
                         <button
                             onClick={onRemoteOpening}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-cyan hover:bg-cyan-300 text-black font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl transition"
                         >
                             <RemoteIcon className="h-4 w-4" />
-                            Remote Gate Unlock
+                            Remote Door Unlock
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* KPI Cards Grid */}
+            {/* Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* RFID Chips Active */}
-                <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-lg flex items-center justify-between">
+                {/* Active RFID Chips */}
+                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active RFID Chips</p>
-                        <p className="text-3xl font-black text-white mt-1">{chips.filter(c => c.is_allowed).length} <span className="text-xs text-gray-500 font-normal">/ {chips.length}</span></p>
+                        <p className="text-3xl font-black text-white mt-1">{chips.filter(c => c.is_allowed).length} <span className="text-xs text-gray-400 font-normal font-mono">/ {chips.length}</span></p>
                     </div>
-                    <div className="p-3 bg-cyan-500/10 text-brand-cyan rounded-xl">
+                    <div className="p-3 bg-brand-teal/10 text-brand-teal rounded-xl">
                         <UsersIcon className="h-6 w-6" />
                     </div>
                 </div>
 
-                {/* Total Inventory Items */}
-                <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-lg flex items-center justify-between">
+                {/* Total Inventory SKUs */}
+                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Workshop Items</p>
-                        <p className="text-3xl font-black text-white mt-1">{inventoryItems.length} <span className="text-xs text-gray-500 font-normal">SKUs</span></p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory Items</p>
+                        <p className="text-3xl font-black text-white mt-1">{inventoryItems.length} <span className="text-xs text-gray-400 font-normal font-mono">SKUs</span></p>
                     </div>
                     <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
                         <BoxesIcon className="h-6 w-6" />
                     </div>
                 </div>
 
-                {/* Low Stock Warning Card */}
-                <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-lg flex items-center justify-between">
+                {/* Low Stock Alerts */}
+                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Low Stock Alerts</p>
                         <p className={`text-3xl font-black mt-1 ${lowStockItems.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -126,12 +126,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                 </div>
 
-                {/* Gate Service Mode Status */}
-                <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-lg flex items-center justify-between">
+                {/* Door Service Mode Status */}
+                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gate Service Mode</p>
-                        <p className={`text-lg font-bold mt-1 ${isServiceMode ? 'text-amber-400' : 'text-emerald-400'}`}>
-                            {isServiceMode ? 'PERMANENTLY OPEN' : 'SECURED (ACTIVE)'}
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Door Service Mode</p>
+                        <p className={`text-sm font-bold mt-1 ${isServiceMode ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            {isServiceMode ? 'UNLOCKED (OPEN)' : 'LOCKED (ACTIVE)'}
                         </p>
                     </div>
                     {(user.is_admin || user.permissions.service_mode) && (
@@ -140,8 +140,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             disabled={isServiceLoading}
                             className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
                                 isServiceMode 
-                                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20' 
-                                    : 'bg-slate-800 text-gray-300 border border-brand-border hover:bg-slate-700'
+                                    ? 'bg-amber-500 text-black' 
+                                    : 'bg-brand-darker text-gray-300 border border-brand-border hover:bg-slate-700'
                             }`}
                         >
                             {isServiceMode ? 'Disable' : 'Enable'}
@@ -150,20 +150,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
             </div>
 
-            {/* Main Content Layout: Minimap & Recent Activity */}
+            {/* Layout: Minimap & Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Minimap Preview Widget (2 Columns) */}
+                {/* Minimap Preview Widget */}
                 <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-center justify-between bg-brand-card border border-brand-border px-5 py-3 rounded-2xl">
-                        <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                            <MapPinIcon className="h-4 w-4 text-brand-cyan" />
-                            Live Workshop Minimap Overview
+                    <div className="flex items-center justify-between bg-brand-dark border border-brand-border px-5 py-3 rounded-2xl">
+                        <h3 className="font-bold text-white text-sm">
+                            Workshop Floorplan Overview
                         </h3>
                         <button
                             onClick={() => onNavigate('minimap')}
-                            className="text-xs text-brand-cyan hover:underline flex items-center gap-1 font-semibold"
+                            className="text-xs text-brand-teal hover:underline flex items-center gap-1 font-semibold"
                         >
-                            Expand Full Floorplan <ArrowUpRight className="h-3.5 w-3.5" />
+                            Full Floorplan <ArrowUpRight className="h-3.5 w-3.5" />
                         </button>
                     </div>
 
@@ -173,14 +172,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     />
                 </div>
 
-                {/* Recent Access & Inventory Alerts (1 Column) */}
+                {/* Recent Access & Inventory Alerts */}
                 <div className="space-y-6">
-                    {/* Low Stock Quick Alert Box */}
+                    {/* Low Stock Box */}
                     {lowStockItems.length > 0 && (
-                        <div className="bg-brand-card border border-amber-500/40 p-5 rounded-2xl shadow-xl space-y-3">
+                        <div className="bg-brand-dark border border-amber-500/40 p-5 rounded-2xl space-y-3">
                             <div className="flex items-center justify-between text-amber-400">
                                 <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                    <WarningIcon className="h-4 w-4" /> Restock Urgently Needed
+                                    <WarningIcon className="h-4 w-4" /> Stock Alert
                                 </span>
                                 <span className="text-xs font-mono bg-amber-500/20 px-2 py-0.5 rounded font-bold">
                                     {lowStockItems.length} Items
@@ -188,12 +187,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                             <div className="space-y-2">
                                 {lowStockItems.slice(0, 4).map((item) => (
-                                    <div key={item.id} className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-xl border border-brand-border text-xs">
+                                    <div key={item.id} className="flex justify-between items-center bg-brand-darker p-2.5 rounded-xl border border-brand-border text-xs">
                                         <div>
                                             <p className="font-bold text-white leading-tight">{item.title}</p>
                                             <p className="text-[10px] text-gray-400 font-mono">{item.location_code} ({item.zone})</p>
                                         </div>
-                                        <span className="text-rose-400 font-black font-mono">
+                                        <span className="text-rose-400 font-bold font-mono">
                                             {item.quantity} {item.unit}
                                         </span>
                                     </div>
@@ -201,24 +200,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                             <button
                                 onClick={() => onNavigate('inventory')}
-                                className="w-full text-center text-xs font-bold text-brand-cyan bg-cyan-500/10 hover:bg-cyan-500/20 py-2 rounded-xl border border-cyan-500/30 transition"
+                                className="w-full text-center text-xs font-bold text-brand-teal bg-brand-teal/10 hover:bg-brand-teal/20 py-2 rounded-xl border border-brand-teal/30 transition"
                             >
-                                Manage Inventory Catalog →
+                                Open Inventory →
                             </button>
                         </div>
                     )}
 
-                    {/* Recent RFID Access Activity */}
+                    {/* Recent RFID Door Access Logs */}
                     {(user.is_admin || user.permissions.view_logs) && (
-                        <div className="bg-brand-card border border-brand-border p-5 rounded-2xl shadow-xl space-y-4">
+                        <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl space-y-4">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-white text-sm flex items-center gap-2">
                                     <ShieldIcon className="h-4 w-4 text-emerald-400" />
-                                    Recent Gate Access Logs
+                                    Recent Door Access Logs
                                 </h3>
                                 <button
                                     onClick={() => onNavigate('access')}
-                                    className="text-xs text-brand-cyan hover:underline flex items-center gap-1 font-semibold"
+                                    className="text-xs text-brand-teal hover:underline flex items-center gap-1 font-semibold"
                                 >
                                     View All <ArrowUpRight className="h-3.5 w-3.5" />
                                 </button>
@@ -227,7 +226,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div className="space-y-2">
                                 {recentLogs.length > 0 ? (
                                     recentLogs.map((log) => (
-                                        <div key={log.id} className="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-xl border border-brand-border text-xs">
+                                        <div key={log.id} className="flex items-center justify-between p-2.5 bg-brand-darker rounded-xl border border-brand-border text-xs">
                                             <div>
                                                 <p className="font-bold text-white">{log.name}</p>
                                                 <p className="text-[10px] text-gray-400 font-mono">
@@ -244,7 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-xs text-gray-500 text-center py-4 font-mono">No recent gate activity logged.</p>
+                                    <p className="text-xs text-gray-400 text-center py-4 font-mono">No recent door access logged.</p>
                                 )}
                             </div>
                         </div>

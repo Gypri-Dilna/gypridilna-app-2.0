@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gypri Dílna | Access & Inventory Platform 2.0</title>
+    <title>Gypri Dílna | RFID Access & Inventory</title>
 
-    <!-- Google Fonts: Montserrat, Outfit & JetBrains Mono -->
+    <!-- Google Fonts: Montserrat (All UI) & Fira Code (Monospace Code/SKUs) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Montserrat:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,8 +18,8 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Montserrat', 'Outfit', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
+              sans: ['Montserrat', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
             },
             colors: {
               brand: {
@@ -29,7 +29,7 @@
                 darker: '#242930',     /* Official Deep Background */
                 bg: '#1b1f26',         /* Platform Page Background */
                 light: '#fafdff',      /* Brand White / Light Text */
-                border: '#39414d',     /* Sleek Border */
+                border: '#39414d',     /* Solid Border */
                 amber: '#F59E0B',
                 emerald: '#10B981',
                 rose: '#F43F5E',
@@ -40,7 +40,7 @@
                 200: '#b7e6dd',
                 300: '#8fd9ca',
                 400: '#62c8b7',
-                500: '#3aa398',        /* Matches Brand Teal */
+                500: '#3aa398',
                 600: '#2f8b81',
                 700: '#29786f',
                 800: '#25615a',
@@ -52,6 +52,12 @@
       }
     </script>
     <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+      }
+      code, pre, .font-mono {
+        font-family: 'Fira Code', monospace !important;
+      }
       @media print {
         body * {
           visibility: hidden;

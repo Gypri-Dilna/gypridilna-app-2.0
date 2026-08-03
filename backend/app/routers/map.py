@@ -12,7 +12,7 @@ DEFAULT_ZONES = [
     {"name": "Zone B: Metal & Welding Lab", "code": "ZONE_B", "color": "#F59E0B", "x": 50.0, "y": 10.0, "width": 45.0, "height": 38.0, "description": "TIG/MIG Welders, Plasma cutter, Angle grinders, Drill press"},
     {"name": "Zone C: Electronics & Soldering", "code": "ZONE_C", "color": "#10B981", "x": 5.0, "y": 55.0, "width": 40.0, "height": 38.0, "description": "Oscilloscopes, Soldering stations, Microcontrollers, RFID gear"},
     {"name": "Zone D: 3D Printing & CAD Station", "code": "ZONE_D", "color": "#EC4899", "x": 50.0, "y": 55.0, "width": 25.0, "height": 38.0, "description": "Prusa & Bambu Lab 3D printers, Resin post-processing"},
-    {"name": "Zone E: Entrance & Access Gate", "code": "ZONE_E", "color": "#8B5CF6", "x": 78.0, "y": 55.0, "width": 17.0, "height": 38.0, "description": "RFID Door Access Gate, Member check-in terminal"}
+    {"name": "Zone E: Entrance Door", "code": "ZONE_E", "color": "#8B5CF6", "x": 78.0, "y": 55.0, "width": 17.0, "height": 38.0, "description": "RFID Door Access, Member check-in terminal"}
 ]
 
 @router.get("/zones")
