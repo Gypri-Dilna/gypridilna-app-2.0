@@ -1,0 +1,8 @@
+# Copy this file to local.properties and fill in your values.
+# local.properties is git-ignored and should NEVER be committed.
+#
+# APPS_SCRIPT_URL: Your Google Apps Script web app deployment URL.
+# Get it from: script.google.com -> Deploy -> Manage deployments -> Web app URL
+# Make sure it ends with a trailing slash.
+#
+APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec/

@@ -1,0 +1,5 @@
+{
+  "name": "RFID Access Control Dashboard",
+  "description": "A modern, responsive admin dashboard to manage an RFID access control system. It allows for managing RFID chips, viewing access logs, and manually overriding door locks.",
+  "requestFramePermissions": []
+}
