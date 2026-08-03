@@ -27,7 +27,8 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    // 600px width threshold so desktop/laptop browser windows always get full sidebar drawer
+    final isDesktop = MediaQuery.of(context).size.width > 600;
 
     final List<Widget> pages = [
       DashboardScreen(onNavigate: _onItemTapped),
@@ -40,7 +41,7 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
     ];
 
     if (isDesktop) {
-      // 100% Reliable Custom Desktop & Web Sidebar Drawer Menu
+      // 100% Guaranteed Extended Sidebar Navigation Drawer (240px wide)
       return Scaffold(
         body: Column(
           children: [
@@ -48,13 +49,24 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
             Expanded(
               child: Row(
                 children: [
-                  // Permanent 240px Custom Sidebar Menu
                   Container(
                     width: 240,
                     color: AppColors.graphiteCoreSurface,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'NAVIGATION MENU',
+                            style: TextStyle(
+                              color: AppColors.cloudPaperMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ),
                         Expanded(
                           child: ListView(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -81,8 +93,37 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
         ),
       );
     } else {
-      // Mobile Layout: Bottom Navigation Bar + Center Floating Scanner Button
+      // Mobile Layout with Full Slide-Out Drawer for all 7 items
       return Scaffold(
+        appBar: AppBar(
+          title: const Text('GYPRI DÍLNA 2.0', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.graphiteCoreSurface,
+        ),
+        drawer: Drawer(
+          backgroundColor: AppColors.graphiteCoreSurface,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const DrawerHeader(
+                decoration: BoxDecoration(color: AppColors.graphiteCore),
+                child: Center(
+                  child: Text(
+                    'GYPRI DÍLNA 2.0\nWORKSHOP MENU',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.circuitMint, fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+              ),
+              _buildDrawerTile(0, Icons.dashboard, 'Dashboard'),
+              _buildDrawerTile(1, Icons.lock, 'Access Control'),
+              _buildDrawerTile(2, Icons.inventory_2, 'Inventory Catalog'),
+              _buildDrawerTile(3, Icons.admin_panel_settings, 'User Management'),
+              _buildDrawerTile(4, Icons.print, 'Print Label'),
+              _buildDrawerTile(5, Icons.qr_code_scanner, 'Mobile Scanner'),
+              _buildDrawerTile(6, Icons.web, 'WebConnect'),
+            ],
+          ),
+        ),
         body: SafeArea(
           child: Column(
             children: [
@@ -145,6 +186,21 @@ class _AdaptiveNavigationShellState extends State<AdaptiveNavigationShell> {
         ),
         onTap: () => _onItemTapped(index),
       ),
+    );
+  }
+
+  Widget _buildDrawerTile(int index, IconData icon, String title) {
+    final isSelected = _selectedIndex == index;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? AppColors.circuitMint : AppColors.cloudPaperMuted),
+      title: Text(
+        title,
+        style: TextStyle(color: isSelected ? AppColors.circuitMint : AppColors.cloudPaper, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+      ),
+      onTap: () {
+        Navigator.pop(context); // Close Drawer
+        _onItemTapped(index);
+      },
     );
   }
 }
