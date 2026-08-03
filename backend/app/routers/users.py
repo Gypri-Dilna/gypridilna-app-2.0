@@ -26,7 +26,7 @@ def get_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return [serialize_user(u) for u in users]
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_21_CREATED)
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.username == user_in.username).first()
     if existing:
