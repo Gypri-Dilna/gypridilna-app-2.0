@@ -80,10 +80,11 @@ class _MobileScannerScreenState extends State<MobileScannerScreen> {
               valueListenable: controller,
               builder: (context, state, child) {
                 switch (state.torchState) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: AppColors.cloudPaperMuted);
                   case TorchState.on:
                     return const Icon(Icons.flash_on, color: AppColors.circuitMint);
+                  case TorchState.off:
+                  default:
+                    return const Icon(Icons.flash_off, color: AppColors.cloudPaperMuted);
                 }
               },
             ),

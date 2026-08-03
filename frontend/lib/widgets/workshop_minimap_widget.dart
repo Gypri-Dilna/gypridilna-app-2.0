@@ -215,7 +215,7 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      color = AppColors.graphiteCoreBorder.withOpacity(0.25)
+      ..color = AppColors.graphiteCoreBorder.withOpacity(0.25)
       ..strokeWidth = 1.0;
 
     const step = 40.0;

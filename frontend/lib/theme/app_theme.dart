@@ -36,7 +36,7 @@ class AppTheme {
         onBackground: AppColors.cloudPaper,
         error: AppColors.statusDenied,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.graphiteCoreSurface,
         elevation: 2,
         shape: RoundedRectangleBorder(

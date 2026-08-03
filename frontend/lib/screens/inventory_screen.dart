@@ -52,7 +52,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header & Search Bar
           Row(
@@ -97,7 +97,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           Expanded(
             child: isDesktop
                 ? Row(
-                    crossAxisAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Item Catalog List
                       Expanded(
@@ -165,7 +165,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               width: isSelected ? 2 : 1,
             ),
           ),
-          child: ListTile,
+          child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             onTap: () {
               setState(() => selectedItem = item);
@@ -202,7 +202,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               ),
             ),
             trailing: const Icon(Icons.chevron_right, color: AppColors.cloudPaperMuted),
-          );
+          ),
+        );
       },
     );
   }

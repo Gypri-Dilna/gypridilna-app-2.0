@@ -94,7 +94,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'ITEM ONBOARDING & BROTHER LABEL PRINTING',
@@ -125,7 +125,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextField(
                       controller: nameController,
@@ -193,7 +193,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('BROTHER PT-D460BTVP (18mm TAPE PREVIEW)', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
@@ -221,7 +221,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                           Expanded(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              crossAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   nameController.text.toUpperCase(),
@@ -269,7 +269,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('SCAN QR & AUTO SNAPSHOT VERIFICATION', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),

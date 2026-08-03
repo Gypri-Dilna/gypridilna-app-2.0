@@ -21,7 +21,7 @@ class DoorStatusCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -32,7 +32,7 @@ class DoorStatusCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'DOOR CONTROL SYSTEM',

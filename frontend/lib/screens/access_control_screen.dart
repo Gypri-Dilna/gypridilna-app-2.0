@@ -70,7 +70,7 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'RFID ACCESS CONTROL SYSTEM',

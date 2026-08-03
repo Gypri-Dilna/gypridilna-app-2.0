@@ -9,7 +9,7 @@ class UserManagementScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'USER MANAGEMENT & RBAC PERMISSIONS',

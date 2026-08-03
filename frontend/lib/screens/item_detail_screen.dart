@@ -42,7 +42,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top Item Banner Header
             Card(
@@ -61,7 +61,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     const SizedBox(width: 20),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             item.name,
@@ -103,7 +103,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             // Item Details & Photo Grid
             Row(
-              crossAxisAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Left: Photo Snapshot & Metadata
                 Expanded(
@@ -134,7 +134,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
-                            crossAxisAlignment: CrossAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildInfoRow('Category', item.category ?? 'Uncategorized'),
                               const Divider(color: AppColors.graphiteCoreBorder),
