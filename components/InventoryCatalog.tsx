@@ -433,14 +433,9 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </div>
                             <div>
                                 <label className="block text-[10px] font-semibold text-gray-400">Item ID (AAA)</label>
-                                <input
-                                    type="text"
-                                    maxLength={3}
-                                    value={itemNum}
-                                    onChange={(e) => setItemNum(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="001"
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
-                                />
+                                <div className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border/60 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
+                                    {itemNum}
+                                </div>
                             </div>
                         </div>
                         <p className="text-[10px] text-gray-400 font-mono">
