@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 
@@ -21,6 +22,12 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
   bool isSaving = false;
   String generatedItemCode = '61-0001';
 
+  // Form Validation State
+  String? nameError;
+  String? rackError;
+  String? poziceError;
+  bool hasAttemptedNext = false;
+
   void _updateItemCodePreview() {
     final r = int.tryParse(rackController.text) ?? 1;
     final p = int.tryParse(poziceController.text) ?? 1;
@@ -30,30 +37,77 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
     });
   }
 
-  Future<void> _triggerBrotherPrint() async {
-    setState(() => isPrinting = true);
-    await Future.delayed(const Duration(milliseconds: 1500)); // Simulate USB bPAC print
-    if (mounted) {
+  bool _validateInputs() {
+    bool isValid = true;
+    setState(() {
+      if (nameController.text.trim().isEmpty) {
+        nameError = 'Item Name is required';
+        isValid = false;
+      } else {
+        nameError = null;
+      }
+
+      final r = int.tryParse(rackController.text.trim());
+      if (r == null || r < 1) {
+        rackError = 'Rack X required (1-9)';
+        isValid = false;
+      } else {
+        rackError = null;
+      }
+
+      final p = int.tryParse(poziceController.text.trim());
+      if (p == null || p < 1) {
+        poziceError = 'Shelf Y required (1-9)';
+        isValid = false;
+      } else {
+        poziceError = null;
+      }
+    });
+    return isValid;
+  }
+
+  void _proceedToStep2() {
+    setState(() => hasAttemptedNext = true);
+    if (_validateInputs()) {
       setState(() {
-        isPrinting = false;
-        currentStep = 2; // Advance to verification step
+        currentStep = 1;
       });
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Label sent to Brother PT-D460BTVP printer via USB!'),
-          backgroundColor: AppColors.statusGranted,
+          content: Text('⚠️ Please fix the required field errors before proceeding.'),
+          backgroundColor: AppColors.statusDenied,
         ),
       );
     }
   }
 
-  Future<void> _completeOnboarding() async {
-    if (nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter item name'), backgroundColor: AppColors.statusDenied),
-      );
-      return;
+  Future<void> _triggerBrotherPrint() async {
+    setState(() => isPrinting = true);
+    try {
+      await ApiService.queueLabelPrint(generatedItemCode, nameController.text.trim().toUpperCase());
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (mounted) {
+        setState(() {
+          isPrinting = false;
+          currentStep = 2; // Advance to verification step
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Label queued & sent to Brother PT-D460BTVP printer via USB!'),
+            backgroundColor: AppColors.statusGranted,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isPrinting = false);
+      }
     }
+  }
+
+  Future<void> _completeOnboarding() async {
+    if (!_validateInputs()) return;
 
     setState(() => isSaving = true);
     try {
@@ -76,6 +130,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
           currentStep = 0;
           nameController.clear();
           noteController.clear();
+          hasAttemptedNext = false;
           isSaving = false;
         });
       }
@@ -119,7 +174,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Step 1: Input Form
+          // Step 1: Input Form with Strict Validation Warnings
           if (currentStep == 0) ...[
             Card(
               child: Padding(
@@ -127,22 +182,57 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (hasAttemptedNext && (nameError != null || rackError != null || poziceError != null)) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusDenied.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.statusDenied),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.warning_amber_rounded, color: AppColors.statusDenied, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'WARNING: Fill all required fields (Item Name, Rack X, Shelf Y) before printing.',
+                              style: TextStyle(color: AppColors.statusDenied, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(
+                      onChanged: (_) {
+                        if (hasAttemptedNext) _validateInputs();
+                      },
+                      decoration: InputDecoration(
                         labelText: 'Item Name *',
                         hintText: 'e.g. Šroubovák červený křížový',
+                        errorText: hasAttemptedNext ? nameError : null,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextField(
                             controller: rackController,
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _updateItemCodePreview(),
-                            decoration: const InputDecoration(labelText: 'Rack Number (X) *'),
+                            onChanged: (_) {
+                              _updateItemCodePreview();
+                              if (hasAttemptedNext) _validateInputs();
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Rack Number (X) *',
+                              hintText: 'e.g. 6',
+                              errorText: hasAttemptedNext ? rackError : null,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -150,8 +240,15 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                           child: TextField(
                             controller: poziceController,
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _updateItemCodePreview(),
-                            decoration: const InputDecoration(labelText: 'Position / Shelf (Y) *'),
+                            onChanged: (_) {
+                              _updateItemCodePreview();
+                              if (hasAttemptedNext) _validateInputs();
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Position / Shelf (Y) *',
+                              hintText: 'e.g. 1',
+                              errorText: hasAttemptedNext ? poziceError : null,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -160,7 +257,10 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                             controller: boxController,
                             keyboardType: TextInputType.number,
                             onChanged: (_) => _updateItemCodePreview(),
-                            decoration: const InputDecoration(labelText: 'Box Number (Z - 0 if none)'),
+                            decoration: const InputDecoration(
+                              labelText: 'Box Number (Z - 0 if none)',
+                              hintText: '0',
+                            ),
                           ),
                         ),
                       ],
@@ -173,11 +273,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        if (nameController.text.trim().isNotEmpty) {
-                          setState(() => currentStep = 1);
-                        }
-                      },
+                      onPressed: _proceedToStep2,
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('PROCEED TO LABEL PRINTING'),
                     ),
@@ -187,7 +283,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
             ),
           ],
 
-          // Step 2: Brother Printer Label Preview & Trigger
+          // Step 2: Brother Printer Label Preview with REAL Scannable QR Code
           if (currentStep == 1) ...[
             Card(
               child: Padding(
@@ -197,7 +293,7 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                   children: [
                     const Text('BROTHER PT-D460BTVP (18mm TAPE PREVIEW)', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    // Simulated 18mm Tape Vector Container
+                    // Real 18mm Tape Vector Container with Live Generated QR Code
                     Container(
                       width: double.infinity,
                       height: 90,
@@ -209,12 +305,17 @@ class _OnboardingPrintScreenState extends State<OnboardingPrintScreen> {
                       ),
                       child: Row(
                         children: [
+                          // Real Scannable Vector QR Code Widget
                           Container(
                             width: 66,
                             height: 66,
-                            color: Colors.black12,
-                            child: const Center(
-                              child: Icon(Icons.qr_code_2, size: 54, color: Colors.black),
+                            color: Colors.white,
+                            child: QrImageView(
+                              data: 'GD:INV:$generatedItemCode',
+                              version: QrVersions.auto,
+                              size: 66.0,
+                              backgroundColor: Colors.white,
+                              errorCorrectionLevel: QrErrorCorrectLevel.M,
                             ),
                           ),
                           const SizedBox(width: 16),
