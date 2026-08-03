@@ -1,18 +1,20 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/map_zone.dart';
+import '../services/api_service.dart';
 
 class WorkshopMinimapWidget extends StatefulWidget {
   final List<MapZone> zones;
   final int? selectedRack;
   final ValueChanged<int>? onRackSelected;
+  final VoidCallback? onZonesUpdated;
 
   const WorkshopMinimapWidget({
     super.key,
     required this.zones,
     this.selectedRack,
     this.onRackSelected,
+    this.onZonesUpdated,
   });
 
   @override
@@ -21,6 +23,8 @@ class WorkshopMinimapWidget extends StatefulWidget {
 
 class _WorkshopMinimapWidgetState extends State<WorkshopMinimapWidget> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
+  bool isEditMode = false;
+  MapZone? draggingZone;
 
   @override
   void initState() {
@@ -37,6 +41,74 @@ class _WorkshopMinimapWidgetState extends State<WorkshopMinimapWidget> with Sing
     super.dispose();
   }
 
+  void _showAddZoneDialog() {
+    final codeController = TextEditingController();
+    final rackController = TextEditingController();
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.graphiteCoreSurface,
+          title: const Text('ADD NEW MAP RACK / ZONE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: codeController,
+                decoration: const InputDecoration(labelText: 'Zone Code *', hintText: 'e.g. RACK-3'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: rackController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Rack Number (X) *', hintText: 'e.g. 3'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Display Name *', hintText: 'e.g. Rack 3 - Power Supplies'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCEL', style: TextStyle(color: AppColors.cloudPaperMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final rNum = int.tryParse(rackController.text) ?? 0;
+                if (codeController.text.isNotEmpty && nameController.text.isNotEmpty && rNum > 0) {
+                  try {
+                    await ApiService.createMapZone(
+                      zoneCode: codeController.text.trim(),
+                      rackNumber: rNum,
+                      displayName: nameController.text.trim(),
+                      gridX: 100,
+                      gridY: 100,
+                      width: 120,
+                      height: 80,
+                      colorHex: '#3AA69A',
+                    );
+                    Navigator.pop(context);
+                    widget.onZonesUpdated?.call();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.statusDenied),
+                    );
+                  }
+                }
+              },
+              child: const Text('ADD TO MAP'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -49,7 +121,7 @@ class _WorkshopMinimapWidgetState extends State<WorkshopMinimapWidget> with Sing
         borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
-            // Minimap Header Bar
+            // Minimap Header Bar with Configurable Grid Editor Toggle
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               color: AppColors.graphiteCore,
@@ -67,46 +139,156 @@ class _WorkshopMinimapWidgetState extends State<WorkshopMinimapWidget> with Sing
                     ),
                   ),
                   const Spacer(),
-                  if (widget.selectedRack != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.circuitMint.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.circuitMint),
-                      ),
-                      child: Text(
-                        'RACK ${widget.selectedRack} SELECTED',
-                        style: const TextStyle(
-                          color: AppColors.circuitMintLight,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  IconButton(
+                    tooltip: isEditMode ? 'Done Editing Map' : 'Edit Map Grid Layout',
+                    icon: Icon(
+                      isEditMode ? Icons.check_circle : Icons.edit_location_alt,
+                      color: isEditMode ? AppColors.statusGranted : AppColors.circuitMint,
+                      size: 22,
+                    ),
+                    onPressed: () {
+                      setState(() => isEditMode = !isEditMode);
+                    },
+                  ),
+                  if (isEditMode) ...[
+                    const SizedBox(width: 4),
+                    ElevatedButton.icon(
+                      onPressed: _showAddZoneDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('ADD RACK', style: TextStyle(fontSize: 11)),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(60, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
-            // Zoomable Interactive Canvas
+
+            // Interactive Zoomable & Drag-Editable Canvas
             Expanded(
               child: InteractiveViewer(
                 boundaryMargin: const EdgeInsets.all(100),
                 minScale: 0.5,
                 maxScale: 3.0,
+                panEnabled: !isEditMode, // Allow pan when not dragging racks
                 child: Container(
                   width: 600,
                   height: 400,
                   color: AppColors.graphiteCore,
                   child: Stack(
                     children: [
-                      // Grid Line Background Paint
+                      // Grid Line Background
                       CustomPaint(
                         size: const Size(600, 400),
                         painter: GridPainter(),
                       ),
-                      // Render Map Zones (Racks)
+
+                      // Map Racks & Zones
                       ...widget.zones.map((zone) {
                         final isSelected = widget.selectedRack == zone.rackNumber;
+
+                        Widget childWidget = AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.circuitMint.withOpacity(0.35)
+                                : zone.color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected ? AppColors.circuitMintLight : (isEditMode ? AppColors.statusWarning : zone.color),
+                              width: isSelected ? 3 : (isEditMode ? 2 : 1.5),
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.circuitMint.withOpacity(0.5),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      zone.zoneCode,
+                                      style: TextStyle(
+                                        color: isSelected ? AppColors.cloudPaper : zone.color,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      zone.displayName,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.cloudPaperMuted,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Animated Pulsing Location Pin
+                              if (isSelected)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: AnimatedBuilder(
+                                    animation: _pulseController,
+                                    builder: (context, child) {
+                                      return Transform.scale(
+                                        scale: 1.0 + (_pulseController.value * 0.3),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.circuitMint,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.location_on,
+                                            color: AppColors.graphiteCore,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+
+                        if (isEditMode) {
+                          return Positioned(
+                            left: zone.gridX,
+                            top: zone.gridY,
+                            width: zone.width,
+                            height: zone.height,
+                            child: GestureDetector(
+                              onPanUpdate: (details) async {
+                                final newX = (zone.gridX + details.delta.dx).clamp(0.0, 500.0);
+                                final newY = (zone.gridY + details.delta.dy).clamp(0.0, 320.0);
+                                await ApiService.updateMapZone(zone.id, {
+                                  'grid_x': newX.toInt(),
+                                  'grid_y': newY.toInt(),
+                                });
+                                widget.onZonesUpdated?.call();
+                              },
+                              child: childWidget,
+                            ),
+                          );
+                        }
+
                         return Positioned(
                           left: zone.gridX,
                           top: zone.gridY,
@@ -118,84 +300,7 @@ class _WorkshopMinimapWidgetState extends State<WorkshopMinimapWidget> with Sing
                                 widget.onRackSelected!(zone.rackNumber);
                               }
                             },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.circuitMint.withOpacity(0.35)
-                                    : zone.color.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected ? AppColors.circuitMintLight : zone.color,
-                                  width: isSelected ? 3 : 1.5,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.circuitMint.withOpacity(0.5),
-                                          blurRadius: 12,
-                                          spreadRadius: 2,
-                                        )
-                                      ]
-                                    : [],
-                              ),
-                              child: Stack(
-                                children: [
-                                  Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          zone.zoneCode,
-                                          style: TextStyle(
-                                            color: isSelected ? AppColors.cloudPaper : zone.color,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          zone.displayName,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.cloudPaperMuted,
-                                            fontSize: 9,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Animated Pulsing Pin Marker if selected
-                                  if (isSelected)
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: AnimatedBuilder(
-                                        animation: _pulseController,
-                                        builder: (context, child) {
-                                          return Transform.scale(
-                                            scale: 1.0 + (_pulseController.value * 0.3),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: const BoxDecoration(
-                                                color: AppColors.circuitMint,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.location_on,
-                                                color: AppColors.graphiteCore,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
+                            child: childWidget,
                           ),
                         );
                       }).toList(),

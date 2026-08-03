@@ -1,6 +1,7 @@
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
+from fastapi.responses import Response
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,9 @@ router = APIRouter(prefix="/api", tags=["Inventory System"])
 async def list_inventory(
     search: str | None = Query(None, description="Search term for name or item_code"),
     rack: int | None = Query(None, description="Filter by Rack number"),
+    category: str | None = Query(None, description="Filter by Category"),
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = select(InventoryItem)
@@ -28,22 +32,27 @@ async def list_inventory(
             or_(
                 InventoryItem.name.ilike(search_term),
                 InventoryItem.item_code.ilike(search_term),
-                InventoryItem.category.ilike(search_term)
+                InventoryItem.category.ilike(search_term),
+                InventoryItem.note.ilike(search_term)
             )
         )
     if rack is not None:
         stmt = stmt.where(InventoryItem.rack == rack)
+    if category is not None and category.strip():
+        stmt = stmt.where(InventoryItem.category.ilike(f"%{category.strip()}%"))
 
-    stmt = stmt.order_by(InventoryItem.rack, InventoryItem.pozice, InventoryItem.number)
+    stmt = stmt.order_by(InventoryItem.rack, InventoryItem.pozice, InventoryItem.number).offset(offset).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
 
 @router.get("/inventory/{item_id_or_code}", response_model=InventoryOut)
 async def get_inventory_item(item_id_or_code: str, db: AsyncSession = Depends(get_db)):
+    code_clean = item_id_or_code.strip()
     stmt = select(InventoryItem).where(
         or_(
-            InventoryItem.id == item_id_or_code,
-            InventoryItem.item_code == item_id_or_code.strip()
+            InventoryItem.id == code_clean,
+            InventoryItem.item_code == code_clean,
+            InventoryItem.barcode == code_clean
         )
     )
     res = await db.execute(stmt)
@@ -60,7 +69,7 @@ async def create_inventory_item(
 ):
     box_num = body.box if body.box is not None else 0
     
-    # Calculate next item number for this rack, pozice, box location
+    # Auto calculate next item number for this rack, pozice, box location
     count_stmt = select(func.max(InventoryItem.number)).where(
         InventoryItem.rack == body.rack,
         InventoryItem.pozice == body.pozice,
@@ -82,7 +91,7 @@ async def create_inventory_item(
         number=next_num,
         category=body.category.strip() if body.category else None,
         note=body.note.strip() if body.note else None,
-        barcode=body.barcode.strip() if body.barcode else item_code,
+        barcode=body.barcode.strip() if body.barcode else f"GD:INV:{item_code}",
         photo_url=body.photo_url,
         created_by_user_id=current_user.id
     )
@@ -124,7 +133,6 @@ async def update_inventory_item(
         location_changed = True
 
     if location_changed:
-        # Recalculate number and item code for new location
         count_stmt = select(func.max(InventoryItem.number)).where(
             InventoryItem.rack == item.rack,
             InventoryItem.pozice == item.pozice,
@@ -183,7 +191,6 @@ async def delete_inventory_item(
     await db.commit()
     return {"message": f"Item '{item_info['item_code']}' deleted successfully"}
 
-# Photo upload endpoint for onboarding snapshots
 @router.post("/uploads/photo")
 async def upload_photo(file: UploadFile = File(...)):
     ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
@@ -195,3 +202,28 @@ async def upload_photo(file: UploadFile = File(...)):
         f.write(content)
 
     return {"photo_url": f"/uploads/{filename}"}
+
+# Brother Label Print Queue Endpoint
+@router.post("/print/label")
+async def queue_label_print(
+    item_code: str = Query(...),
+    item_name: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    log = AuditLog(
+        event_type="LABEL_PRINT_TRIGGERED",
+        actor_type="USER",
+        actor_id=str(current_user.id),
+        actor_name=current_user.full_name,
+        result="SUCCESS",
+        details={"item_code": item_code, "item_name": item_name, "printer": "Brother PT-D460BTVP (18mm)"}
+    )
+    db.add(log)
+    await db.commit()
+    return {
+        "status": "PRINT_JOB_QUEUED",
+        "printer": "Brother PT-D460BTVP (18mm tape)",
+        "item_code": item_code,
+        "item_name": item_name
+    }

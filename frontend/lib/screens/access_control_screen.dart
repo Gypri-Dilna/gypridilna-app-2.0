@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/rfid_chip.dart';
@@ -43,7 +44,7 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
     try {
       await ApiService.requestDoorUnlock();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Remote unlock request sent!'), backgroundColor: AppColors.statusGranted),
+        const SnackBar(content: Text('Remote unlock request sent to ESP32!'), backgroundColor: AppColors.statusGranted),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,6 +64,122 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
         SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.statusDenied),
       );
     }
+  }
+
+  void _showAddChipDialog() {
+    final chipIdController = TextEditingController();
+    final nameController = TextEditingController();
+    bool isOneTime = false;
+    Timer? pollTimer;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Start polling for Learn Mode chip scan
+            pollTimer ??= Timer.periodic(const Duration(seconds: 2), (_) async {
+              final unknownId = await ApiService.getLastUnknownChip();
+              if (unknownId != null && unknownId.isNotEmpty) {
+                setDialogState(() {
+                  chipIdController.text = unknownId;
+                });
+              }
+            });
+
+            return AlertDialog(
+              backgroundColor: AppColors.graphiteCoreSurface,
+              title: Row(
+                children: const [
+                  Icon(Icons.nfc, color: AppColors.circuitMint),
+                  SizedBox(width: 8),
+                  Text('REGISTER NEW RFID CHIP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.circuitMint.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.circuitMint),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.sensors, color: AppColors.circuitMint, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Learn Mode Active: Scan an unregistered chip at the workshop door to auto-fill ID.',
+                            style: TextStyle(fontSize: 11, color: AppColors.circuitMintLight),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: chipIdController,
+                    decoration: const InputDecoration(labelText: 'Chip ID *', hintText: 'e.g. 1A2B3C4D'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Holder Name / Description *'),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: isOneTime,
+                        onChanged: (v) => setDialogState(() => isOneTime = v ?? false),
+                        activeColor: AppColors.circuitMint,
+                      ),
+                      const Text('One-Time Visitor Pass'),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    pollTimer?.cancel();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('CANCEL', style: TextStyle(color: AppColors.cloudPaperMuted)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (chipIdController.text.trim().isNotEmpty && nameController.text.trim().isNotEmpty) {
+                      pollTimer?.cancel();
+                      try {
+                        await ApiService.createChip(
+                          chipId: chipIdController.text.trim(),
+                          name: nameController.text.trim(),
+                          isOneTime: isOneTime,
+                        );
+                        Navigator.pop(context);
+                        _fetchData();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Chip registered successfully!'), backgroundColor: AppColors.statusGranted),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.statusDenied),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('REGISTER CHIP'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) => pollTimer?.cancel());
   }
 
   @override
@@ -101,8 +218,8 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(letterSpacing: 1.1),
               ),
               ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add),
+                onPressed: _showAddChipDialog,
+                icon: const Icon(Icons.add_circle_outline),
                 label: const Text('REGISTER NEW CHIP'),
               ),
             ],
@@ -149,10 +266,6 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: AppColors.cloudPaperMuted),
-                              onPressed: () {},
                             ),
                           ],
                         ),
