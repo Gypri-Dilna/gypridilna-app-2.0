@@ -47,7 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           isLoading = false;
-          errorMessage = 'Authentication failed. Check credentials.';
+          final errStr = e.toString();
+          if (errStr.contains('SocketException') || errStr.contains('Connection refused') || errStr.contains('Failed to fetch')) {
+            errorMessage = 'Cannot connect to backend server at http://localhost:8000. Ensure uvicorn is running.';
+          } else {
+            errorMessage = 'Invalid username or password.';
+          }
         });
       }
     }
