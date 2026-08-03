@@ -50,8 +50,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         <Logo variant="light" className="h-20 w-auto" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-white tracking-tight">GYPRI DÍLNA 2.0</h1>
-                        <p className="text-xs font-mono text-brand-teal font-bold uppercase tracking-wider mt-1">Workshop Management Platform</p>
+                        <h1 className="text-2xl font-black text-white tracking-tight">GYPRI DÍLNA</h1>
                     </div>
                 </div>
 

@@ -48,7 +48,6 @@ export const Header: React.FC<HeaderProps> = ({
                             <Logo variant="light" className="h-10 w-auto flex-shrink-0" />
                             <div>
                                 <h1 className="font-extrabold text-brand-light text-base leading-tight tracking-tight">GYPRI DÍLNA</h1>
-                                <p className="text-[10px] text-brand-teal font-bold uppercase tracking-wider">Access & Inventory</p>
                             </div>
                         </div>
 
