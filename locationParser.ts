@@ -2,7 +2,7 @@ export interface ParsedLocation {
     rack: number;       // X: Rack / Wall / Shelf Number
     sector: number;     // Y: Shelf / Sector Number
     box: number;        // Z: Box Number (0 if no box)
-    itemId: string;     // AAA: 3-digit Item ID (e.g. "012", "123")
+    itemId: string;     // AAA: 3-digit Item ID (e.g. "001", "012", "123")
     formatted: string;  // XY-ZAAA
     description: string;
 }
@@ -46,6 +46,32 @@ export function formatLocationCode(rack: number, sector: number, box: number, it
     }
 
     return `${r}${s}-${b}${numStr}`;
+}
+
+// Automatically calculate next sequential 3-digit AAA item ID for location prefix XY-Z
+export function getNextSequenceForItem(
+    items: { location_code: string }[],
+    rack: number,
+    sector: number,
+    box: number
+): string {
+    const prefix = `${rack}${sector}-${box}`;
+    let maxId = 0;
+
+    for (const item of items) {
+        if (item.location_code && item.location_code.startsWith(prefix)) {
+            const parsed = parseLocationCode(item.location_code);
+            if (parsed) {
+                const idVal = parseInt(parsed.itemId, 10);
+                if (!isNaN(idVal) && idVal > maxId) {
+                    maxId = idVal;
+                }
+            }
+        }
+    }
+
+    const nextId = maxId + 1;
+    return String(nextId).padStart(3, '0');
 }
 
 // Convert Rack # (X) to approximate coordinates on Dílna floorplan outline (0-100%)

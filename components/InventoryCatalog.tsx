@@ -294,6 +294,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     isOpen={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}
                     item={editingItem}
+                    allItems={items}
                     onSave={async (itemData) => {
                         if (editingItem) {
                             await onUpdateItem({ ...editingItem, ...itemData });
@@ -308,30 +309,44 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     );
 };
 
-// Form Modal Component for Inventory Items with XY-ZAAA Code Generator
+// Form Modal Component for Inventory Items with XY-ZAAA Auto-Sequencer
 interface FormModalProps {
     isOpen: boolean;
     onClose: () => void;
     item: InventoryItem | null;
+    allItems: InventoryItem[];
     onSave: (data: any) => Promise<void>;
 }
 
-const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, onSave }) => {
+const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
     const [title, setTitle] = useState(item?.title || '');
     const [category, setCategory] = useState(item?.category || 'Power Tools');
     const [quantity, setQuantity] = useState(item?.quantity ?? 1);
     const [unit, setUnit] = useState(item?.unit || 'pcs');
 
     // XY-ZAAA Fields
-    const parsedInitial = parseLocationCode(item?.location_code || '12-0123');
+    const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
-    const [itemNum, setItemNum] = useState<string>(parsedInitial ? parsedInitial.itemId : '123');
+    
+    // Auto-calculate initial sequence ID if creating new item
+    const initialSeq = item 
+        ? (parsedInitial ? parsedInitial.itemId : '001')
+        : getNextSequenceForItem(allItems, 1, 2, 0);
 
+    const [itemNum, setItemNum] = useState<string>(initialSeq);
     const [qrCode, setQrCode] = useState(item?.qr_code || `GYPRI-${Date.now().toString().slice(-6)}`);
     const [notes, setNotes] = useState(item?.notes || '');
     const [codeError, setCodeError] = useState<string>('');
+
+    // Auto-assign next sequential 3-digit AAA ID whenever location prefix (rack, sector, box) changes for new items
+    React.useEffect(() => {
+        if (!item) {
+            const nextSeq = getNextSequenceForItem(allItems, rack, sector, box);
+            setItemNum(nextSeq);
+        }
+    }, [rack, sector, box, allItems, item]);
 
     if (!isOpen) return null;
 
@@ -465,7 +480,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </div>
                         </div>
                         <p className="text-[10px] text-gray-400 font-mono">
-                            Example: <strong>12-0123</strong> = Rack 1, Sector 2, Box 0 (No Box), Item ID 123.
+                            Auto-assigned sequence ID based on registration order at location <strong>{rack}{sector}-{box}</strong> (e.g. 12-0001, 12-0002).
                         </p>
                     </div>
 

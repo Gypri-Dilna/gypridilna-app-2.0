@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -13,6 +14,33 @@ from app.schemas.inventory import (
 )
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory System"])
+
+def auto_sequence_location_code(location_code: str, db: Session) -> str:
+    match = re.match(r"^(\d)(\d)-(\d)(\d{3})$", location_code.strip())
+    if not match:
+        return location_code
+
+    rack, sector, box, item_id = match.groups()
+    prefix = f"{rack}{sector}-{box}"
+
+    existing_items = db.query(InventoryItem.location_code).filter(
+        InventoryItem.location_code.like(f"{prefix}%")
+    ).all()
+
+    existing_codes = {item[0] for item in existing_items if item[0]}
+    
+    if location_code in existing_codes or item_id == "000":
+        max_seq = 0
+        for code in existing_codes:
+            m = re.match(r"^\d\d-\d(\d{3})$", code)
+            if m:
+                seq = int(m.group(1))
+                if seq > max_seq:
+                    max_seq = seq
+        next_seq = max_seq + 1
+        return f"{prefix}{next_seq:03d}"
+
+    return location_code
 
 @router.get("", response_model=List[InventoryItemResponse])
 def get_inventory(
@@ -39,9 +67,6 @@ def get_inventory(
     if zone:
         query = query.filter(InventoryItem.zone == zone)
 
-    if low_stock_only:
-        query = query.filter(InventoryItem.quantity <= InventoryItem.min_quantity)
-
     return query.order_by(InventoryItem.title).all()
 
 @router.get("/categories")
@@ -63,11 +88,16 @@ def lookup_by_qr(qr_code: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=InventoryItemResponse, status_code=status.HTTP_201_CREATED)
 def create_inventory_item(item_in: InventoryItemCreate, db: Session = Depends(get_db)):
-    existing = db.query(InventoryItem).filter(InventoryItem.qr_code == item_in.qr_code).first()
-    if existing:
+    existing_qr = db.query(InventoryItem).filter(InventoryItem.qr_code == item_in.qr_code).first()
+    if existing_qr:
         raise HTTPException(status_code=400, detail="Item with this QR Code / SKU already exists")
 
-    new_item = InventoryItem(**item_in.model_dump())
+    item_data = item_in.model_dump()
+    
+    # Auto-assign sequential AAA location code based on order of registration at location XY-Z
+    item_data["location_code"] = auto_sequence_location_code(item_data["location_code"], db)
+
+    new_item = InventoryItem(**item_data)
     db.add(new_item)
     
     # Audit Log
