@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
     DashboardIcon, ScanIcon, ClipboardIcon, LogoutIcon, 
-    SunIcon, MoonIcon, DesktopIcon, Menu, X, UserManagementIcon, 
-    UserIcon, KeyIcon, InventoryIcon, MapIcon, QrCodeIcon, WebConnectIcon, RemoteIcon
+    Menu, X, UserManagementIcon, UserIcon, KeyIcon, 
+    InventoryIcon, MapIcon, QrCodeIcon, WebConnectIcon
 } from './icons';
+import { Logo } from './Logo';
 import { User } from '../types';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
@@ -29,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, show: true },
-        { id: 'access', label: 'RFID Access', icon: ScanIcon, show: user.is_admin || user.permissions.add_chips || user.permissions.view_logs },
+        { id: 'access', label: 'RFID Access', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
         { id: 'inventory', label: 'Inventory', icon: InventoryIcon, show: true },
         { id: 'minimap', label: 'Workshop Map', icon: MapIcon, show: true },
         { id: 'scanner', label: 'QR Scanner', icon: QrCodeIcon, show: true },
@@ -39,22 +40,20 @@ export const Header: React.FC<HeaderProps> = ({
 
     return (
         <>
-            {/* Desktop Sidebar (Permanent 240px) */}
-            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-card border-r border-brand-border h-screen sticky top-0">
+            {/* Desktop Sidebar (Permanent 240px, Brand Dark Slate background #2f353e) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-screen sticky top-0">
                 <div className="p-5 flex flex-col h-full justify-between overflow-y-auto">
                     <div>
-                        {/* Logo & Platform Name */}
-                        <div className="flex items-center gap-3 pb-6 border-b border-brand-border">
-                            <div className="h-10 w-10 bg-brand-cyan/10 border border-brand-cyan/40 rounded-xl flex items-center justify-center font-black text-brand-cyan text-xl">
-                                GD
-                            </div>
+                        {/* Official Brand Logo & Name */}
+                        <div className="flex items-center gap-3.5 pb-6 border-b border-brand-border/70">
+                            <Logo variant="light" className="h-10 w-auto flex-shrink-0" />
                             <div>
-                                <h1 className="font-extrabold text-white text-base leading-tight tracking-tight">GYPRI DÍLNA</h1>
-                                <p className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">Platform 2.0</p>
+                                <h1 className="font-extrabold text-brand-light text-base leading-tight tracking-tight">GYPRI DÍLNA</h1>
+                                <p className="text-[10px] font-mono text-brand-teal font-bold uppercase tracking-wider">Platform 2.0</p>
                             </div>
                         </div>
 
-                        {/* Navigation Menu Links */}
+                        {/* Navigation Links */}
                         <nav className="mt-6 space-y-1.5">
                             {navItems.filter(item => item.show).map((item) => {
                                 const Icon = item.icon;
@@ -65,11 +64,11 @@ export const Header: React.FC<HeaderProps> = ({
                                         onClick={() => setActiveTab(item.id as TabType)}
                                         className={`flex items-center w-full px-4 py-3 text-xs font-bold rounded-xl transition ${
                                             isActive
-                                                ? 'bg-brand-cyan text-black shadow-lg shadow-cyan-500/20'
-                                                : 'text-gray-300 hover:bg-slate-800/80 hover:text-white'
+                                                ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
+                                                : 'text-gray-300 hover:bg-brand-darker hover:text-white'
                                         }`}
                                     >
-                                        <Icon className={`h-4 w-4 mr-3 ${isActive ? 'text-black' : 'text-cyan-400'}`} />
+                                        <Icon className={`h-4 w-4 mr-3 ${isActive ? 'text-black' : 'text-brand-teal'}`} />
                                         <span>{item.label}</span>
                                     </button>
                                 );
@@ -77,11 +76,11 @@ export const Header: React.FC<HeaderProps> = ({
                         </nav>
                     </div>
 
-                    {/* Bottom User Card & Logout */}
-                    <div className="pt-4 border-t border-brand-border space-y-3">
-                        <div className="p-3 bg-slate-900/80 rounded-xl border border-brand-border">
+                    {/* User Card & Logout */}
+                    <div className="pt-4 border-t border-brand-border/70 space-y-3">
+                        <div className="p-3 bg-brand-darker rounded-xl border border-brand-border/60">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-cyan-500/10 text-brand-cyan rounded-lg">
+                                <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-lg">
                                     <UserIcon className="h-4 w-4" />
                                 </div>
                                 <div className="overflow-hidden">
@@ -92,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                             <button
                                 onClick={() => setIsChangePasswordOpen(true)}
-                                className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-gray-300 text-[11px] font-semibold rounded-lg transition border border-brand-border"
+                                className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[11px] font-semibold rounded-lg transition border border-brand-border"
                             >
                                 <KeyIcon className="h-3.5 w-3.5" /> Change Password
                             </button>
@@ -110,17 +109,15 @@ export const Header: React.FC<HeaderProps> = ({
             </aside>
 
             {/* Mobile Header Bar & Drawer */}
-            <div className="md:hidden sticky top-0 z-40 bg-brand-card border-b border-brand-border px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 bg-brand-cyan/10 border border-brand-cyan/40 rounded-lg flex items-center justify-center font-black text-brand-cyan text-sm">
-                        GD
-                    </div>
+            <div className="md:hidden sticky top-0 z-40 bg-brand-dark border-b border-brand-border px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                    <Logo variant="light" className="h-7 w-auto" />
                     <span className="font-extrabold text-white text-sm">GYPRI DÍLNA 2.0</span>
                 </div>
 
                 <button
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="p-2 text-gray-300 hover:text-white bg-slate-900 rounded-lg border border-brand-border"
+                    className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-lg border border-brand-border"
                 >
                     {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
@@ -130,7 +127,10 @@ export const Header: React.FC<HeaderProps> = ({
             {isMobileMenuOpen && (
                 <div className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col p-6 animate-fadeIn">
                     <div className="flex justify-between items-center pb-4 border-b border-brand-border">
-                        <span className="font-extrabold text-white text-lg">GYPRI DÍLNA MENU</span>
+                        <div className="flex items-center gap-2">
+                            <Logo variant="light" className="h-8 w-auto" />
+                            <span className="font-extrabold text-white text-base">GYPRI DÍLNA MENU</span>
+                        </div>
                         <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400">
                             <X className="h-6 w-6" />
                         </button>
@@ -149,8 +149,8 @@ export const Header: React.FC<HeaderProps> = ({
                                     }}
                                     className={`flex items-center w-full px-4 py-3.5 text-sm font-bold rounded-xl transition ${
                                         isActive
-                                            ? 'bg-brand-cyan text-black shadow-lg'
-                                            : 'text-gray-200 bg-slate-900 border border-brand-border'
+                                            ? 'bg-brand-teal text-black shadow-lg'
+                                            : 'text-gray-200 bg-brand-dark border border-brand-border'
                                     }`}
                                 >
                                     <Icon className="h-5 w-5 mr-3" />
@@ -161,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </nav>
 
                     <div className="pt-4 border-t border-brand-border space-y-3">
-                        <div className="text-xs text-gray-300 font-mono">Logged in as: <strong className="text-cyan-400">{user.username}</strong></div>
+                        <div className="text-xs text-gray-300 font-mono">Logged in as: <strong className="text-brand-teal">{user.username}</strong></div>
                         <button
                             onClick={onLogout}
                             className="w-full py-3 bg-rose-500/20 text-rose-300 font-bold rounded-xl border border-rose-500/40 text-xs"

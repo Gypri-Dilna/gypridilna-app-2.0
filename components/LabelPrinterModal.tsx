@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { InventoryItem } from '../types';
 import { CloseIcon, PrinterIcon, TagIcon } from './icons';
+import { Logo } from './Logo';
 
 interface LabelPrinterModalProps {
     isOpen: boolean;
@@ -20,11 +21,11 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-brand-card border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
                 {/* Header */}
-                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-slate-900/50">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-500/10 text-brand-cyan rounded-lg">
+                        <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-lg">
                             <PrinterIcon className="h-6 w-6" />
                         </div>
                         <div>
@@ -44,7 +45,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                             Live Print Preview (Scale 1:1)
                         </label>
-                        <div className="flex justify-center p-6 bg-slate-950 border border-brand-border rounded-xl">
+                        <div className="flex justify-center p-6 bg-brand-bg border border-brand-border rounded-xl">
                             {/* Printable 18mm Tape Container */}
                             <div
                                 ref={printRef}
@@ -60,12 +61,15 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                     />
                                 </div>
 
-                                {/* Center: Title & Location */}
+                                {/* Center: Brand Logo, Title & Location */}
                                 <div className="flex-1 px-2 min-w-0 flex flex-col justify-center">
-                                    <p className="text-[10px] font-black uppercase tracking-tight text-gray-900 leading-none truncate">
-                                        GYPRI DÍLNA
-                                    </p>
-                                    <p className="text-[11px] font-bold text-black leading-snug truncate mt-0.5">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                        <Logo variant="full" className="h-3 w-auto flex-shrink-0" />
+                                        <span className="text-[9px] font-black uppercase tracking-tight text-gray-900 leading-none truncate">
+                                            GYPRI DÍLNA
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] font-bold text-black leading-snug truncate">
                                         {item.title}
                                     </p>
                                     <div className="flex items-center gap-1 mt-0.5">
@@ -82,10 +86,10 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                     </div>
 
                     {/* Printer Details Card */}
-                    <div className="bg-slate-900/60 p-4 rounded-xl border border-brand-border space-y-2 text-xs">
+                    <div className="bg-brand-darker p-4 rounded-xl border border-brand-border space-y-2 text-xs">
                         <div className="flex justify-between text-gray-300">
                             <span className="text-gray-400">Target Printer:</span>
-                            <span className="font-mono font-semibold text-brand-cyan">Brother PT-D460BTVP</span>
+                            <span className="font-mono font-semibold text-brand-teal">Brother PT-D460BTVP</span>
                         </div>
                         <div className="flex justify-between text-gray-300">
                             <span className="text-gray-400">Tape Cassette:</span>
@@ -93,7 +97,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         </div>
                         <div className="flex justify-between text-gray-300">
                             <span className="text-gray-400">Payload SKU:</span>
-                            <span className="font-mono text-cyan-400">{item.qr_code}</span>
+                            <span className="font-mono text-brand-teal">{item.qr_code}</span>
                         </div>
                         <div className="flex justify-between text-gray-300">
                             <span className="text-gray-400">Location Tag:</span>
@@ -111,7 +115,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         </button>
                         <button
                             onClick={handlePrint}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-black bg-brand-cyan hover:bg-cyan-300 rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95"
                         >
                             <PrinterIcon className="h-4 w-4" />
                             Print Label Now

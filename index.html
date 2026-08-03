@@ -4,12 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gypri Dílna | Workshop Management Platform 2.0</title>
-    <!-- Google Fonts: Outfit & JetBrains Mono -->
+    <title>Gypri Dílna | Access & Inventory Platform 2.0</title>
+
+    <!-- Google Fonts: Montserrat, Outfit & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Montserrat:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -17,30 +18,34 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Outfit', 'sans-serif'],
+              sans: ['Montserrat', 'Outfit', 'sans-serif'],
               mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
-              primary: {
-                50: '#ecfeff',
-                100: '#cffaff',
-                200: '#a5f3fc',
-                300: '#67e8f9',
-                400: '#22d3ee',
-                500: '#06b6d4',
-                600: '#00F0FF', /* Electric Cyan Accent */
-                700: '#0e7490',
-                800: '#155e75',
-                900: '#164e63',
-                950: '#083344',
+              brand: {
+                teal: '#3aa398',       /* Official Gypri Dílna Brand Teal */
+                'teal-hover': '#2f8b81',
+                dark: '#2f353e',       /* Official Brand Charcoal */
+                darker: '#242930',     /* Official Deep Background */
+                bg: '#1b1f26',         /* Platform Page Background */
+                light: '#fafdff',      /* Brand White / Light Text */
+                border: '#39414d',     /* Sleek Border */
+                amber: '#F59E0B',
+                emerald: '#10B981',
+                rose: '#F43F5E',
               },
-              'brand-bg': '#0B0F17',
-              'brand-card': '#151C2C',
-              'brand-border': '#222F46',
-              'brand-cyan': '#00F0FF',
-              'brand-amber': '#F59E0B',
-              'brand-emerald': '#10B981',
-              'brand-rose': '#F43F5E',
+              primary: {
+                50: '#f0faf9',
+                100: '#d9f2ef',
+                200: '#b7e6dd',
+                300: '#8fd9ca',
+                400: '#62c8b7',
+                500: '#3aa398',        /* Matches Brand Teal */
+                600: '#2f8b81',
+                700: '#29786f',
+                800: '#25615a',
+                900: '#22514c',
+              }
             }
           }
         }
@@ -68,7 +73,7 @@
       }
     </style>
 </head>
-<body class="bg-brand-bg text-gray-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
+<body class="bg-brand-bg text-brand-light font-sans antialiased selection:bg-brand-teal selection:text-black">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

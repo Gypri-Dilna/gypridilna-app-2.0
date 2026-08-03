@@ -1,5 +1,6 @@
 import React, { useState, FormEvent } from 'react';
 import { User } from '../types';
+import { Logo } from './Logo';
 
 interface LoginProps {
     onLoginSuccess: (user: User, rememberMe: boolean) => void;
@@ -42,15 +43,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-brand-bg px-4">
-            <div className="w-full max-w-md p-8 space-y-6 bg-brand-card border border-brand-border rounded-2xl shadow-2xl">
-                {/* Brand Logo & Header */}
+            <div className="w-full max-w-md p-8 space-y-6 bg-brand-dark border border-brand-border rounded-2xl shadow-2xl">
+                {/* Official Brand Logo & Header */}
                 <div className="text-center space-y-3">
-                    <div className="inline-flex h-14 w-14 items-center justify-center bg-cyan-500/10 border-2 border-brand-cyan rounded-2xl text-brand-cyan font-black text-2xl shadow-lg shadow-cyan-500/20">
-                        GD
+                    <div className="flex justify-center">
+                        <Logo variant="light" className="h-20 w-auto" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-white tracking-tight">GYPRI DÍLNA 2.0</h1>
-                        <p className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider mt-1">Workshop Management Platform</p>
+                        <p className="text-xs font-mono text-brand-teal font-bold uppercase tracking-wider mt-1">Workshop Management Platform</p>
                     </div>
                 </div>
 
@@ -68,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 required
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-3 text-sm text-white bg-slate-900 border border-brand-border rounded-xl focus:outline-none focus:border-brand-cyan transition"
+                                className="w-full px-4 py-3 text-sm text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
                                 placeholder="Enter username (e.g. admin)"
                             />
                         </div>
@@ -84,7 +85,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 text-sm text-white bg-slate-900 border border-brand-border rounded-xl focus:outline-none focus:border-brand-cyan transition"
+                                className="w-full px-4 py-3 text-sm text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
                                 placeholder="••••••••••••"
                             />
                         </div>
@@ -98,7 +99,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 type="checkbox"
                                 checked={rememberMe}
                                 onChange={(e) => setRememberMe(e.target.checked)}
-                                className="h-4 w-4 rounded border-brand-border bg-slate-900 text-brand-cyan focus:ring-brand-cyan cursor-pointer"
+                                className="h-4 w-4 rounded border-brand-border bg-brand-darker text-brand-teal focus:ring-brand-teal cursor-pointer"
                             />
                             <span>Remember me on this workstation</span>
                         </label>
@@ -113,7 +114,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 text-sm font-bold text-black bg-brand-cyan hover:bg-cyan-300 rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95 disabled:bg-cyan-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="w-full py-3 text-sm font-bold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 disabled:bg-teal-900 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Authenticating...' : 'Sign in to Platform'}
                     </button>
@@ -121,8 +122,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
                 {/* Default Credential Hint Box */}
                 <div className="pt-2 text-center border-t border-brand-border/60">
-                    <p className="text-[11px] font-mono text-gray-500">
-                        Default Admin: <span className="text-gray-300">admin</span> / <span className="text-gray-300">rfid_admin_pass</span>
+                    <p className="text-[11px] font-mono text-gray-400">
+                        Default Admin: <span className="text-gray-200">admin</span> / <span className="text-gray-200">rfid_admin_pass</span>
                     </p>
                 </div>
             </div>
