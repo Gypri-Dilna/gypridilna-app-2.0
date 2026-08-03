@@ -1,17 +1,39 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
-import { User } from './types';
+import { Dashboard } from './components/Dashboard';
+import { AccessControl } from './components/AccessControl';
+import { InventoryCatalog } from './components/InventoryCatalog';
+import { WorkshopMinimap } from './components/WorkshopMinimap';
+import { QrScanner } from './components/QrScanner';
+import { WebConnect } from './components/WebConnect';
+import { UserManagement } from './components/UserManagement';
+import { Header, TabType } from './components/Header';
+import { Toast } from './components/Toast';
+import { User, Chip, AccessLog, InventoryItem, MapZone } from './types';
 
 export type Theme = 'light' | 'dark' | 'system';
+
+const API_BASE_URL = ''; // Relative path handled by Vite Proxy / Production Server
 
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [theme, setTheme] = useState<Theme>(() => {
-        return (localStorage.getItem('theme') as Theme) || 'system';
-    });
+    const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
+    const [chips, setChips] = useState<Chip[]>([]);
+    const [logs, setLogs] = useState<AccessLog[]>([]);
+    const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+    const [mapZones, setMapZones] = useState<MapZone[]>([]);
+    const [selectedMinimapItemId, setSelectedMinimapItemId] = useState<number | null>(null);
+
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    const showToast = useCallback((message: string, type: 'success' | 'error') => {
+        setToast({ message, type });
+    }, []);
+
+    // Check localStorage session on mount
     useEffect(() => {
         const savedUser = localStorage.getItem('savedUser');
         if (savedUser) {
@@ -25,43 +47,318 @@ const App: React.FC = () => {
         }
     }, []);
 
+    // Fetch all platform data
+    const fetchAllData = useCallback(async () => {
+        if (!isAuthenticated || !user) return;
+        setIsLoading(true);
+        try {
+            const canViewLogs = user.is_admin || user.permissions?.view_logs;
+
+            const [chipsRes, logsRes, invRes, mapRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/chips`),
+                canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
+                fetch(`${API_BASE_URL}/api/inventory`),
+                fetch(`${API_BASE_URL}/api/map/zones`)
+            ]);
+
+            if (chipsRes.ok) {
+                const chipsData = await chipsRes.json();
+                setChips(chipsData);
+            }
+
+            if (logsRes && logsRes.ok) {
+                const logsData = await logsRes.json();
+                setLogs(logsData);
+            }
+
+            if (invRes.ok) {
+                const invData = await invRes.json();
+                setInventoryItems(invData);
+            }
+
+            if (mapRes.ok) {
+                const mapData = await mapRes.json();
+                setMapZones(mapData);
+            }
+        } catch (error) {
+            console.error('Data sync error:', error);
+            showToast('Error syncing with backend server.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isAuthenticated, user, showToast]);
+
     useEffect(() => {
-        const root = window.document.documentElement;
-        const isDark =
-            theme === 'dark' ||
-            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isAuthenticated) {
+            fetchAllData();
+        }
+    }, [isAuthenticated, fetchAllData]);
 
-        root.classList.remove(isDark ? 'light' : 'dark');
-        root.classList.add(isDark ? 'dark' : 'light');
-
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const handleLoginSuccess = useCallback((loggedInUser: User, rememberMe: boolean) => {
+    // Handle Login
+    const handleLoginSuccess = (loggedInUser: User, rememberMe: boolean) => {
         setUser(loggedInUser);
         setIsAuthenticated(true);
         if (rememberMe) {
             localStorage.setItem('savedUser', JSON.stringify(loggedInUser));
         }
-    }, []);
+        showToast(`Welcome back, ${loggedInUser.username}!`, 'success');
+    };
 
-    const handleLogout = useCallback(() => {
+    // Handle Logout
+    const handleLogout = () => {
         setUser(null);
         setIsAuthenticated(false);
         localStorage.removeItem('savedUser');
-    }, []);
+        showToast('Logged out successfully.', 'success');
+    };
 
-    const handleSetTheme = useCallback((newTheme: Theme) => {
-        setTheme(newTheme);
-    }, []);
+    // RFID API Handlers
+    const handleAddChip = async (newChip: Omit<Chip, 'id'>) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/chips`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newChip)
+            });
+            if (!res.ok) throw new Error('Failed to add chip');
+            showToast(`RFID Chip for ${newChip.name} added.`, 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error adding chip.', 'error');
+        }
+    };
+
+    const handleUpdateChip = async (updatedChip: Chip) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/chips/${updatedChip.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedChip)
+            });
+            if (!res.ok) throw new Error('Failed to update chip');
+            showToast(`Chip for ${updatedChip.name} updated.`, 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error updating chip.', 'error');
+        }
+    };
+
+    const handleDeleteChip = async (chipId: number) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/chips/${chipId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete chip');
+            showToast('RFID Chip deleted.', 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error deleting chip.', 'error');
+        }
+    };
+
+    const handleRemoteOpening = async () => {
+        if (!user) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/remote-opening`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user.username })
+            });
+            if (!res.ok) throw new Error('Gate command failed');
+            showToast('Remote gate unlock signal transmitted!', 'success');
+            setTimeout(fetchAllData, 1000);
+        } catch (e) {
+            showToast('Error sending remote opening signal.', 'error');
+        }
+    };
+
+    const handleToggleServiceMode = async (enabled: boolean) => {
+        if (!user) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/service-mode?enabled=${enabled}&username=${user.username}`);
+            if (!res.ok) throw new Error('Service mode command failed');
+            showToast(`Service mode set to ${enabled ? 'ENABLED' : 'DISABLED'}.`, 'success');
+        } catch (e) {
+            showToast('Error setting service mode.', 'error');
+        }
+    };
+
+    // Inventory API Handlers
+    const handleAddInventoryItem = async (itemData: Omit<InventoryItem, 'id'>) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemData)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || 'Failed to add item');
+            }
+            showToast(`Added item '${itemData.title}'.`, 'success');
+            fetchAllData();
+        } catch (e: any) {
+            showToast(e.message || 'Error adding inventory item.', 'error');
+        }
+    };
+
+    const handleUpdateInventoryItem = async (updatedItem: InventoryItem) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory/${updatedItem.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedItem)
+            });
+            if (!res.ok) throw new Error('Failed to update item');
+            showToast(`Updated '${updatedItem.title}'.`, 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error updating item.', 'error');
+        }
+    };
+
+    const handleDeleteInventoryItem = async (id: number) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete item');
+            showToast('Inventory item deleted.', 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error deleting item.', 'error');
+        }
+    };
+
+    const handleAdjustStock = async (id: number, delta: number) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory/${id}/adjust-stock?delta=${delta}`, { method: 'POST' });
+            if (!res.ok) throw new Error('Stock adjustment failed');
+            showToast(`Stock updated (${delta > 0 ? '+' : ''}${delta})`, 'success');
+            fetchAllData();
+        } catch (e) {
+            showToast('Error adjusting stock.', 'error');
+        }
+    };
+
+    const handleUpdateItemCoordinates = async (itemId: number, x: number, y: number, zoneName: string) => {
+        const item = inventoryItems.find(i => i.id === itemId);
+        if (!item) return;
+        await handleUpdateInventoryItem({
+            ...item,
+            location_x: x,
+            location_y: y,
+            zone: zoneName
+        });
+        showToast(`Pin coordinates updated to X:${x}%, Y:${y}%`, 'success');
+    };
+
+    const handleLookupQrItem = async (qrCode: string): Promise<InventoryItem | null> => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory/lookup/${encodeURIComponent(qrCode)}`);
+            if (res.ok) {
+                return await res.json();
+            }
+        } catch (e) {
+            console.error('QR lookup error:', e);
+        }
+        return null;
+    };
+
+    // Render Active Module View
+    const renderActiveTabContent = () => {
+        if (!user) return null;
+
+        switch (activeTab) {
+            case 'dashboard':
+                return (
+                    <Dashboard
+                        user={user}
+                        chips={chips}
+                        logs={logs}
+                        inventoryItems={inventoryItems}
+                        onRemoteOpening={handleRemoteOpening}
+                        onToggleServiceMode={handleToggleServiceMode}
+                        onRefresh={fetchAllData}
+                        onNavigate={(tab) => setActiveTab(tab)}
+                    />
+                );
+            case 'access':
+                return (
+                    <AccessControl
+                        user={user}
+                        chips={chips}
+                        logs={logs}
+                        onAddChip={handleAddChip}
+                        onUpdateChip={handleUpdateChip}
+                        onDeleteChip={handleDeleteChip}
+                        onRemoteOpening={handleRemoteOpening}
+                        onToggleServiceMode={handleToggleServiceMode}
+                        onRefresh={fetchAllData}
+                        showToast={showToast}
+                    />
+                );
+            case 'inventory':
+                return (
+                    <InventoryCatalog
+                        items={inventoryItems}
+                        user={user}
+                        onAddItem={handleAddInventoryItem}
+                        onUpdateItem={handleUpdateInventoryItem}
+                        onDeleteItem={handleDeleteInventoryItem}
+                        onAdjustStock={handleAdjustStock}
+                        onSelectMinimapItem={(id) => {
+                            setSelectedMinimapItemId(id);
+                            setActiveTab('minimap');
+                        }}
+                        showToast={showToast}
+                    />
+                );
+            case 'minimap':
+                return (
+                    <div className="space-y-6">
+                        <WorkshopMinimap
+                            items={inventoryItems}
+                            zones={mapZones}
+                            selectedItemId={selectedMinimapItemId}
+                            onSelectItem={(item) => setSelectedMinimapItemId(item.id)}
+                            onUpdateItemCoordinates={handleUpdateItemCoordinates}
+                            readOnly={!user.is_admin && user.permissions?.inventory_edit === false}
+                        />
+                    </div>
+                );
+            case 'scanner':
+                return (
+                    <QrScanner
+                        onLookupItem={handleLookupQrItem}
+                        onAdjustStock={handleAdjustStock}
+                    />
+                );
+            case 'webconnect':
+                return <WebConnect />;
+            case 'users':
+                return <UserManagement chips={chips} showToast={showToast} />;
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-brand-light dark:bg-brand-darker text-gray-800 dark:text-gray-200">
+        <div className="min-h-screen bg-brand-bg text-gray-100 font-sans">
             {isAuthenticated && user ? (
-                <Dashboard user={user} onLogout={handleLogout} theme={theme} setTheme={handleSetTheme} />
+                <div className="flex flex-col md:flex-row min-h-screen">
+                    <Header
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        onLogout={handleLogout}
+                        user={user}
+                        showToast={showToast}
+                    />
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-brand-bg overflow-y-auto max-w-7xl mx-auto w-full">
+                        {renderActiveTabContent()}
+                    </main>
+                </div>
             ) : (
                 <Login onLoginSuccess={handleLoginSuccess} />
             )}
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 };

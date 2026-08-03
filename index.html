@@ -1,39 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gypri Dílna Access System</title>
+    <title>Gypri Dílna | Workshop Management Platform 2.0</title>
+    <!-- Google Fonts: Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Outfit', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
             colors: {
-              primary: {"50":"#f0faf9","100":"#d9f2ef","200":"#b7e6dd","300":"#8fd9ca","400":"#62c8b7","500":"#3aa69a","600":"#2f8f82","700":"#29786f","800":"#25615a","900":"#22514c","950":"#153330"},
-              'brand-light': '#FAFDFF',
-              'brand-dark': '#2F353E',
-              'brand-darker': '#242930',
+              primary: {
+                50: '#ecfeff',
+                100: '#cffaff',
+                200: '#a5f3fc',
+                300: '#67e8f9',
+                400: '#22d3ee',
+                500: '#06b6d4',
+                600: '#00F0FF', /* Electric Cyan Accent */
+                700: '#0e7490',
+                800: '#155e75',
+                900: '#164e63',
+                950: '#083344',
+              },
+              'brand-bg': '#0B0F17',
+              'brand-card': '#151C2C',
+              'brand-border': '#222F46',
+              'brand-cyan': '#00F0FF',
+              'brand-amber': '#F59E0B',
+              'brand-emerald': '#10B981',
+              'brand-rose': '#F43F5E',
             }
           }
         }
       }
     </script>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-area, .print-area * {
+          visibility: visible;
+        }
+        .print-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 64mm !important;
+          height: 18mm !important;
+          margin: 0 !important;
+          padding: 1mm !important;
+          background: white !important;
+          color: black !important;
+        }
+      }
+    </style>
 </head>
-<body>
+<body class="bg-brand-bg text-gray-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

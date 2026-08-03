@@ -1,217 +1,186 @@
 import React, { useState } from 'react';
-import { DashboardIcon, UsersIcon, ClipboardIcon, LogoutIcon, SunIcon, MoonIcon, DesktopIcon, Menu, X, UserManagementIcon, UserIcon, KeyIcon } from './icons';
-import { Theme } from '../App';
+import { 
+    DashboardIcon, ScanIcon, ClipboardIcon, LogoutIcon, 
+    SunIcon, MoonIcon, DesktopIcon, Menu, X, UserManagementIcon, 
+    UserIcon, KeyIcon, InventoryIcon, MapIcon, QrCodeIcon, WebConnectIcon, RemoteIcon
+} from './icons';
 import { User } from '../types';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
+export type TabType = 'dashboard' | 'access' | 'inventory' | 'minimap' | 'scanner' | 'webconnect' | 'users';
+
 interface HeaderProps {
-    activeTab: 'dashboard' | 'chips' | 'logs' | 'users';
-    setActiveTab: (tab: 'dashboard' | 'chips' | 'logs' | 'users') => void;
+    activeTab: TabType;
+    setActiveTab: (tab: TabType) => void;
     onLogout: () => void;
-    theme: Theme;
-    setTheme: (theme: Theme) => void;
     user: User;
     showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-const NavItem: React.FC<{
-    icon: React.ReactNode;
-    label: string;
-    isActive: boolean;
-    onClick: () => void;
-    isMobile?: boolean;
-}> = ({ icon, label, isActive, onClick, isMobile }) => {
-    return (
-        <button
-            onClick={onClick}
-            className={`flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150 rounded-lg ${
-                isActive
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            } ${isMobile ? 'justify-center' : ''}`}
-        >
-            {icon}
-            <span className={`ml-4 ${isMobile ? 'sr-only' : ''}`}>{label}</span>
-        </button>
-    );
-};
-
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onLogout, theme, setTheme, user, showToast }) => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+export const Header: React.FC<HeaderProps> = ({
+    activeTab,
+    setActiveTab,
+    onLogout,
+    user,
+    showToast
+}) => {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
-    const themes: Theme[] = ['light', 'dark', 'system'];
 
-    const handleThemeChange = () => {
-        const currentIndex = themes.indexOf(theme);
-        const nextIndex = (currentIndex + 1) % themes.length;
-        setTheme(themes[nextIndex]);
-    };
-    
-    const themeIcon = {
-        light: <SunIcon className="h-5 w-5" />,
-        dark: <MoonIcon className="h-5 w-5" />,
-        system: <DesktopIcon className="h-5 w-5" />,
-    }[theme];
-
-    const navItems = (
-        <>
-            <NavItem 
-                icon={<DashboardIcon className="h-5 w-5" />}
-                label="Dashboard"
-                isActive={activeTab === 'dashboard'}
-                onClick={() => setActiveTab('dashboard')}
-                isMobile={false}
-            />
-            {(user.is_admin || user.permissions.add_chips) && (
-                <NavItem
-                    icon={<UsersIcon className="h-5 w-5" />}
-                    label="Chip Management"
-                    isActive={activeTab === 'chips'}
-                    onClick={() => setActiveTab('chips')}
-                    isMobile={false}
-                />
-            )}
-            {(user.is_admin || user.permissions.view_logs) && (
-                <NavItem
-                    icon={<ClipboardIcon className="h-5 w-5" />}
-                    label="Access Logs"
-                    isActive={activeTab === 'logs'}
-                    onClick={() => setActiveTab('logs')}
-                    isMobile={false}
-                />
-            )}
-            {user.is_admin && (
-                <NavItem
-                    icon={<UserManagementIcon className="h-5 w-5" />}
-                    label="User Management"
-                    isActive={activeTab === 'users'}
-                    onClick={() => setActiveTab('users')}
-                    isMobile={false}
-                />
-            )}
-        </>
-    );
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, show: true },
+        { id: 'access', label: 'RFID Access', icon: ScanIcon, show: user.is_admin || user.permissions.add_chips || user.permissions.view_logs },
+        { id: 'inventory', label: 'Inventory', icon: InventoryIcon, show: true },
+        { id: 'minimap', label: 'Workshop Map', icon: MapIcon, show: true },
+        { id: 'scanner', label: 'QR Scanner', icon: QrCodeIcon, show: true },
+        { id: 'webconnect', label: 'WebConnect', icon: WebConnectIcon, show: true },
+        { id: 'users', label: 'User Admin', icon: UserManagementIcon, show: user.is_admin },
+    ];
 
     return (
         <>
-            {/* Desktop Sidebar */}
-            <aside className="hidden md:flex md:flex-col md:w-64 flex-shrink-0 bg-white dark:bg-brand-dark shadow-lg">
-                <div className="py-4 px-6 h-full flex flex-col">
-                    <div className="flex items-center justify-start py-2">
-                        <img 
-                            src="/assets/logo.svg" 
-                            alt="Logo"
-                            className="h-12 w-auto"
-                        />
+            {/* Desktop Sidebar (Permanent 240px) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-card border-r border-brand-border h-screen sticky top-0">
+                <div className="p-5 flex flex-col h-full justify-between overflow-y-auto">
+                    <div>
+                        {/* Logo & Platform Name */}
+                        <div className="flex items-center gap-3 pb-6 border-b border-brand-border">
+                            <div className="h-10 w-10 bg-brand-cyan/10 border border-brand-cyan/40 rounded-xl flex items-center justify-center font-black text-brand-cyan text-xl">
+                                GD
+                            </div>
+                            <div>
+                                <h1 className="font-extrabold text-white text-base leading-tight tracking-tight">GYPRI DÍLNA</h1>
+                                <p className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">Platform 2.0</p>
+                            </div>
+                        </div>
+
+                        {/* Navigation Menu Links */}
+                        <nav className="mt-6 space-y-1.5">
+                            {navItems.filter(item => item.show).map((item) => {
+                                const Icon = item.icon;
+                                const isActive = activeTab === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setActiveTab(item.id as TabType)}
+                                        className={`flex items-center w-full px-4 py-3 text-xs font-bold rounded-xl transition ${
+                                            isActive
+                                                ? 'bg-brand-cyan text-black shadow-lg shadow-cyan-500/20'
+                                                : 'text-gray-300 hover:bg-slate-800/80 hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon className={`h-4 w-4 mr-3 ${isActive ? 'text-black' : 'text-cyan-400'}`} />
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
                     </div>
-                    <nav className="mt-8 flex-1 space-y-2">
-                        {navItems}
-                    </nav>
-                    <div className="mt-auto space-y-2">
-                        <div className="px-4 py-3 mb-2 border-t dark:border-gray-700">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-full">
-                                    <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+
+                    {/* Bottom User Card & Logout */}
+                    <div className="pt-4 border-t border-brand-border space-y-3">
+                        <div className="p-3 bg-slate-900/80 rounded-xl border border-brand-border">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-cyan-500/10 text-brand-cyan rounded-lg">
+                                    <UserIcon className="h-4 w-4" />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.username}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user.is_admin ? 'Administrator' : 'User'}</p>
+                                    <p className="text-xs font-bold text-white truncate">{user.username}</p>
+                                    <p className="text-[10px] font-mono text-gray-400 uppercase">{user.is_admin ? 'Administrator' : 'Staff User'}</p>
                                 </div>
                             </div>
+
                             <button
                                 onClick={() => setIsChangePasswordOpen(true)}
-                                className="flex items-center w-full px-2 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                                className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-gray-300 text-[11px] font-semibold rounded-lg transition border border-brand-border"
                             >
-                                <KeyIcon className="h-4 w-4 mr-2" />
-                                Change Password
+                                <KeyIcon className="h-3.5 w-3.5" /> Change Password
                             </button>
                         </div>
-                        <button
-                            onClick={handleThemeChange}
-                            className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 capitalize"
-                        >
-                            {themeIcon}
-                            <span className="ml-4">Theme: {theme}</span>
-                        </button>
+
                         <button
                             onClick={onLogout}
-                            className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                            className="flex items-center justify-center w-full px-4 py-2.5 text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 rounded-xl border border-rose-500/30 transition"
                         >
-                            <LogoutIcon className="h-5 w-5" />
-                            <span className="ml-4">Logout</span>
+                            <LogoutIcon className="h-4 w-4 mr-2" />
+                            Log Out
                         </button>
                     </div>
                 </div>
             </aside>
 
-            {/* Mobile Bottom Bar */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-brand-dark shadow-t-lg z-50">
-                <div className="flex justify-around items-center h-16">
-                    <NavItem icon={<DashboardIcon />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} isMobile={true} />
-                    {(user.is_admin || user.permissions.add_chips) && (
-                        <NavItem icon={<UsersIcon />} label="Chips" isActive={activeTab === 'chips'} onClick={() => setActiveTab('chips')} isMobile={true} />
-                    )}
-                    {(user.is_admin || user.permissions.view_logs) && (
-                        <NavItem icon={<ClipboardIcon />} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} isMobile={true} />
-                    )}
-                    {user.is_admin && (
-                        <NavItem icon={<UserManagementIcon />} label="Users" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} isMobile={true} />
-                    )}
-                    <button onClick={() => setIsMenuOpen(true)} className="p-4 text-gray-600 dark:text-gray-400">
-                        <Menu />
-                    </button>
+            {/* Mobile Header Bar & Drawer */}
+            <div className="md:hidden sticky top-0 z-40 bg-brand-card border-b border-brand-border px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 bg-brand-cyan/10 border border-brand-cyan/40 rounded-lg flex items-center justify-center font-black text-brand-cyan text-sm">
+                        GD
+                    </div>
+                    <span className="font-extrabold text-white text-sm">GYPRI DÍLNA 2.0</span>
                 </div>
+
+                <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 text-gray-300 hover:text-white bg-slate-900 rounded-lg border border-brand-border"
+                >
+                    {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
             </div>
 
-            {/* Mobile Menu Overlay */}
-            {isMenuOpen && (
-                <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setIsMenuOpen(false)}>
-                    <div className="fixed inset-y-0 right-0 w-64 bg-white dark:bg-brand-dark shadow-lg p-4 flex flex-col" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setIsMenuOpen(false)} className="absolute top-4 right-4 text-gray-600 dark:text-gray-400">
-                            <X />
+            {/* Mobile Drawer Menu */}
+            {isMobileMenuOpen && (
+                <div className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col p-6 animate-fadeIn">
+                    <div className="flex justify-between items-center pb-4 border-b border-brand-border">
+                        <span className="font-extrabold text-white text-lg">GYPRI DÍLNA MENU</span>
+                        <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400">
+                            <X className="h-6 w-6" />
                         </button>
-                        <div className="mt-12 space-y-4 flex-1">
-                             <div className="px-4 py-3 mb-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{user.username}</p>
-                                </div>
+                    </div>
+
+                    <nav className="mt-6 space-y-2 flex-1">
+                        {navItems.filter(item => item.show).map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activeTab === item.id;
+                            return (
                                 <button
+                                    key={item.id}
                                     onClick={() => {
-                                        setIsMenuOpen(false);
-                                        setIsChangePasswordOpen(true);
+                                        setActiveTab(item.id as TabType);
+                                        setIsMobileMenuOpen(false);
                                     }}
-                                    className="flex items-center w-full px-2 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                                    className={`flex items-center w-full px-4 py-3.5 text-sm font-bold rounded-xl transition ${
+                                        isActive
+                                            ? 'bg-brand-cyan text-black shadow-lg'
+                                            : 'text-gray-200 bg-slate-900 border border-brand-border'
+                                    }`}
                                 >
-                                    <KeyIcon className="h-4 w-4 mr-2" />
-                                    Change Password
+                                    <Icon className="h-5 w-5 mr-3" />
+                                    <span>{item.label}</span>
                                 </button>
-                            </div>
-                             <button
-                                onClick={handleThemeChange}
-                                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 capitalize"
-                            >
-                                {themeIcon}
-                                <span className="ml-4">Theme: {theme}</span>
-                            </button>
-                             <button
-                                onClick={onLogout}
-                                className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
-                            >
-                                <LogoutIcon className="h-5 w-5" />
-                                <span className="ml-4">Logout</span>
-                            </button>
-                        </div>
+                            );
+                        })}
+                    </nav>
+
+                    <div className="pt-4 border-t border-brand-border space-y-3">
+                        <div className="text-xs text-gray-300 font-mono">Logged in as: <strong className="text-cyan-400">{user.username}</strong></div>
+                        <button
+                            onClick={onLogout}
+                            className="w-full py-3 bg-rose-500/20 text-rose-300 font-bold rounded-xl border border-rose-500/40 text-xs"
+                        >
+                            Log Out
+                        </button>
                     </div>
                 </div>
             )}
 
-            <ChangePasswordModal 
-                isOpen={isChangePasswordOpen}
-                onClose={() => setIsChangePasswordOpen(false)}
-                userId={user.id}
-                showToast={showToast}
-            />
+            {/* Change Password Modal */}
+            {isChangePasswordOpen && (
+                <ChangePasswordModal
+                    isOpen={isChangePasswordOpen}
+                    onClose={() => setIsChangePasswordOpen(false)}
+                    userId={user.id}
+                    showToast={showToast}
+                />
+            )}
         </>
     );
 };

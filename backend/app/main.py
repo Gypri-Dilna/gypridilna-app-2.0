@@ -1,0 +1,158 @@
+import os
+import json
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from passlib.context import CryptContext
+
+from app.database import engine, Base, SessionLocal
+from app.models import User, Chip, InventoryItem, MapZone, AccessLog
+from app.routers import auth, users, chips, hardware, logs, inventory, map as map_router
+
+# Initialize database schema
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="Gypri Dílna Management Platform API",
+    description="Unified API for RFID Access Control & Workshop Inventory System",
+    version="2.0.0"
+)
+
+# CORS configuration to support web app & mobile connections
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API Routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(chips.router)
+app.include_router(hardware.router)
+app.include_router(logs.router)
+app.include_router(inventory.router)
+app.include_router(map_router.router)
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def seed_initial_data():
+    db = SessionLocal()
+    try:
+        # Seed Admin user if database is empty
+        if db.query(User).count() == 0:
+            admin_perms = {
+                "service_mode": True,
+                "add_chips": True,
+                "view_logs": True,
+                "remote_opening": True,
+                "erase_logs": True,
+                "inventory_edit": True
+            }
+            default_admin = User(
+                username="admin",
+                password_hash=pwd_context.hash("rfid_admin_pass"),
+                is_admin=True,
+                permissions=json.dumps(admin_perms),
+                chip_id="CHIP_ADMIN_001"
+            )
+            db.add(default_admin)
+
+            default_chip = Chip(
+                chip_id="CHIP_ADMIN_001",
+                name="Admin Master Key",
+                is_allowed=True,
+                is_one_time=False
+            )
+            db.add(default_chip)
+
+        # Seed sample workshop inventory items if empty
+        if db.query(InventoryItem).count() == 0:
+            sample_items = [
+                {
+                    "title": "Bosch Professional Cordless Drill 18V",
+                    "category": "Power Tools",
+                    "quantity": 3,
+                    "unit": "pcs",
+                    "min_quantity": 2,
+                    "location_code": "A1-RACK-02",
+                    "location_x": 18.0,
+                    "location_y": 25.0,
+                    "zone": "Zone A: CNC & Woodworking",
+                    "qr_code": "GYPRI-TOOL-001",
+                    "notes": "Includes 2x 4.0Ah batteries & charger."
+                },
+                {
+                    "title": "Prusa MK4 3D Printer Nozzle 0.4mm Brass",
+                    "category": "3D Printing",
+                    "quantity": 12,
+                    "unit": "pcs",
+                    "min_quantity": 5,
+                    "location_code": "D2-DRAWER-01",
+                    "location_x": 62.0,
+                    "location_y": 70.0,
+                    "zone": "Zone D: 3D Printing & CAD Station",
+                    "qr_code": "GYPRI-PRUSA-04",
+                    "notes": "V6 compatible brass nozzles."
+                },
+                {
+                    "title": "Weller WT1010 Soldering Station 90W",
+                    "category": "Electronics",
+                    "quantity": 2,
+                    "unit": "pcs",
+                    "min_quantity": 1,
+                    "location_code": "C1-BENCH-03",
+                    "location_x": 22.0,
+                    "location_y": 68.0,
+                    "zone": "Zone C: Electronics & Soldering",
+                    "qr_code": "GYPRI-ELEC-SOLD-01",
+                    "notes": "ESD safe with WTP90 pencil."
+                },
+                {
+                    "title": "PLA Filament 1.75mm Signal Black 1kg",
+                    "category": "Consumables",
+                    "quantity": 8,
+                    "unit": "spools",
+                    "min_quantity": 3,
+                    "location_code": "D1-SHELF-04",
+                    "location_x": 58.0,
+                    "location_y": 65.0,
+                    "zone": "Zone D: 3D Printing & CAD Station",
+                    "qr_code": "GYPRI-FIL-PLA-BLK",
+                    "notes": "Prusament PLA Premium."
+                },
+                {
+                    "title": "M4 Stainless Steel Hex Nut Box (500pcs)",
+                    "category": "Fasteners",
+                    "quantity": 1,
+                    "unit": "boxes",
+                    "min_quantity": 2,
+                    "location_code": "B2-BIN-14",
+                    "location_x": 72.0,
+                    "location_y": 28.0,
+                    "zone": "Zone B: Metal & Welding Lab",
+                    "qr_code": "GYPRI-FAST-M4-NUT",
+                    "notes": "DIN 934 A2 Stainless."
+                }
+            ]
+            for item in sample_items:
+                db.add(InventoryItem(**item))
+
+        db.commit()
+    except Exception as e:
+        print(f"Error seeding initial database: {e}")
+    finally:
+        db.close()
+
+seed_initial_data()
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "online", "system": "Gypri Dílna Management Platform", "version": "2.0.0"}
+
+# Serve frontend build if dist folder exists
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")

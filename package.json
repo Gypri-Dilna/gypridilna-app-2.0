@@ -1,7 +1,7 @@
 {
-  "name": "rfid-access-control-dashboard",
+  "name": "gypri-dilna-workshop-platform",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,12 +10,16 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.575.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

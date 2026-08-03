@@ -1,29 +1,10 @@
-
-
 export enum AccessResult {
     GRANTED = 'GRANTED',
-    GRANTED_OVERRIDE = 'GRANTED (OVERRIDE)',
-    GRANTED_MOBILE = 'GRANTED (MOBILE)',
+    GRANTED_REMOTE = 'GRANTED (REMOTE)',
+    GRANTED_SERVICE = 'GRANTED (SERVICE)',
     DENIED_BLOCKED = 'DENIED (BLOCKED)',
     DENIED_UNKNOWN = 'DENIED (UNKNOWN_CHIP)',
     DENIED_EXPIRED = 'DENIED (EXPIRED)',
-}
-
-export interface Chip {
-    id: number;
-    chip_id: string;
-    name: string;
-    is_allowed: boolean;
-    is_one_time: boolean;
-    valid_until: string | null; // ISO 8601 string
-}
-
-export interface AccessLog {
-    id: number;
-    timestamp: string; // ISO 8601 string
-    chip_id: string;
-    name: string;
-    result: AccessResult;
 }
 
 export interface Permissions {
@@ -32,6 +13,7 @@ export interface Permissions {
     view_logs: boolean;
     remote_opening: boolean;
     erase_logs: boolean;
+    inventory_edit: boolean;
 }
 
 export interface User {
@@ -42,15 +24,58 @@ export interface User {
     chip_id: string | null;
 }
 
-// FIX: Add missing type definitions for Presence and HistoricalPresence, which are used in PresenceViewer.tsx.
-export interface Presence {
+export interface Chip {
+    id: number;
     chip_id: string;
     name: string;
-    entry_time: string; // ISO 8601 string
+    is_allowed: boolean;
+    is_one_time: boolean;
+    valid_until: string | null;
 }
 
-export interface HistoricalPresence {
+export interface AccessLog {
+    id: number;
+    timestamp: string;
     chip_id: string;
     name: string;
-    entry_time: string; // ISO 8601 string
+    result: string;
 }
+
+export interface InventoryItem {
+    id: number;
+    title: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    min_quantity: number;
+    location_code: string;
+    location_x: float;
+    location_y: float;
+    zone: string;
+    qr_code: string;
+    notes?: string;
+    last_updated?: string;
+}
+
+export interface MapZone {
+    id: number;
+    name: string;
+    code: string;
+    color: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    description?: string;
+}
+
+export interface PrintLabelData {
+    title: string;
+    qr_code: string;
+    location_code: string;
+    category: string;
+    quantity: number;
+    unit: string;
+}
+
+type float = number;
