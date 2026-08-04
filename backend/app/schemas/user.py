@@ -30,8 +30,7 @@ class UserLogin(BaseModel):
     password: str
 
 class GoogleLoginRequest(BaseModel):
-    credential: Optional[str] = None
-    email: Optional[str] = None
+    credential: str
 
 class ChangePasswordRequest(BaseModel):
     user_id: int

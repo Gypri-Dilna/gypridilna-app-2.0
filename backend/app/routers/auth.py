@@ -96,25 +96,30 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
 
 @router.post("/google-login")
 def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
+    if not payload.credential or not payload.credential.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing Google OAuth ID token credential."
+        )
+
     google_email = None
-
-    if payload.credential:
-        try:
-            url = f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}"
-            with urllib.request.urlopen(url, timeout=6) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    google_email = data.get("email")
-        except Exception as e:
-            print("Google token verification error:", e)
-
-    if not google_email and payload.email:
-        google_email = payload.email.strip()
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential.strip()}"
+        with urllib.request.urlopen(url, timeout=6) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode("utf-8"))
+                google_email = data.get("email")
+    except Exception as e:
+        print("Google token verification failed:", e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google OAuth ID token verification failed or expired. Please sign in again."
+        )
 
     if not google_email:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Google OAuth credential or email."
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google OAuth credential. Email address not found."
         )
 
     clean_email = google_email.strip().lower()

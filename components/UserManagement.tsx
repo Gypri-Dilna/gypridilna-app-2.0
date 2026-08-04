@@ -14,6 +14,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
+    const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('gypri_google_client_id') || '');
+
+    const handleSaveClientId = () => {
+        localStorage.setItem('gypri_google_client_id', googleClientId.trim());
+        showToast('Google OAuth Client ID saved successfully!', 'success');
+    };
+
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -115,6 +122,35 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                         <UserManagementIcon className="h-4 w-4" />
                         Add User
                     </button>
+                </div>
+            </div>
+
+            {/* Google OAuth Client ID Configuration Card */}
+            <div className="bg-brand-dark border border-brand-border rounded-xl p-5 shadow-md font-sans">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                            <span>🔑</span> Google OAuth 2.0 Client ID Settings
+                        </h2>
+                        <p className="text-xs text-gray-300 mt-0.5">
+                            Configure your Google Cloud Console Client ID to enable native Google OAuth sign-in for assigned user emails.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                            type="text"
+                            placeholder="e.g. 123456789-xyz.apps.googleusercontent.com"
+                            value={googleClientId}
+                            onChange={e => setGoogleClientId(e.target.value)}
+                            className="flex-1 sm:w-80 px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                        />
+                        <button
+                            onClick={handleSaveClientId}
+                            className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow transition whitespace-nowrap"
+                        >
+                            Save Client ID
+                        </button>
+                    </div>
                 </div>
             </div>
 
