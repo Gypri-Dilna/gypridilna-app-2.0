@@ -94,10 +94,10 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop">
-                <form onSubmit={handleSubmit}>
-                    <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto max-h-[85vh] flex flex-col">
+                <form onSubmit={handleSubmit} className="flex flex-col max-h-[85vh]">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker flex-shrink-0">
                         <h2 id="modal-title" className="text-base font-extrabold text-white">
                             {chip ? 'Edit RFID Chip Profile' : 'Register New RFID Chip'}
                         </h2>
@@ -106,7 +106,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                         </button>
                     </div>
 
-                    <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+                    <div className="p-6 space-y-4 overflow-y-auto text-xs flex-1">
                         <div>
                             <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Holder's Name *</label>
                             <input 
