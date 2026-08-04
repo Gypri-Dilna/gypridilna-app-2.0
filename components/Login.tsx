@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     // Google Sign-In Modal state
     const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
     const [googleEmailInput, setGoogleEmailInput] = useState('');
-    const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('gypri_google_client_id') || '');
+    const [googleClientId, setGoogleClientId] = useState(() => (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || localStorage.getItem('gypri_google_client_id') || '');
     const [showClientIdConfig, setShowClientIdConfig] = useState(false);
     const googleBtnRef = useRef<HTMLDivElement>(null);
 
