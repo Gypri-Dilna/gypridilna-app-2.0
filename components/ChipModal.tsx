@@ -94,82 +94,109 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div className="bg-white dark:bg-brand-dark rounded-lg shadow-xl w-full max-w-lg mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop">
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6">
-                        <div className="flex justify-between items-center">
-                            <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">
-                                {chip ? 'Edit Chip' : 'Add New Chip'}
-                            </h2>
-                            <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                <CloseIcon />
-                            </button>
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+                        <h2 id="modal-title" className="text-base font-extrabold text-white">
+                            {chip ? 'Edit RFID Chip Profile' : 'Register New RFID Chip'}
+                        </h2>
+                        <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition">
+                            <CloseIcon className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+                        <div>
+                            <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Holder's Name *</label>
+                            <input 
+                                type="text" 
+                                name="name" 
+                                id="name" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                required 
+                                className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-400 focus:outline-none focus:border-brand-teal transition" 
+                            />
                         </div>
-                        <div className="mt-6 space-y-4">
-                            <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Holder's Name</label>
-                                <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                        <div>
+                            <label htmlFor="chip_id" className="block text-xs font-semibold text-gray-300 mb-1">Chip ID *</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    name="chip_id" 
+                                    id="chip_id" 
+                                    value={formData.chip_id} 
+                                    onChange={handleChange} 
+                                    required 
+                                    className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono placeholder-gray-400 focus:outline-none focus:border-brand-teal transition" 
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleScan}
+                                    disabled={isScanning}
+                                    className={`flex items-center gap-2 px-4 py-2.5 font-extrabold text-xs rounded-xl transition-all shadow flex-shrink-0 ${
+                                        isScanning 
+                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-brand-teal hover:bg-brand-teal-hover text-black active:scale-95'
+                                    }`}
+                                >
+                                    <ScanIcon className={`h-4 w-4 ${isScanning ? 'animate-pulse' : ''}`} />
+                                    {isScanning ? 'Scanning...' : 'Scan Door Reader'}
+                                </button>
                             </div>
-                            <div>
-                                <label htmlFor="chip_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Chip ID</label>
-                                <div className="mt-1 flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        name="chip_id" 
-                                        id="chip_id" 
-                                        value={formData.chip_id} 
-                                        onChange={handleChange} 
-                                        required 
-                                        className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm font-mono" 
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleScan}
-                                        disabled={isScanning}
-                                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all ${
-                                            isScanning 
-                                            ? 'bg-gray-400 cursor-not-allowed' 
-                                            : 'bg-primary-600 hover:bg-primary-700 active:scale-95'
-                                        }`}
-                                    >
-                                        <ScanIcon className={`h-4 w-4 ${isScanning ? 'animate-pulse' : ''}`} />
-                                        {isScanning ? 'Scanning...' : 'Start Scanning'}
-                                    </button>
-                                </div>
-                                {scanError && <p className="mt-1 text-xs text-red-500 font-medium">{scanError}</p>}
-                                {isScanning && <p className="mt-1 text-xs text-primary-500 font-medium animate-pulse">Now scan a chip at the main door reader...</p>}
+                            {scanError && <p className="mt-1 text-xs text-rose-400 font-bold">{scanError}</p>}
+                            {isScanning && <p className="mt-1 text-xs text-brand-teal font-mono font-bold animate-pulse">Scan a physical chip at the door reader now...</p>}
+                        </div>
+                        <div>
+                            <label htmlFor="valid_until" className="block text-xs font-semibold text-gray-300 mb-1">Valid Until (optional)</label>
+                            <input 
+                                type="date" 
+                                name="valid_until" 
+                                id="valid_until" 
+                                value={formData.valid_until} 
+                                onChange={handleChange} 
+                                className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs focus:outline-none focus:border-brand-teal transition" 
+                            />
+                        </div>
+                        <div className="flex items-center gap-6 pt-2">
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    id="is_allowed" 
+                                    name="is_allowed" 
+                                    type="checkbox" 
+                                    checked={formData.is_allowed} 
+                                    onChange={handleChange} 
+                                    className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0" 
+                                />
+                                <label htmlFor="is_allowed" className="text-xs font-bold text-white cursor-pointer">Allow Door Access</label>
                             </div>
-                            <div>
-                                <label htmlFor="valid_until" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Valid Until (optional)</label>
-                                <input type="date" name="valid_until" id="valid_until" value={formData.valid_until} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                            </div>
-                            <div className="flex items-center space-x-8">
-                                <div className="flex items-start">
-                                    <div className="flex items-center h-5">
-                                        <input id="is_allowed" name="is_allowed" type="checkbox" checked={formData.is_allowed} onChange={handleChange} className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded" />
-                                    </div>
-                                    <div className="ml-3 text-sm">
-                                        <label htmlFor="is_allowed" className="font-medium text-gray-700 dark:text-gray-300">Allow Access</label>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="flex items-center h-5">
-                                        <input id="is_one_time" name="is_one_time" type="checkbox" checked={formData.is_one_time} onChange={handleChange} className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded" />
-                                    </div>
-                                    <div className="ml-3 text-sm">
-                                        <label htmlFor="is_one_time" className="font-medium text-gray-700 dark:text-gray-300">One-Time Chip</label>
-                                    </div>
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    id="is_one_time" 
+                                    name="is_one_time" 
+                                    type="checkbox" 
+                                    checked={formData.is_one_time} 
+                                    onChange={handleChange} 
+                                    className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0" 
+                                />
+                                <label htmlFor="is_one_time" className="text-xs font-bold text-white cursor-pointer">One-Time Guest Pass</label>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end space-x-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-600 dark:text-gray-200 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <div className="bg-brand-darker px-6 py-4 flex justify-end gap-3 border-t border-brand-border">
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="px-5 py-2.5 bg-brand-dark border border-brand-border text-gray-300 hover:text-white font-bold text-xs rounded-xl transition"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                            Save Chip
+                        <button 
+                            type="submit" 
+                            className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl transition shadow"
+                        >
+                            Save Chip Profile
                         </button>
                     </div>
                 </form>

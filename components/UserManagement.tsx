@@ -88,68 +88,89 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
     };
 
     return (
-        <div>
+        <div className="font-sans space-y-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-white">User Management</h1>
-                <div className="flex gap-2">
-                    <button onClick={fetchUsers} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <RefreshIcon className="h-5 w-5"/>
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
+                        <UserManagementIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-white tracking-tight">User Administration</h1>
+                        <p className="text-xs text-gray-300 mt-0.5">Manage System Accounts, Roles & Permissions</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={fetchUsers} 
+                        className="p-2.5 bg-brand-darker border border-brand-border text-gray-300 hover:text-white rounded-xl transition shadow"
+                        title="Refresh Users"
+                    >
+                        <RefreshIcon className="h-4 w-4"/>
                     </button>
                     <button
                         onClick={handleAddUser}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                        className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
                     >
-                        <UserManagementIcon className="h-5 w-5" />
+                        <UserManagementIcon className="h-4 w-4" />
                         Add User
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-brand-dark rounded-lg shadow-md overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+                    <table className="w-full text-sm text-left text-gray-300">
+                        <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Username</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Linked Chip</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                                <th scope="col" className="px-6 py-4">USERNAME</th>
+                                <th scope="col" className="px-6 py-4">ROLE</th>
+                                <th scope="col" className="px-6 py-4">LINKED CHIP</th>
+                                <th scope="col" className="px-6 py-4 text-right">ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="divide-y divide-brand-border/60 text-xs">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading users...</td>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">Loading users...</td>
                                 </tr>
-                            ) : users.length > 0 ? users.map(user => (
-                                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
+                            ) : users.length > 0 ? users.map(u => (
+                                <tr key={u.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
+                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">
+                                        {u.username}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                            user.is_admin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                        <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                                            u.is_admin ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
                                         }`}>
-                                            {user.is_admin ? 'Admin' : 'User'}
+                                            {u.is_admin ? 'Admin' : 'User'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                                            {user.chip_id ? chips.find(c => c.chip_id === user.chip_id)?.name || user.chip_id : 'None'}
-                                        </div>
+                                    <td className="px-6 py-4 font-mono text-gray-300">
+                                        {u.chip_id ? chips.find(c => c.chip_id === u.chip_id)?.name || u.chip_id : <span className="text-gray-400 italic">None</span>}
                                     </td>
-                                    <td className="px-6 py-4 text-right space-x-2">
-                                        <button onClick={() => handleEditUser(user)} className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300">
-                                            <EditIcon className="h-5 w-5" />
-                                        </button>
-                                        <button onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                onClick={() => handleEditUser(u)} 
+                                                className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                title="Edit User"
+                                            >
+                                                <EditIcon className="h-4 w-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDeleteUser(u.id)} 
+                                                className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                title="Delete User"
+                                            >
+                                                <TrashIcon className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No users found.</td>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">No users found.</td>
                                 </tr>
                             )}
                         </tbody>

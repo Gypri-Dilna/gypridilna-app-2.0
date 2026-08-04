@@ -123,15 +123,15 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
             </div>
 
             {/* Inventory Table List */}
-            <div className="bg-brand-dark border border-brand-border rounded-2xl overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-brand-darker border-b border-brand-border text-[11px] font-mono uppercase tracking-wider text-gray-400">
-                                <th className="px-5 py-3.5">Item Name</th>
-                                <th className="px-5 py-3.5">Category</th>
-                                <th className="px-5 py-3.5">Location ID (XY-ZAAA)</th>
-                                <th className="px-5 py-3.5 text-right">Actions</th>
+                    <table className="w-full text-left text-gray-300">
+                        <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
+                            <tr>
+                                <th scope="col" className="px-6 py-4">ITEM NAME</th>
+                                <th scope="col" className="px-6 py-4">CATEGORY</th>
+                                <th scope="col" className="px-6 py-4">LOCATION ID</th>
+                                <th scope="col" className="px-6 py-4 text-right">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
@@ -139,9 +139,9 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 filteredItems.map((item) => {
                                     const parsedLoc = parseLocationCode(item.location_code);
                                     return (
-                                        <tr key={item.id} className="hover:bg-brand-darker/60 transition">
+                                        <tr key={item.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
                                             {/* Item Name */}
-                                            <td className="px-5 py-4">
+                                            <td className="px-6 py-4">
                                                 <button
                                                     onClick={() => onSelectItem(item)}
                                                     className="font-bold text-white text-sm hover:text-brand-teal transition text-left"
@@ -156,19 +156,19 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                             </td>
 
                                             {/* Category */}
-                                            <td className="px-5 py-4 font-semibold text-gray-300">
+                                            <td className="px-6 py-4 font-semibold text-gray-300">
                                                 {item.category}
                                             </td>
 
                                             {/* Location ID (XY-ZAAA) */}
-                                            <td className="px-5 py-4 font-mono">
+                                            <td className="px-6 py-4 font-mono">
                                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold">
                                                     {item.location_code}
                                                 </span>
                                             </td>
 
                                             {/* Actions: Open Item Page Button */}
-                                            <td className="px-5 py-4 text-right">
+                                            <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => onSelectItem(item)}
                                                     className="p-2 bg-brand-teal text-black hover:bg-brand-teal-hover font-bold rounded-xl shadow transition inline-flex items-center justify-center"
