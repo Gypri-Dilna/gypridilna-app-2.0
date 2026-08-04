@@ -39,10 +39,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             if (response.ok && data.status === 'success') {
                 onLoginSuccess(data.user, rememberMe);
             } else {
-                setError(data.detail || 'Google account email is not authorized for any system user.');
+                setError(data.detail || 'E-mail účtu Google není autorizován pro žádného uživatele systému.');
             }
         } catch (err) {
-            setError('Server connection error. Ensure backend is running.');
+            setError('Chyba připojení k serveru. Ujistěte se, že běží backend.');
         } finally {
             setIsLoading(false);
         }
@@ -92,10 +92,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             if (response.ok && data.status === 'success') {
                 onLoginSuccess(data.user, rememberMe);
             } else {
-                setError(data.detail || data.message || 'Invalid username or password.');
+                setError(data.detail || data.message || 'Nesprávné uživatelské jméno nebo heslo.');
             }
         } catch (err) {
-            setError('Failed to connect to the server. Ensure backend is running.');
+            setError('Chyba připojení k serveru. Ujistěte se, že běží backend.');
         } finally {
             setIsLoading(false);
         }
@@ -113,7 +113,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         <h1 className="text-3xl font-black tracking-tight lowercase text-center">
                             <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
                         </h1>
-                        <p className="text-xs text-gray-400 mt-1">Workshop Access & Inventory Control Platform</p>
+                        <p className="text-xs text-gray-400 mt-1">Platforma pro správu dílny a přístupový systém</p>
                     </div>
                 </div>
 
@@ -126,7 +126,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     ) : (
                         <div className="p-3 bg-brand-darker border border-brand-border/60 rounded-xl text-center">
                             <p className="text-[11px] text-gray-400 font-medium">
-                                🔑 Google OAuth is available. Log in as admin to configure your Google Client ID in <span className="text-brand-teal font-semibold">User Administration</span>.
+                                🔑 Google OAuth je k dispozici. Přihlaste se jako správce a nastavte Google Client ID ve <span className="text-brand-teal font-semibold">Správě uživatelů</span>.
                             </p>
                         </div>
                     )}
@@ -134,7 +134,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
                 <div className="relative flex py-1 items-center">
                     <div className="flex-grow border-t border-brand-border/80"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">or sign in with password</span>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">nebo se přihlaste heslem</span>
                     <div className="flex-grow border-t border-brand-border/80"></div>
                 </div>
 
@@ -142,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="space-y-3">
                         <div>
                             <label htmlFor="username" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
-                                Username
+                                Uživatelské jméno
                             </label>
                             <input
                                 id="username"
@@ -153,12 +153,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
-                                placeholder="Enter username (e.g. admin)"
+                                placeholder="Zadejte jméno (např. admin)"
                             />
                         </div>
                         <div>
                             <label htmlFor="password-input" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
-                                Password
+                                Heslo
                             </label>
                             <input
                                 id="password-input"
@@ -184,7 +184,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 onChange={(e) => setRememberMe(e.target.checked)}
                                 className="h-4 w-4 rounded border-brand-border bg-brand-darker text-brand-teal focus:ring-brand-teal cursor-pointer"
                             />
-                            <span>Remember me</span>
+                            <span>Zapamatovat si mě</span>
                         </label>
                     </div>
 
@@ -199,14 +199,14 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         disabled={isLoading}
                         className="w-full py-2.5 text-xs font-extrabold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 disabled:bg-teal-900 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? 'Authenticating...' : 'Sign in to Platform'}
+                        {isLoading ? 'Ověřování...' : 'Přihlásit se do systému'}
                     </button>
                 </form>
 
                 {/* Default Credential Hint Box */}
                 <div className="pt-2 text-center border-t border-brand-border/60">
                     <p className="text-[11px] font-mono text-gray-400">
-                        Default Admin: <span className="text-gray-200">admin</span> / <span className="text-gray-200">rfid_admin_pass</span>
+                        Výchozí admin: <span className="text-gray-200">admin</span> / <span className="text-gray-200">rfid_admin_pass</span>
                     </p>
                 </div>
             </div>

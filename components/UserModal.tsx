@@ -78,7 +78,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
             <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto max-h-[85vh] flex flex-col">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker flex-shrink-0">
                     <h2 className="text-base font-extrabold text-white">
-                        {user ? 'Edit System User' : 'Add New System User'}
+                        {user ? 'Upravit uživatele' : 'Přidat nového uživatele'}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition">
                         <CloseIcon className="h-5 w-5" />
@@ -87,7 +87,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto text-xs flex-1">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Username *</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Uživatelské jméno *</label>
                         <input
                             type="text"
                             required
@@ -98,22 +98,22 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Google Email (For Google Sign-In Authorization)</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Google Email (Pro přihlašování přes Google)</label>
                         <input
                             type="email"
-                            placeholder="user@example.com"
+                            placeholder="uzivatel@example.com"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-400 focus:outline-none focus:border-brand-teal transition"
                         />
                         <p className="mt-1 text-[11px] text-gray-400">
-                            Assigning an email allows this user to log in via Google. Unassigned Google emails are strictly rejected.
+                            Přiřazením e-mailu umožníte uživateli přihlášení přes Google.
                         </p>
                     </div>
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-300 mb-1">
-                            {user ? 'Password (leave blank to keep current)' : 'Password *'}
+                            {user ? 'Heslo (ponechte prázdné pro zachování)' : 'Heslo *'}
                         </label>
                         <input
                             type="password"
@@ -133,49 +133,55 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                             className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0"
                         />
                         <label htmlFor="isAdmin" className="text-xs font-bold text-white cursor-pointer">
-                            Administrator (Full System Access)
+                            Administrátor (Plný přístup k systému)
                         </label>
                     </div>
 
                     {!isAdmin && (
                         <div className="space-y-3 p-4 bg-brand-darker border border-brand-border rounded-xl">
-                            <h3 className="text-xs font-bold text-brand-teal uppercase tracking-wider">Granular Permissions</h3>
+                            <h3 className="text-xs font-bold text-brand-teal uppercase tracking-wider">Detailní oprávnění</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {Object.entries(permissions).map(([key, value]) => (
-                                    <div key={key} className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id={`perm-${key}`}
-                                            checked={value}
-                                            onChange={() => togglePermission(key as keyof Permissions)}
-                                            className="h-4 w-4 rounded bg-brand-dark border-brand-border text-brand-teal focus:ring-0"
-                                        />
-                                        <label htmlFor={`perm-${key}`} className="text-xs text-gray-300 capitalize cursor-pointer">
-                                            {key.replace('_', ' ')}
-                                        </label>
-                                    </div>
-                                ))}
+                                {Object.entries(permissions).map(([key, value]) => {
+                                    const czechLabels: Record<string, string> = {
+                                        service_mode: 'Servisní režim',
+                                        add_chips: 'Správa čipů',
+                                        view_logs: 'Prohlížení historie',
+                                        remote_opening: 'Vzdálené otevírání',
+                                        erase_logs: 'Mazání historie'
+                                    };
+                                    return (
+                                        <div key={key} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id={`perm-${key}`}
+                                                checked={value}
+                                                onChange={() => togglePermission(key as keyof Permissions)}
+                                                className="h-4 w-4 rounded bg-brand-dark border-brand-border text-brand-teal focus:ring-0"
+                                            />
+                                            <label htmlFor={`perm-${key}`} className="text-xs text-gray-300 cursor-pointer">
+                                                {czechLabels[key] || key.replace('_', ' ')}
+                                            </label>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Link with RFID Chip Profile</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Propojit s profilovým čipem RFID</label>
                         <select
                             value={chipId || ''}
                             onChange={e => setChipId(e.target.value || null)}
                             className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs focus:outline-none focus:border-brand-teal transition"
                         >
-                            <option value="">None (Unlinked)</option>
+                            <option value="">Žádný (nepropojeno)</option>
                             {chips.map(chip => (
                                 <option key={chip.id} value={chip.chip_id}>
                                     {chip.name} ({chip.chip_id})
                                 </option>
                             ))}
                         </select>
-                        <p className="mt-1 text-[11px] text-gray-400">
-                            Linking a chip tags the user's username when unlocking doors using their physical RFID chip.
-                        </p>
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t border-brand-border">
@@ -184,13 +190,13 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                             onClick={onClose}
                             className="flex-1 px-5 py-2.5 bg-brand-darker border border-brand-border text-gray-300 hover:text-white font-bold text-xs rounded-xl transition"
                         >
-                            Cancel
+                            Zrušit
                         </button>
                         <button
                             type="submit"
                             className="flex-1 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl transition shadow"
                         >
-                            Save User
+                            Uložit uživatele
                         </button>
                     </div>
                 </form>

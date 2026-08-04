@@ -63,12 +63,12 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-extrabold text-white tracking-tight">RFID Chip Roster</h2>
+                <h2 className="text-xl font-extrabold text-white tracking-tight">Seznam RFID čipů</h2>
                 <button
                     onClick={handleOpenAddModal}
                     className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
                 >
-                    Add New Chip
+                    Přidat nový čip
                 </button>
             </div>
             <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
@@ -77,12 +77,12 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                     <table className="w-full text-sm text-left text-gray-300">
                         <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
-                                <th scope="col" className="px-6 py-4">NAME</th>
-                                <th scope="col" className="px-6 py-4">CHIP ID</th>
-                                <th scope="col" className="px-6 py-4">STATUS</th>
-                                <th scope="col" className="px-6 py-4">TYPE</th>
-                                <th scope="col" className="px-6 py-4">VALID UNTIL</th>
-                                <th scope="col" className="px-6 py-4 text-right">ACTIONS</th>
+                                <th scope="col" className="px-6 py-4">JMÉNO</th>
+                                <th scope="col" className="px-6 py-4">ID ČIPU</th>
+                                <th scope="col" className="px-6 py-4">STAV</th>
+                                <th scope="col" className="px-6 py-4">TYP</th>
+                                <th scope="col" className="px-6 py-4">PLATNOST DO</th>
+                                <th scope="col" className="px-6 py-4 text-right">AKCE</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
@@ -96,28 +96,28 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                                                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
                                                 : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                                         }`}>
-                                            {chip.is_allowed ? 'Allowed' : 'Blocked'}
+                                            {chip.is_allowed ? 'Povoleno' : 'Zablokováno'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-gray-300">
                                         {chip.is_one_time ? 
-                                            <span className="px-3 py-1 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">One-Time</span> : 
-                                            <span className="text-gray-300">Permanent</span>}
+                                            <span className="px-3 py-1 text-xs font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Jednorázový</span> : 
+                                            <span className="text-gray-300">Trvalý</span>}
                                     </td>
-                                    <td className="px-6 py-4 text-gray-300">{chip.valid_until ? new Date(chip.valid_until).toLocaleDateString() : 'N/A'}</td>
+                                    <td className="px-6 py-4 text-gray-300">{chip.valid_until ? new Date(chip.valid_until).toLocaleDateString() : 'Bez omezení'}</td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button 
                                                 onClick={() => handleOpenEditModal(chip)} 
                                                 className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
-                                                title="Edit Chip"
+                                                title="Upravit čip"
                                             >
                                                 <EditIcon className="h-4 w-4" />
                                             </button>
                                             <button 
                                                 onClick={() => handleOpenConfirmModal(chip)} 
                                                 className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white font-bold rounded-xl shadow transition inline-flex items-center justify-center"
-                                                title="Delete Chip"
+                                                title="Smazat čip"
                                             >
                                                 <TrashIcon className="h-4 w-4" />
                                             </button>
@@ -158,13 +158,13 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                                         ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
                                         : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                                 }`}>
-                                    {chip.is_allowed ? 'Allowed' : 'Blocked'}
+                                    {chip.is_allowed ? 'Povoleno' : 'Zablokováno'}
                                 </span>
                                 {chip.is_one_time && (
-                                    <span className="px-2.5 py-0.5 font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">One-Time</span>
+                                    <span className="px-2.5 py-0.5 font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Jednorázový</span>
                                 )}
                                 {chip.valid_until && (
-                                    <span className="px-2.5 py-0.5 font-bold rounded-full bg-brand-darker text-gray-300 border border-brand-border">Expires: {new Date(chip.valid_until).toLocaleDateString()}</span>
+                                    <span className="px-2.5 py-0.5 font-bold rounded-full bg-brand-darker text-gray-300 border border-brand-border">Platí do: {new Date(chip.valid_until).toLocaleDateString()}</span>
                                 )}
                             </div>
                         </div>
@@ -177,8 +177,8 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                     isOpen={isConfirmModalOpen}
                     onClose={handleCloseConfirmModal}
                     onConfirm={confirmDelete}
-                    title="Delete Chip"
-                    message={`Are you sure you want to delete the chip for ${chipToDelete.name} (${chipToDelete.chip_id})? This action cannot be undone.`}
+                    title="Smazat RFID čip"
+                    message={`Opravdu chcete smazat RFID čip pro ${chipToDelete.name} (${chipToDelete.chip_id})? Tato akce je nevratná.`}
                 />
             )}
         </div>

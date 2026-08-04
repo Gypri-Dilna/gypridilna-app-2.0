@@ -62,16 +62,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-dark border border-brand-border p-6 rounded-2xl">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight leading-tight lowercase">
-                        <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span> <span className="text-white">overview</span>
+                        <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span> <span className="text-white">přehled</span>
                     </h1>
-                    <p className="text-xs text-gray-300 mt-1">RFID Door Access & Workshop Inventory Control</p>
+                    <p className="text-xs text-gray-300 mt-1">Přístupový systém RFID & Správa dílenského skladu</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onRefresh}
                         className="p-2.5 bg-brand-darker hover:bg-slate-800 text-gray-300 rounded-xl border border-brand-border transition"
-                        title="Sync Data"
+                        title="Synchronizovat data"
                     >
                         <RefreshIcon className="h-5 w-5" />
                     </button>
@@ -81,7 +81,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl transition"
                         >
                             <RemoteIcon className="h-4 w-4" />
-                            Remote Door Unlock
+                            Vzdáleně otevřít dveře
                         </button>
                     )}
                 </div>
@@ -92,7 +92,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Active RFID Chips */}
                 <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active RFID Chips</p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Aktivní RFID čipy</p>
                         <p className="text-3xl font-black text-white mt-1">{chips.filter(c => c.is_allowed).length} <span className="text-xs text-gray-400 font-normal font-mono">/ {chips.length}</span></p>
                     </div>
                     <div className="p-3 bg-brand-teal/10 text-brand-teal rounded-xl">
@@ -103,8 +103,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Total Inventory Items */}
                 <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory SKUs</p>
-                        <p className="text-3xl font-black text-white mt-1">{inventoryItems.length} <span className="text-xs text-gray-400 font-normal font-mono">Items</span></p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Položky v zásobách</p>
+                        <p className="text-3xl font-black text-white mt-1">{inventoryItems.length} <span className="text-xs text-gray-400 font-normal font-mono">položek</span></p>
                     </div>
                     <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
                         <BoxesIcon className="h-6 w-6" />
@@ -114,9 +114,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Door Service Mode Status */}
                 <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Door Service Mode</p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Servisní režim dveří</p>
                         <p className={`text-sm font-bold mt-1 ${isServiceMode ? 'text-amber-400' : 'text-emerald-400'}`}>
-                            {isServiceMode ? 'UNLOCKED (OPEN)' : 'LOCKED (ACTIVE)'}
+                            {isServiceMode ? 'ODEMČENO (TRVALE)' : 'ZAMČENO (AKTIVNÍ)'}
                         </p>
                     </div>
                     {(user.is_admin || user.permissions.service_mode) && (
@@ -129,7 +129,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     : 'bg-brand-darker text-gray-300 border border-brand-border hover:bg-slate-700'
                             }`}
                         >
-                            {isServiceMode ? 'Disable' : 'Enable'}
+                            {isServiceMode ? 'Vypnout' : 'Zapnout'}
                         </button>
                     )}
                 </div>
@@ -141,13 +141,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex justify-between items-center">
                         <h3 className="font-bold text-white text-sm flex items-center gap-2">
                             <ShieldIcon className="h-4 w-4 text-emerald-400" />
-                            Recent Door Access Logs
+                            Nedávné průchody dveřmi
                         </h3>
                         <button
                             onClick={() => onNavigate('access')}
                             className="text-xs text-brand-teal hover:underline flex items-center gap-1 font-semibold"
                         >
-                            View All Logs <ArrowUpRight className="h-3.5 w-3.5" />
+                            Zobrazit vše <ArrowUpRight className="h-3.5 w-3.5" />
                         </button>
                     </div>
 
@@ -171,7 +171,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
                             ))
                         ) : (
-                            <p className="text-xs text-gray-400 text-center py-4 font-mono">No recent door access logged.</p>
+                            <p className="text-xs text-gray-400 text-center py-4 font-mono">Žádné nedávné průchody.</p>
                         )}
                     </div>
                 </div>

@@ -17,7 +17,7 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
 
     const users = useMemo(() => {
         const userSet = new Set(logs.map(log => log.name));
-        return ['All Users', ...Array.from(userSet).sort()];
+        return ['Všichni uživatelé', ...Array.from(userSet).sort()];
     }, [logs]);
 
     const filteredLogs = useMemo(() => {
@@ -29,7 +29,7 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
                 return false;
             }
             // User filter
-            if (selectedUser !== 'all' && log.name !== selectedUser) {
+            if (selectedUser !== 'all' && selectedUser !== 'Všichni uživatelé' && log.name !== selectedUser) {
                 return false;
             }
             // Text search filter
@@ -79,77 +79,77 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
     
     return (
         <div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Access Logs</h1>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight mb-6">Kniha přístupů</h1>
             <div className="mb-4 flex flex-wrap items-center gap-4">
                 <input
                     type="text"
-                    placeholder="Search logs..."
+                    placeholder="Hledat v záznamech..."
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
-                    className="w-full sm:w-auto flex-grow max-w-sm px-4 py-2 bg-white border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full sm:w-auto flex-grow max-w-sm px-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal"
                 />
                 <select 
                     value={selectedUser} 
                     onChange={e => setSelectedUser(e.target.value)}
-                    className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full sm:w-auto px-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-gray-200 focus:outline-none focus:border-brand-teal"
                 >
-                    {users.map(user => (
-                        <option key={user} value={user}>{user === 'all' ? 'All Users' : user}</option>
+                    {users.map(u => (
+                        <option key={u} value={u}>{u === 'all' ? 'Všichni uživatelé' : u}</option>
                     ))}
                 </select>
                 <input
                     type="date"
                     value={selectedDate}
                     onChange={e => setSelectedDate(e.target.value)}
-                    className="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full sm:w-auto px-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-gray-200 focus:outline-none focus:border-brand-teal"
                 />
-                 <button onClick={handleClearFilters} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
-                    Clear Filters
+                 <button onClick={handleClearFilters} className="px-4 py-2 text-xs font-bold text-gray-300 bg-brand-darker border border-brand-border rounded-xl hover:bg-slate-800 transition">
+                    Vymazat filtry
                 </button>
                 <div className="ml-auto flex items-center gap-2">
-                    <a href="/api/logs/export" download="access_logs.csv" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
+                    <a href="/api/logs/export" download="access_logs.csv" className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow transition">
                         <DownloadIcon className="h-4 w-4" />
-                        Export CSV
+                        Exportovat CSV
                     </a>
                     {(user.is_admin || user.permissions.erase_logs) && (
-                        <button onClick={() => setIsConfirmModalOpen(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                        <button onClick={() => setIsConfirmModalOpen(true)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition">
                             <TrashIcon className="h-4 w-4" />
-                            Delete All
+                            Smazat vše
                         </button>
                     )}
                 </div>
-                <button onClick={onRefresh} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <RefreshIcon className="h-5 w-5"/>
+                <button onClick={onRefresh} className="p-2.5 rounded-xl text-gray-300 bg-brand-darker border border-brand-border hover:bg-slate-800 transition">
+                    <RefreshIcon className="h-4 w-4"/>
                 </button>
             </div>
-            <div className="bg-white dark:bg-brand-dark rounded-lg shadow-md overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <table className="w-full text-sm text-left text-gray-300">
+                        <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
-                                <th scope="col" className="px-6 py-3">Timestamp</th>
-                                <th scope="col" className="px-6 py-3">Name</th>
-                                <th scope="col" className="px-6 py-3">Chip ID</th>
-                                <th scope="col" className="px-6 py-3">Result</th>
+                                <th scope="col" className="px-6 py-4">DATUM A ČAS</th>
+                                <th scope="col" className="px-6 py-4">JMÉNO</th>
+                                <th scope="col" className="px-6 py-4">ID ČIPU</th>
+                                <th scope="col" className="px-6 py-4">VÝSLEDEK</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-brand-border/60 text-xs">
                             {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-                                <tr key={log.id} className="bg-white border-b dark:bg-brand-dark dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <tr key={log.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
                                     <td className="px-6 py-4">{new Date(log.timestamp).toLocaleString()}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{log.name}</td>
+                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{log.name}</td>
                                     <td className="px-6 py-4 font-mono">{log.chip_id}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getResultColor(log.result)}`}>
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${getResultColor(log.result)}`}>
                                             {log.result}
                                         </span>
                                     </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                        No logs found matching your criteria.
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">
+                                        Žádné záznamy neodpovídají zadaným kritériím.
                                     </td>
                                 </tr>
                             )}
@@ -157,22 +157,22 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
                     </table>
                 </div>
                 {/* Mobile Card List */}
-                <div className="md:hidden">
+                <div className="md:hidden divide-y divide-brand-border/60">
                     {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-                        <div key={log.id} className="border-b dark:border-gray-700 p-4">
+                        <div key={log.id} className="p-4 bg-brand-dark">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="font-bold text-gray-900 dark:text-white">{log.name}</p>
-                                    <p className="font-mono text-sm text-gray-500 dark:text-gray-400">{log.chip_id}</p>
+                                    <p className="font-bold text-white">{log.name}</p>
+                                    <p className="font-mono text-xs text-gray-400 mt-0.5">{log.chip_id}</p>
                                 </div>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getResultColor(log.result)}`}>
+                                <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${getResultColor(log.result)}`}>
                                     {log.result}
                                 </span>
                             </div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{new Date(log.timestamp).toLocaleString()}</p>
+                            <p className="mt-2 text-xs text-gray-400 font-mono">{new Date(log.timestamp).toLocaleString()}</p>
                         </div>
                     )) : (
-                        <p className="p-4 text-center text-gray-500 dark:text-gray-400">No logs found matching your criteria.</p>
+                        <p className="p-4 text-center text-gray-400 font-mono">Žádné záznamy neodpovídají zadaným kritériím.</p>
                     )}
                 </div>
             </div>
@@ -181,9 +181,9 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
                     isOpen={isConfirmModalOpen}
                     onClose={() => setIsConfirmModalOpen(false)}
                     onConfirm={handleDeleteAllLogs}
-                    title="Delete All Logs"
-                    message="Are you sure you want to permanently delete all access logs? This action cannot be undone."
-                    confirmText="Yes, delete all"
+                    title="Smazat všechny záznamy"
+                    message="Opravdu chcete trvale smazat všechny záznamy o průchodech? Tato akce je nevratná."
+                    confirmText="Ano, smazat vše"
                 />
             )}
         </div>

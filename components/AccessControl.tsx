@@ -48,8 +48,8 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                             <ScanIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-extrabold text-white tracking-tight">RFID Door Access Control</h1>
-                            <p className="text-xs text-gray-300 mt-0.5">RFID Reader Protocol, Door Control & Access Logs</p>
+                            <h1 className="text-2xl font-extrabold text-white tracking-tight">Přístupový systém RFID</h1>
+                            <p className="text-xs text-gray-300 mt-0.5">Protokol RFID čtečky, ovládání dveří a kniha přístupů</p>
                         </div>
                     </div>
 
@@ -63,7 +63,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                         : 'bg-brand-darker border-brand-border text-gray-300 hover:bg-slate-800'
                                 }`}
                             >
-                                Door Service Mode: {isServiceMode ? 'ACTIVE (Unlocked)' : 'OFF'}
+                                Servisní režim: {isServiceMode ? 'AKTIVNÍ (Odemčeno)' : 'VYPNUTO'}
                             </button>
                         )}
 
@@ -73,7 +73,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                 className="flex items-center gap-2 px-5 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl transition"
                             >
                                 <RemoteIcon className="h-4 w-4" />
-                                Remote Door Unlock
+                                Vzdáleně otevřít dveře
                             </button>
                         )}
                     </div>
@@ -89,7 +89,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
-                        <ScanIcon className="h-4 w-4" /> RFID Chips ({chips.length})
+                        <ScanIcon className="h-4 w-4" /> RFID Čipy ({chips.length})
                     </button>
                     {(user.is_admin || user.permissions.view_logs) && (
                         <button
@@ -100,7 +100,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <ClipboardIcon className="h-4 w-4" /> Access Logs ({logs.length})
+                            <ClipboardIcon className="h-4 w-4" /> Kniha přístupů ({logs.length})
                         </button>
                     )}
                 </div>

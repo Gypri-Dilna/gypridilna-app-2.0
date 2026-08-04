@@ -66,15 +66,15 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 
     return (
         <div className="space-y-6 font-sans">
-            {/* Header */}
+            {/* Header Banner */}
             <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-dark border border-brand-border p-6 rounded-2xl">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
                         <InventoryIcon className="h-6 w-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Workshop Inventory Catalog</h1>
-                        <p className="text-xs text-gray-300">Item List & Location Index (XY-ZAAA Scheme)</p>
+                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Katalog dílenských zásob</h1>
+                        <p className="text-xs text-gray-300">Seznam položek a index umístění (schéma XY-ZAAA)</p>
                     </div>
                 </div>
 
@@ -87,7 +87,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black text-xs font-bold rounded-xl transition"
                     >
                         <PlusIcon className="h-4 w-4" />
-                        Add New Item
+                        Přidat novou položku
                     </button>
                 )}
             </div>
@@ -100,7 +100,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search item title or location ID (XY-ZAAA e.g. 12-0001)..."
+                        placeholder="Hledat název položky nebo kód umístění (např. 12-0001)..."
                         className="w-full pl-10 pr-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal font-mono"
                     />
                 </div>
@@ -115,7 +115,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     >
                         {categories.map(cat => (
                             <option key={cat} value={cat}>
-                                {cat === 'ALL' ? 'All Categories' : cat}
+                                {cat === 'ALL' ? 'Všechny kategorie' : cat}
                             </option>
                         ))}
                     </select>
@@ -128,16 +128,15 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     <table className="w-full text-left text-gray-300">
                         <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
-                                <th scope="col" className="px-6 py-4">ITEM NAME</th>
-                                <th scope="col" className="px-6 py-4">CATEGORY</th>
-                                <th scope="col" className="px-6 py-4">LOCATION ID</th>
-                                <th scope="col" className="px-6 py-4 text-right">ACTIONS</th>
+                                <th scope="col" className="px-6 py-4">NÁZEV POLOŽKY</th>
+                                <th scope="col" className="px-6 py-4">KATEGORIE</th>
+                                <th scope="col" className="px-6 py-4">UMÍSTĚNÍ (ID)</th>
+                                <th scope="col" className="px-6 py-4 text-right">AKCE</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item) => {
-                                    const parsedLoc = parseLocationCode(item.location_code);
                                     return (
                                         <tr key={item.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
                                             {/* Item Name */}
@@ -160,21 +159,21 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                 {item.category}
                                             </td>
 
-                                            {/* Location ID (XY-ZAAA) */}
+                                            {/* Location ID */}
                                             <td className="px-6 py-4 font-mono">
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold">
-                                                    {item.location_code}
-                                                </span>
+                                                <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-brand-darker rounded-lg border border-brand-border text-brand-teal font-bold text-xs">
+                                                    <span>{item.location_code || 'N/A'}</span>
+                                                </div>
                                             </td>
 
-                                            {/* Actions: Open Item Page Button */}
+                                            {/* Actions */}
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => onSelectItem(item)}
-                                                    className="p-2 bg-brand-teal text-black hover:bg-brand-teal-hover font-bold rounded-xl shadow transition inline-flex items-center justify-center"
-                                                    title="Open Item Details Page"
+                                                    className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center gap-1.5"
+                                                    title="Zobrazit detail položky"
                                                 >
-                                                    <ArrowUpRight className="h-4 w-4" />
+                                                    <ChevronRightIcon className="h-4 w-4" />
                                                 </button>
                                             </td>
                                         </tr>
@@ -182,8 +181,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-5 py-12 text-center text-gray-400 font-mono">
-                                        No inventory items found matching search criteria.
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">
+                                        Žádné položky neodpovídají zadaným filtrům.
                                     </td>
                                 </tr>
                             )}

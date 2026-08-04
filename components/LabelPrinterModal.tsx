@@ -31,12 +31,12 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
 
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                setStatusMsg({ type: 'success', text: data.message || `Label successfully printed on PT-D460BTVP (${tapeSize})` });
+                setStatusMsg({ type: 'success', text: data.message || `Štítek byl úspěšně vytisknut na tiskárně PT-D460BTVP (${tapeSize})` });
             } else {
-                setStatusMsg({ type: 'error', text: data.detail || data.message || 'b-PAC printing error. Check printer workstation status.' });
+                setStatusMsg({ type: 'error', text: data.detail || data.message || 'Chyba tisku b-PAC. Zkontrolujte připojení tiskárny.' });
             }
         } catch (err: any) {
-            setStatusMsg({ type: 'error', text: 'Failed to connect to backend b-PAC printer agent.' });
+            setStatusMsg({ type: 'error', text: 'Chyba připojení k tiskovému serveru b-PAC.' });
         } finally {
             setIsPrinting(false);
         }
@@ -52,8 +52,8 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                             <PrinterIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h2 className="text-base font-extrabold text-white">Brother PT-D460BTVP b-PAC Engine</h2>
-                            <p className="text-xs text-gray-400">Direct SDK Print Workstation Integration</p>
+                            <h2 className="text-base font-extrabold text-white">Tiskárna štítků Brother PT-D460BTVP</h2>
+                            <p className="text-xs text-gray-400">Přímý tisk štítků s kódem umístění</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
@@ -66,7 +66,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                     {/* Tape Size Selector */}
                     <div>
                         <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                            Select TZe Tape Size:
+                            Vyberte šířku pásky TZe:
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                             <button
@@ -78,7 +78,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                         : 'bg-brand-darker text-gray-300 border-brand-border hover:bg-slate-800'
                                 }`}
                             >
-                                <TagIcon className="h-4 w-4" /> 18 mm Standard Tape
+                                <TagIcon className="h-4 w-4" /> 18 mm Standardní páska
                             </button>
                             <button
                                 type="button"
@@ -89,7 +89,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                         : 'bg-brand-darker text-gray-300 border-brand-border hover:bg-slate-800'
                                 }`}
                             >
-                                <TagIcon className="h-4 w-4" /> 9 mm Compact Tape
+                                <TagIcon className="h-4 w-4" /> 9 mm Kompaktní páska
                             </button>
                         </div>
                     </div>
@@ -97,7 +97,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                     {/* Live Label Preview */}
                     <div>
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                            Live Print Layout Preview ({tapeSize})
+                            Živý náhled rozvržení štítku ({tapeSize})
                         </label>
                         <div className="flex justify-center p-6 bg-brand-bg border border-brand-border rounded-xl">
                             {tapeSize === '18mm' ? (
@@ -155,17 +155,17 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                     {/* Printer Details Card */}
                     <div className="bg-brand-darker p-3.5 rounded-xl border border-brand-border space-y-1.5 text-xs">
                         <div className="flex justify-between text-gray-300">
-                            <span className="text-gray-400">Target Printer:</span>
+                            <span className="text-gray-400">Cílová tiskárna:</span>
                             <span className="font-mono font-semibold text-brand-teal">Brother PT-D460BTVP</span>
                         </div>
                         <div className="flex justify-between text-gray-300">
-                            <span className="text-gray-400">Tape Cassette:</span>
+                            <span className="text-gray-400">Pásková kazeta:</span>
                             <span className="font-mono text-gray-200">
-                                {tapeSize === '18mm' ? 'TZe-241 (18mm Black on White)' : 'TZe-221 (9mm Black on White)'}
+                                {tapeSize === '18mm' ? 'TZe-241 (18mm Černá na bílé)' : 'TZe-221 (9mm Černá na bílé)'}
                             </span>
                         </div>
                         <div className="flex justify-between text-gray-300">
-                            <span className="text-gray-400">Location Tag:</span>
+                            <span className="text-gray-400">Kód umístění:</span>
                             <span className="font-mono text-amber-400">{item.location_code}</span>
                         </div>
                     </div>
@@ -177,7 +177,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                             onClick={onClose}
                             className="flex-1 px-4 py-2.5 text-xs font-bold text-gray-300 bg-slate-800 rounded-xl hover:bg-slate-700 transition"
                         >
-                            Close
+                            Zavřít
                         </button>
                         <button
                             type="button"
@@ -186,7 +186,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-black bg-brand-teal hover:bg-brand-teal-hover disabled:opacity-50 rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95"
                         >
                             <PrinterIcon className="h-4 w-4" />
-                            {isPrinting ? 'Printing via b-PAC...' : `Print ${tapeSize} Label`}
+                            {isPrinting ? 'Tisknu přes b-PAC...' : `Vytisknout štítek (${tapeSize})`}
                         </button>
                     </div>
                 </div>

@@ -58,11 +58,11 @@ export const Header: React.FC<HeaderProps> = ({
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     const navItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, show: true },
-        { id: 'access', label: 'Door Access', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
-        { id: 'inventory', label: 'Inventory', icon: InventoryIcon, show: true },
-        { id: 'scanner', label: isMobile ? 'QR Scanner' : 'Item Lookup', icon: isMobile ? QrCodeIcon : SearchIcon, show: true },
-        { id: 'users', label: 'User Admin', icon: UserManagementIcon, show: user.is_admin },
+        { id: 'dashboard', label: 'Přehled', icon: DashboardIcon, show: true },
+        { id: 'access', label: 'Vstup a čipy', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
+        { id: 'inventory', label: 'Katalog zásob', icon: InventoryIcon, show: true },
+        { id: 'scanner', label: isMobile ? 'QR Skener' : 'Vyhledat položku', icon: isMobile ? QrCodeIcon : SearchIcon, show: true },
+        { id: 'users', label: 'Správa uživatelů', icon: UserManagementIcon, show: user.is_admin },
     ];
 
     return (
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                    <p className="text-[10px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Administrator' : 'User'}</p>
+                                    <p className="text-[10px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
                                 </div>
                             </div>
 
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 onClick={() => setIsChangePasswordOpen(true)}
                                 className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[11px] font-semibold rounded-lg transition border border-brand-border"
                             >
-                                <KeyIcon className="h-3.5 w-3.5" /> Change Password
+                                <KeyIcon className="h-3.5 w-3.5" /> Změnit heslo
                             </button>
                         </div>
 
@@ -174,7 +174,7 @@ export const Header: React.FC<HeaderProps> = ({
                             className="flex items-center justify-center w-full px-4 py-2.5 text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 rounded-xl border border-rose-500/30 transition"
                         >
                             <LogoutIcon className="h-4 w-4 mr-2" />
-                            Log Out
+                            Odhlásit se
                         </button>
                     </div>
                 </div>
@@ -264,7 +264,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     </div>
                                     <div className="truncate">
                                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                        <p className="text-[9px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Admin' : 'User'}</p>
+                                        <p className="text-[9px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Admin' : 'Uživatel'}</p>
                                     </div>
                                 </div>
 
@@ -275,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     }}
                                     className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[10px] font-semibold rounded-lg transition border border-brand-border"
                                 >
-                                    <KeyIcon className="h-3 w-3 flex-shrink-0" /> Password
+                                    <KeyIcon className="h-3 w-3 flex-shrink-0" /> Heslo
                                 </button>
                             </div>
 
@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 className="w-full py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold rounded-xl border border-rose-500/30 text-xs transition"
                             >
                                 <LogoutIcon className="h-4 w-4 mr-2 inline-block flex-shrink-0" />
-                                Log Out
+                                Odhlásit se
                             </button>
                         </div>
                     </div>
