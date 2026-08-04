@@ -5,12 +5,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from sqlalchemy import text
 from app.database import engine, Base, SessionLocal
 from app.models import User, Chip, InventoryItem, MapZone, AccessLog
 from app.routers import auth, users, chips, hardware, logs, inventory, map as map_router
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
+
+def auto_migrate_db():
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in res.fetchall()]
+            if "email" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(200)"))
+                conn.commit()
+                print("Database auto-migration: Added missing 'email' column to 'users' table.")
+    except Exception as e:
+        print("Auto-migration notice:", e)
+
+auto_migrate_db()
 
 app = FastAPI(
     title="Gypri Dílna Management Platform API",
