@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Chip, Permissions } from '../types';
 import { CloseIcon } from './icons';
 
@@ -68,8 +69,8 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-y-auto">
+    return createPortal(
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-y-auto">
             <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto max-h-[85vh] flex flex-col">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker flex-shrink-0">
                     <h2 className="text-base font-extrabold text-white">
@@ -176,6 +177,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
