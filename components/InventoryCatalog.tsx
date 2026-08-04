@@ -2,12 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { InventoryItem, User } from '../types';
 import { 
     InventoryIcon, SearchIcon, PlusIcon, 
-    PrinterIcon, MapPinIcon, FilterIcon, TrashIcon, EditIcon, 
-    CloseIcon
+    PrinterIcon, FilterIcon, TrashIcon, EditIcon, 
+    ArrowUpRight
 } from './icons';
-import { LabelPrinterModal } from './LabelPrinterModal';
-import { DilnaFloorplanOutline } from './DilnaFloorplanOutline';
 import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
+import { LabelPrinterModal } from './LabelPrinterModal';
 
 interface InventoryCatalogProps {
     items: InventoryItem[];
@@ -15,7 +14,7 @@ interface InventoryCatalogProps {
     onAddItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDeleteItem: (id: number) => Promise<void>;
-    onAdjustStock?: (id: number, delta: number) => Promise<void>;
+    onSelectItem: (item: InventoryItem) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -25,14 +24,21 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    onSelectItem,
     showToast
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
-    const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
-    const [viewingLocationItem, setViewingLocationItem] = useState<InventoryItem | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
+
+    // Check if the current browser is running on the Printer Workstation (PC B / localhost)
+    const isPrinterWorkstation = useMemo(() => {
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const hasFlag = localStorage.getItem('is_printer_workstation') === 'true';
+        return isLocal || hasFlag;
+    }, []);
 
     // Categories list derived dynamically
     const categories = useMemo(() => {
@@ -68,11 +74,11 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     </div>
                     <div>
                         <h1 className="text-2xl font-extrabold text-white tracking-tight">Workshop Inventory Catalog</h1>
-                        <p className="text-xs text-gray-300">Tools & Workshop Items (XY-ZAAA Scheme)</p>
+                        <p className="text-xs text-gray-300">Item List & Location Index (XY-ZAAA Scheme)</p>
                     </div>
                 </div>
 
-                {canEdit && (
+                {canEdit && isPrinterWorkstation && (
                     <button
                         onClick={() => {
                             setEditingItem(null);
@@ -94,8 +100,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search title, location code (XY-ZAAA e.g. 12-0001), SKU..."
-                        className="w-full pl-10 pr-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal"
+                        placeholder="Search item title or location ID (XY-ZAAA e.g. 12-0001)..."
+                        className="w-full pl-10 pr-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal font-mono"
                     />
                 </div>
 
@@ -116,15 +122,15 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 </div>
             </div>
 
-            {/* Inventory Table (Simplified without quantity) */}
+            {/* Inventory Table List */}
             <div className="bg-brand-dark border border-brand-border rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-brand-darker border-b border-brand-border text-[11px] font-mono uppercase tracking-wider text-gray-400">
-                                <th className="px-5 py-3.5">Item Name & SKU</th>
+                                <th className="px-5 py-3.5">Item Name</th>
                                 <th className="px-5 py-3.5">Category</th>
-                                <th className="px-5 py-3.5">Location Code (XY-ZAAA)</th>
+                                <th className="px-5 py-3.5">Location ID (XY-ZAAA)</th>
                                 <th className="px-5 py-3.5 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -134,19 +140,19 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                     const parsedLoc = parseLocationCode(item.location_code);
                                     return (
                                         <tr key={item.id} className="hover:bg-brand-darker/60 transition">
-                                            {/* Title & SKU */}
+                                            {/* Item Name */}
                                             <td className="px-5 py-4">
-                                                <div className="font-bold text-white text-sm">{item.title}</div>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="font-mono text-[10px] text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded border border-brand-teal/30">
-                                                        {item.qr_code}
-                                                    </span>
-                                                    {item.notes && (
-                                                        <span className="text-[10px] text-gray-400 truncate max-w-[250px]">
-                                                            {item.notes}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <button
+                                                    onClick={() => onSelectItem(item)}
+                                                    className="font-bold text-white text-sm hover:text-brand-teal transition text-left"
+                                                >
+                                                    {item.title}
+                                                </button>
+                                                {item.notes && (
+                                                    <div className="text-[10px] text-gray-400 truncate max-w-[250px] mt-0.5">
+                                                        {item.notes}
+                                                    </div>
+                                                )}
                                             </td>
 
                                             {/* Category */}
@@ -154,56 +160,22 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                 {item.category}
                                             </td>
 
-                                            {/* Location Code (XY-ZAAA) & Outline View Trigger */}
-                                            <td className="px-5 py-4">
-                                                <button
-                                                    onClick={() => setViewingLocationItem(item)}
-                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-mono font-bold transition"
-                                                    title="View location outline pin"
-                                                >
-                                                    <MapPinIcon className="h-3.5 w-3.5" />
+                                            {/* Location ID (XY-ZAAA) */}
+                                            <td className="px-5 py-4 font-mono">
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold">
                                                     {item.location_code}
-                                                </button>
-                                                {parsedLoc && (
-                                                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                                                        Rack #{parsedLoc.rack}, Sector #{parsedLoc.sector}, Box #{parsedLoc.box}
-                                                    </div>
-                                                )}
+                                                </span>
                                             </td>
 
-                                            {/* Action Buttons */}
-                                            <td className="px-5 py-4 text-right space-x-2">
-                                                {/* Print Label Button */}
+                                            {/* Actions: Open Item Page Button */}
+                                            <td className="px-5 py-4 text-right">
                                                 <button
-                                                    onClick={() => setPrintingItem(item)}
-                                                    className="px-3 py-1.5 bg-brand-darker hover:bg-brand-teal/20 text-brand-teal border border-brand-border rounded-lg font-bold text-xs transition inline-flex items-center gap-1.5"
-                                                    title="Print Brother PT-D460BTVP 18mm Tape Label"
+                                                    onClick={() => onSelectItem(item)}
+                                                    className="p-2 bg-brand-teal text-black hover:bg-brand-teal-hover font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                    title="Open Item Details Page"
                                                 >
-                                                    <PrinterIcon className="h-3.5 w-3.5" />
-                                                    Label
+                                                    <ArrowUpRight className="h-4 w-4" />
                                                 </button>
-
-                                                {canEdit && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingItem(item);
-                                                                setIsAddModalOpen(true);
-                                                            }}
-                                                            className="p-1.5 bg-brand-darker hover:bg-slate-700 text-gray-300 rounded-lg border border-brand-border transition inline-block"
-                                                            title="Edit Item"
-                                                        >
-                                                            <EditIcon className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => onDeleteItem(item.id)}
-                                                            className="p-1.5 bg-brand-darker hover:bg-rose-500/20 text-rose-400 rounded-lg border border-brand-border transition inline-block"
-                                                            title="Delete Item"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4" />
-                                                        </button>
-                                                    </>
-                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -220,44 +192,6 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 </div>
             </div>
 
-            {/* Brother Label Printer Modal */}
-            {printingItem && (
-                <LabelPrinterModal
-                    isOpen={!!printingItem}
-                    onClose={() => setPrintingItem(null)}
-                    item={printingItem}
-                />
-            )}
-
-            {/* Item Location Floorplan Outline Modal */}
-            {viewingLocationItem && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-brand-border">
-                            <div>
-                                <h3 className="font-bold text-white text-base">{viewingLocationItem.title}</h3>
-                                <p className="text-xs text-gray-400 font-mono">Location Code: {viewingLocationItem.location_code}</p>
-                            </div>
-                            <button onClick={() => setViewingLocationItem(null)} className="p-2 text-gray-400 hover:text-white">
-                                <CloseIcon className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <DilnaFloorplanOutline 
-                            locationCode={viewingLocationItem.location_code} 
-                            itemTitle={viewingLocationItem.title} 
-                        />
-
-                        <button
-                            onClick={() => setViewingLocationItem(null)}
-                            className="w-full py-2 bg-brand-darker text-gray-300 font-bold rounded-xl border border-brand-border text-xs"
-                        >
-                            Close Location View
-                        </button>
-                    </div>
-                </div>
-            )}
-
             {/* Add / Edit Inventory Modal */}
             {isAddModalOpen && (
                 <InventoryItemFormModal
@@ -268,18 +202,35 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     onSave={async (itemData) => {
                         if (editingItem) {
                             await onUpdateItem({ ...editingItem, ...itemData });
+                            showToast("Item updated successfully", "success");
                         } else {
                             await onAddItem(itemData);
+                            showToast("Item added successfully", "success");
+                            // Open print modal immediately for the newly registered item
+                            const newItem = items.find(i => i.location_code === itemData.location_code) || {
+                                id: Date.now(),
+                                ...itemData
+                            };
+                            setPrintingItem(newItem as InventoryItem);
                         }
                         setIsAddModalOpen(false);
                     }}
+                />
+            )}
+
+            {/* Direct b-PAC Printer Modal for Brother PT-D460BTVP */}
+            {printingItem && (
+                <LabelPrinterModal
+                    isOpen={!!printingItem}
+                    onClose={() => setPrintingItem(null)}
+                    item={printingItem}
                 />
             )}
         </div>
     );
 };
 
-// Form Modal Component for Inventory Items with XY-ZAAA Auto-Sequencer (Without Quantity)
+// Form Modal Component for Inventory Items with Read-Only Auto-Assigned Location ID
 interface FormModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -304,7 +255,6 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         : getNextSequenceForItem(allItems, 1, 2, 0);
 
     const [itemNum, setItemNum] = useState<string>(initialSeq);
-    const [qrCode, setQrCode] = useState(item?.qr_code || `GYPRI-${Date.now().toString().slice(-6)}`);
     const [notes, setNotes] = useState(item?.notes || '');
     const [codeError, setCodeError] = useState<string>('');
 
@@ -346,11 +296,11 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 font-sans">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
                     <h2 className="text-lg font-bold text-white">{item ? 'Edit Inventory Item' : 'Add New Inventory Item'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon className="h-5 w-5" /></button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -379,7 +329,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">QR Payload / Location ID</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">Location ID / QR Payload</label>
                             <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
                                 {computedLocationCode}
                             </div>
@@ -439,7 +389,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </div>
                         </div>
                         <p className="text-[10px] text-gray-400 font-mono">
-                            Auto-assigned sequence ID based on registration order at location <strong>{rack}{sector}-{box}</strong> (e.g. 12-0001, 12-0002).
+                            Auto-assigned sequence ID based on registration order at location <strong>{rack}{sector}-{box}</strong> (reuses deleted IDs).
                         </p>
                     </div>
 

@@ -1,18 +1,17 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Login from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { AccessControl } from './components/AccessControl';
 import { InventoryCatalog } from './components/InventoryCatalog';
 import { QrScanner } from './components/QrScanner';
-import { WebConnect } from './components/WebConnect';
 import { UserManagement } from './components/UserManagement';
+import { ItemDetailView } from './components/ItemDetailView';
 import { Header, TabType } from './components/Header';
 import { Toast } from './components/Toast';
 import { User, Chip, AccessLog, InventoryItem } from './types';
 
 const API_BASE_URL = '';
 
-// Helper for safe error parsing from HTTP responses
 const parseResponseError = async (res: Response, fallbackMessage: string): Promise<string> => {
     try {
         const text = await res.text();
@@ -34,6 +33,7 @@ const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+    const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
     const [chips, setChips] = useState<Chip[]>([]);
     const [logs, setLogs] = useState<AccessLog[]>([]);
@@ -60,7 +60,7 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // Fetch all platform data
+    // Fetch all platform data safely without trigger loops
     const fetchAllData = useCallback(async () => {
         if (!isAuthenticated || !user) return;
         setIsLoading(true);
@@ -101,6 +101,12 @@ const App: React.FC = () => {
         }
     }, [isAuthenticated, fetchAllData]);
 
+    // Tab switcher always clears open item view
+    const handleTabChange = (tab: TabType) => {
+        setSelectedItem(null);
+        setActiveTab(tab);
+    };
+
     // Handle Login
     const handleLoginSuccess = (loggedInUser: User, rememberMe: boolean) => {
         setUser(loggedInUser);
@@ -115,6 +121,7 @@ const App: React.FC = () => {
     const handleLogout = () => {
         setUser(null);
         setIsAuthenticated(false);
+        setSelectedItem(null);
         localStorage.removeItem('savedUser');
         showToast('Logged out successfully.', 'success');
     };
@@ -215,8 +222,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to add item');
                 throw new Error(err);
             }
+            const created = await res.json();
             showToast(`Added item '${itemData.title}'.`, 'success');
-            fetchAllData();
+            await fetchAllData();
+            setSelectedItem(created);
         } catch (e: any) {
             showToast(e.message || 'Error adding inventory item.', 'error');
         }
@@ -233,8 +242,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to update item');
                 throw new Error(err);
             }
+            const saved = await res.json();
             showToast(`Updated '${updatedItem.title}'.`, 'success');
-            fetchAllData();
+            await fetchAllData();
+            setSelectedItem(saved);
         } catch (e: any) {
             showToast(e.message || 'Error updating item.', 'error');
         }
@@ -248,6 +259,7 @@ const App: React.FC = () => {
                 throw new Error(err);
             }
             showToast('Inventory item deleted.', 'success');
+            setSelectedItem(null);
             fetchAllData();
         } catch (e: any) {
             showToast(e.message || 'Error deleting item.', 'error');
@@ -255,8 +267,19 @@ const App: React.FC = () => {
     };
 
     const handleLookupQrItem = async (qrCode: string): Promise<InventoryItem | null> => {
+        if (!qrCode) return null;
+        const clean = qrCode.trim().toUpperCase();
+
+        // 1. Instant local state search by location_code or qr_code
+        const match = inventoryItems.find(
+            i => (i.location_code && i.location_code.trim().toUpperCase() === clean) ||
+                 (i.qr_code && i.qr_code.trim().toUpperCase() === clean)
+        );
+        if (match) return match;
+
+        // 2. Fallback to API lookup
         try {
-            const res = await fetch(`${API_BASE_URL}/api/inventory/lookup/${encodeURIComponent(qrCode)}`);
+            const res = await fetch(`${API_BASE_URL}/api/inventory/lookup/${encodeURIComponent(clean)}`);
             if (res.ok) {
                 return await res.json();
             }
@@ -266,7 +289,56 @@ const App: React.FC = () => {
         return null;
     };
 
-    // Render Active View
+    const [pcSessionId] = useState<string>(() => {
+        let id = sessionStorage.getItem('pc_scan_session');
+        if (!id) {
+            id = 'pc_' + Math.random().toString(36).substring(2, 8);
+            sessionStorage.setItem('pc_scan_session', id);
+        }
+        return id;
+    });
+    const lastRemoteScanTimeRef = useRef<number>(Date.now() / 1000);
+
+    // Global Remote Scan Poller for PC Screen
+    // Keeps polling continuously even when ItemDetailView is open so scanning item #2 refreshes PC screen instantly!
+    useEffect(() => {
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        if (isMobileDevice) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/inventory/remote-scan/latest?session_id=${pcSessionId}&since=${lastRemoteScanTimeRef.current}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.qr_code && data.timestamp > lastRemoteScanTimeRef.current) {
+                        lastRemoteScanTimeRef.current = data.timestamp;
+                        const item = await handleLookupQrItem(data.qr_code);
+                        if (item) {
+                            setSelectedItem(item);
+                            setActiveTab('scanner');
+                        }
+                    }
+                }
+            } catch (e) {
+                // Silent poll fail
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [pcSessionId]);
+
+    const handleSelectItem = (item: InventoryItem, sourceTab?: TabType) => {
+        setSelectedItem(item);
+        if (sourceTab) {
+            setActiveTab(sourceTab);
+        }
+    };
+
+    const handleCloseItemDetail = () => {
+        setSelectedItem(null);
+    };
+
+    // Render Active View scoped to active tab
     const renderActiveTabContent = () => {
         if (!user) return null;
 
@@ -281,7 +353,7 @@ const App: React.FC = () => {
                         onRemoteOpening={handleRemoteOpening}
                         onToggleServiceMode={handleToggleServiceMode}
                         onRefresh={fetchAllData}
-                        onNavigate={(tab) => setActiveTab(tab)}
+                        onNavigate={(tab) => handleTabChange(tab)}
                     />
                 );
             case 'access':
@@ -300,6 +372,18 @@ const App: React.FC = () => {
                     />
                 );
             case 'inventory':
+                if (selectedItem) {
+                    return (
+                        <ItemDetailView
+                            item={selectedItem}
+                            user={user}
+                            allItems={inventoryItems}
+                            onBack={handleCloseItemDetail}
+                            onUpdateItem={handleUpdateInventoryItem}
+                            onDelete={handleDeleteInventoryItem}
+                        />
+                    );
+                }
                 return (
                     <InventoryCatalog
                         items={inventoryItems}
@@ -307,17 +391,30 @@ const App: React.FC = () => {
                         onAddItem={handleAddInventoryItem}
                         onUpdateItem={handleUpdateInventoryItem}
                         onDeleteItem={handleDeleteInventoryItem}
+                        onSelectItem={(item) => handleSelectItem(item, 'inventory')}
                         showToast={showToast}
                     />
                 );
             case 'scanner':
+                if (selectedItem) {
+                    return (
+                        <ItemDetailView
+                            item={selectedItem}
+                            user={user}
+                            allItems={inventoryItems}
+                            onBack={handleCloseItemDetail}
+                            onUpdateItem={handleUpdateInventoryItem}
+                            onDelete={handleDeleteInventoryItem}
+                        />
+                    );
+                }
                 return (
                     <QrScanner
+                        pcSessionId={pcSessionId}
                         onLookupItem={handleLookupQrItem}
+                        onSelectItem={(item) => handleSelectItem(item, 'scanner')}
                     />
                 );
-            case 'webconnect':
-                return <WebConnect />;
             case 'users':
                 return <UserManagement chips={chips} showToast={showToast} />;
             default:
@@ -326,22 +423,38 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-bg text-brand-light font-sans">
+        <div className="min-h-screen bg-brand-bg text-brand-light font-sans relative overflow-hidden">
+            {/* Ambient Brand Teal Radial Mesh Gradient Background overlays */}
+            <img 
+                src="/assets/gradient.svg" 
+                alt="" 
+                className="fixed -top-40 -right-40 w-[750px] h-[750px] pointer-events-none opacity-35 mix-blend-screen select-none z-0" 
+            />
+            <img 
+                src="/assets/gradient.svg" 
+                alt="" 
+                className="fixed -bottom-48 -left-48 w-[850px] h-[850px] pointer-events-none opacity-30 mix-blend-screen select-none z-0" 
+            />
+
             {isAuthenticated && user ? (
-                <div className="flex flex-col md:flex-row min-h-screen">
+                <div className="flex flex-col md:flex-row min-h-screen relative z-10">
                     <Header
                         activeTab={activeTab}
-                        setActiveTab={setActiveTab}
+                        setActiveTab={handleTabChange}
                         onLogout={handleLogout}
                         user={user}
                         showToast={showToast}
                     />
-                    <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-brand-bg overflow-y-auto max-w-7xl mx-auto w-full">
-                        {renderActiveTabContent()}
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+                        <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
+                            {renderActiveTabContent()}
+                        </div>
                     </main>
                 </div>
             ) : (
-                <Login onLoginSuccess={handleLoginSuccess} />
+                <div className="relative z-10">
+                    <Login onLoginSuccess={handleLoginSuccess} />
+                </div>
             )}
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

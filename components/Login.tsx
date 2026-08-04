@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { User } from '../types';
 import { Logo } from './Logo';
+import { BoltGlyphChain } from './BoltGlyph';
 
 interface LoginProps {
     onLoginSuccess: (user: User, rememberMe: boolean) => void;
@@ -42,7 +43,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-brand-bg px-4">
+        <div className="flex items-center justify-center min-h-screen bg-brand-bg px-4 relative overflow-hidden">
             <div className="w-full max-w-md p-8 space-y-6 bg-brand-dark border border-brand-border rounded-2xl shadow-2xl">
                 {/* Official Brand Logo & Header */}
                 <div className="text-center space-y-3">
@@ -50,7 +51,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         <Logo variant="light" className="h-20 w-auto" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-white tracking-tight">GYPRI DÍLNA</h1>
+                        <h1 className="text-3xl font-black tracking-tight lowercase text-center">
+                            <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
+                        </h1>
                     </div>
                 </div>
 

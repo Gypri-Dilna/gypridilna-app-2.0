@@ -40,5 +40,6 @@ export {
     SlidersHorizontal as FilterIcon,
     ArrowUpRight,
     ArrowDownLeft,
+    ArrowLeft as ArrowLeftIcon,
     Tag as TagIcon
 } from 'lucide-react';

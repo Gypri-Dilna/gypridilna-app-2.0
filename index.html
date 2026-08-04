@@ -58,6 +58,45 @@
       code, pre, .font-mono {
         font-family: 'Fira Code', monospace !important;
       }
+      @keyframes modalPopIn {
+        from {
+          opacity: 0;
+          transform: scale(0.94) translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      @keyframes backdropFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes pageTransition {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.99);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .animate-modal-pop {
+        animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .animate-backdrop-fade {
+        animation: backdropFadeIn 0.22s ease-out forwards;
+      }
+
+      .animate-page-transition {
+        animation: pageTransition 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
       @media print {
         body * {
           visibility: hidden;

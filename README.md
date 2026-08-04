@@ -66,11 +66,11 @@ python -m venv venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch FastAPI backend on port 8000
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Launch FastAPI backend on port 5000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 5000 --reload
 ```
 
-> **Backend API Docs**: Interactive Swagger documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs)
+> **Backend API Docs**: Interactive Swagger documentation will be available at [http://localhost:5000/docs](http://localhost:5000/docs)
 
 ### 2. Start React Frontend Dev Server
 

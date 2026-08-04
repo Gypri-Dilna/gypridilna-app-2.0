@@ -4,6 +4,7 @@ import {
     RefreshIcon, RemoteIcon, UsersIcon, ShieldIcon, 
     ArrowUpRight, BoxesIcon
 } from './icons';
+import { BoltGlyphChain } from './BoltGlyph';
 
 interface DashboardProps {
     user: User;
@@ -60,10 +61,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* Top Banner */}
             <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-dark border border-brand-border p-6 rounded-2xl">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight">
-                        Gypri Dílna Overview
+                    <h1 className="text-2xl font-extrabold tracking-tight leading-tight lowercase">
+                        <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span> <span className="text-white">overview</span>
                     </h1>
-                    <p className="text-xs text-gray-300 mt-1">RFID Door Access & Inventory Control</p>
+                    <p className="text-xs text-gray-300 mt-1">RFID Door Access & Workshop Inventory Control</p>
                 </div>
 
                 <div className="flex items-center gap-3">

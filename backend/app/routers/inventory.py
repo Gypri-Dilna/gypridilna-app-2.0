@@ -86,9 +86,13 @@ def get_zones(db: Session = Depends(get_db)):
 
 @router.get("/lookup/{qr_code}", response_model=InventoryItemResponse)
 def lookup_by_qr(qr_code: str, db: Session = Depends(get_db)):
-    item = db.query(InventoryItem).filter(InventoryItem.qr_code == qr_code).first()
+    clean_code = qr_code.strip()
+    item = db.query(InventoryItem).filter(
+        (InventoryItem.qr_code.ilike(clean_code)) | 
+        (InventoryItem.location_code.ilike(clean_code))
+    ).first()
     if not item:
-        raise HTTPException(status_code=404, detail="Item with this QR Code / SKU not found")
+        raise HTTPException(status_code=404, detail="Item with this QR Code or Location ID not found")
     return item
 
 @router.post("", response_model=InventoryItemResponse, status_code=status.HTTP_201_CREATED)
@@ -156,3 +160,76 @@ def delete_inventory_item(item_id: int, db: Session = Depends(get_db)):
     db.delete(item)
     db.commit()
     return {"message": "Inventory item deleted"}
+
+import urllib.request
+import json
+import os
+
+PRINTER_AGENT_URL = os.getenv("PRINTER_AGENT_URL", "http://127.0.0.1:5001/print-label")
+
+@router.post("/{item_id}/print-label")
+def print_inventory_label(
+    item_id: int, 
+    tape_size: str = Query("18mm", regex="^(18mm|9mm)$"),
+    db: Session = Depends(get_db)
+):
+    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    payload = {
+        "title": item.title,
+        "location_code": item.location_code,
+        "qr_code": item.qr_code or item.location_code,
+        "category": item.category or "General",
+        "tape_size": tape_size
+    }
+
+    try:
+        req = urllib.request.Request(
+            PRINTER_AGENT_URL,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(req, timeout=8) as response:
+            res_body = response.read().decode('utf-8')
+            res_json = json.loads(res_body)
+            if response.status == 200 and res_json.get("success"):
+                return {"status": "success", "message": res_json.get("message")}
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=res_json.get("message", "b-PAC Printer Agent reported an error.")
+                )
+    except urllib.error.URLError as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Printer Workstation (PC B) b-PAC Agent unreachable at {PRINTER_AGENT_URL}. Ensure print_agent.py is running on PC B."
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Print error: {str(ex)}")
+
+# Session-based remote scan state for PC <-> Mobile pairing
+paired_sessions = {}
+
+@router.post("/remote-scan")
+def broadcast_remote_scan(payload: dict):
+    session_id = payload.get("session_id", "default")
+    qr_code = payload.get("qr_code", "").strip()
+    if qr_code:
+        paired_sessions[session_id] = {
+            "qr_code": qr_code,
+            "timestamp": datetime.now(timezone.utc).timestamp()
+        }
+        return {"status": "broadcasted", "session_id": session_id, "qr_code": qr_code}
+    raise HTTPException(status_code=400, detail="Missing qr_code payload")
+
+@router.get("/remote-scan/latest")
+def get_latest_remote_scan(session_id: str = "default", since: float = 0.0):
+    session_data = paired_sessions.get(session_id, {"qr_code": None, "timestamp": 0.0})
+    if session_data["timestamp"] > since:
+        return session_data
+    return {"qr_code": None, "timestamp": session_data["timestamp"]}
+
+
+

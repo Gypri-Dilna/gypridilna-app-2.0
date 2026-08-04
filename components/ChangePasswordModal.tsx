@@ -52,8 +52,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <div className="bg-white dark:bg-brand-dark rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade">
+            <div className="bg-white dark:bg-brand-dark rounded-xl border border-brand-border shadow-2xl w-full max-w-md overflow-hidden animate-modal-pop">
                 <div className="flex justify-between items-center p-6 border-b dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">Change Password</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
