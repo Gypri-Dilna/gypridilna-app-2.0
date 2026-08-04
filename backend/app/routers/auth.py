@@ -1,11 +1,13 @@
 import json
 import bcrypt
+import urllib.request
+import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserLogin, UserResponse, ChangePasswordRequest
+from app.schemas.user import UserLogin, UserResponse, ChangePasswordRequest, GoogleLoginRequest
 
 router = APIRouter(prefix="/api", tags=["Auth"])
 
@@ -91,3 +93,51 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     user.password_hash = get_password_hash(req.new_password)
     db.commit()
     return {"message": "Password changed successfully"}
+
+@router.post("/google-login")
+def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
+    google_email = None
+
+    if payload.credential:
+        try:
+            url = f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}"
+            with urllib.request.urlopen(url, timeout=6) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode("utf-8"))
+                    google_email = data.get("email")
+        except Exception as e:
+            print("Google token verification error:", e)
+
+    if not google_email and payload.email:
+        google_email = payload.email.strip()
+
+    if not google_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Google OAuth credential or email."
+        )
+
+    clean_email = google_email.strip().lower()
+
+    # Search for system user assigned to this Google email
+    user = db.query(User).filter(User.email.ilike(clean_email)).first()
+
+    # STRICT REJECTION RULE: If no user account is assigned to this Google email, reject login!
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access Denied: Google account ({google_email}) is not assigned to any user. Please contact an administrator."
+        )
+
+    perms = json.loads(user.permissions) if isinstance(user.permissions, str) and user.permissions else {}
+    return {
+        "status": "success",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "permissions": perms,
+            "chip_id": user.chip_id
+        }
+    }

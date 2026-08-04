@@ -13,6 +13,7 @@ interface UserModalProps {
 
 export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user, chips }) => {
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [chipId, setChipId] = useState<string | null>(null);
@@ -27,12 +28,14 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
     useEffect(() => {
         if (user) {
             setUsername(user.username);
+            setEmail(user.email || '');
             setPassword(''); // Don't show password
             setIsAdmin(user.is_admin);
             setChipId(user.chip_id);
             setPermissions(user.permissions);
         } else {
             setUsername('');
+            setEmail('');
             setPassword('');
             setIsAdmin(false);
             setChipId(null);
@@ -50,6 +53,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
         e.preventDefault();
         const userData: any = {
             username,
+            email: email.trim() || null,
             is_admin: isAdmin,
             permissions,
             chip_id: chipId
@@ -91,6 +95,20 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                             onChange={e => setUsername(e.target.value)}
                             className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-400 focus:outline-none focus:border-brand-teal transition"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Google Email (For Google Sign-In Authorization)</label>
+                        <input
+                            type="email"
+                            placeholder="user@example.com"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-400 focus:outline-none focus:border-brand-teal transition"
+                        />
+                        <p className="mt-1 text-[11px] text-gray-400">
+                            Assigning an email allows this user to log in via Google. Unassigned Google emails are strictly rejected.
+                        </p>
                     </div>
 
                     <div>

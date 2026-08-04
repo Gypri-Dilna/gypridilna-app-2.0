@@ -20,6 +20,7 @@ def serialize_user(user: User):
     return {
         "id": user.id,
         "username": user.username,
+        "email": user.email,
         "is_admin": user.is_admin,
         "permissions": perms,
         "chip_id": user.chip_id
@@ -35,12 +36,18 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.username == user_in.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
+
+    if user_in.email:
+        existing_email = db.query(User).filter(User.email.ilike(user_in.email.strip())).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail=f"Email '{user_in.email}' is already assigned to user '{existing_email.username}'")
         
     hashed = get_password_hash(user_in.password)
     perms_str = json.dumps(user_in.permissions)
     
     new_user = User(
         username=user_in.username,
+        email=user_in.email.strip().lower() if user_in.email else None,
         password_hash=hashed,
         is_admin=user_in.is_admin,
         permissions=perms_str,
@@ -59,6 +66,15 @@ def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)
         
     if user_in.username is not None:
         user.username = user_in.username
+
+    if user_in.email is not None:
+        clean_email = user_in.email.strip().lower() if user_in.email else None
+        if clean_email:
+            existing_email = db.query(User).filter(User.email.ilike(clean_email), User.id != user_id).first()
+            if existing_email:
+                raise HTTPException(status_code=400, detail=f"Email '{clean_email}' is already assigned to user '{existing_email.username}'")
+        user.email = clean_email
+
     if user_in.password:
         user.password_hash = get_password_hash(user_in.password)
     if user_in.is_admin is not None:

@@ -124,6 +124,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                         <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
                                 <th scope="col" className="px-6 py-4">USERNAME</th>
+                                <th scope="col" className="px-6 py-4">GOOGLE EMAIL</th>
                                 <th scope="col" className="px-6 py-4">ROLE</th>
                                 <th scope="col" className="px-6 py-4">LINKED CHIP</th>
                                 <th scope="col" className="px-6 py-4 text-right">ACTIONS</th>
@@ -132,12 +133,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                         <tbody className="divide-y divide-brand-border/60 text-xs">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">Loading users...</td>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400 font-mono">Loading users...</td>
                                 </tr>
                             ) : users.length > 0 ? users.map(u => (
                                 <tr key={u.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
                                     <td className="px-6 py-4 font-bold text-white whitespace-nowrap">
                                         {u.username}
+                                    </td>
+                                    <td className="px-6 py-4 font-sans text-gray-300">
+                                        {u.email ? (
+                                            <span className="text-brand-teal font-semibold">{u.email}</span>
+                                        ) : (
+                                            <span className="text-gray-400 italic text-[11px]">Unassigned (No Google Auth)</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-3 py-1 text-xs font-bold rounded-full border ${

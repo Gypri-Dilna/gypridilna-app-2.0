@@ -19,6 +19,7 @@ export interface Permissions {
 export interface User {
     id: number;
     username: string;
+    email?: string | null;
     is_admin: boolean;
     permissions: Permissions;
     chip_id: string | null;
