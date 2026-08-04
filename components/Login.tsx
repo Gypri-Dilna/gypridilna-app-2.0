@@ -1,6 +1,8 @@
 import React, { useState, FormEvent, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '../types';
 import { Logo } from './Logo';
+import { CloseIcon } from './icons';
 
 interface LoginProps {
     onLoginSuccess: (user: User, rememberMe: boolean) => void;
@@ -18,9 +20,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Google Sign-In Modal state
+    const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+    const [googleEmailInput, setGoogleEmailInput] = useState('');
+    const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('gypri_google_client_id') || '');
+    const [showClientIdConfig, setShowClientIdConfig] = useState(false);
     const googleBtnRef = useRef<HTMLDivElement>(null);
 
-    const handleGoogleCredential = async (credential: string, emailFallback?: string) => {
+    const handleGoogleCredential = async (credential?: string, emailFallback?: string) => {
         setError('');
         setIsLoading(true);
         try {
@@ -35,6 +43,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             const data = await response.json();
 
             if (response.ok && data.status === 'success') {
+                setIsGoogleModalOpen(false);
                 onLoginSuccess(data.user, rememberMe);
             } else {
                 setError(data.detail || 'Google email is not authorized for any system account.');
@@ -47,11 +56,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     };
 
     useEffect(() => {
-        // Initialize Google Identity Services if available
-        if (window.google?.accounts?.id && googleBtnRef.current) {
+        // Initialize native Google Identity Services only if a real client ID is configured by user
+        if (isGoogleModalOpen && googleClientId && window.google?.accounts?.id && googleBtnRef.current) {
             try {
                 window.google.accounts.id.initialize({
-                    client_id: '928374829103-mockclientid.apps.googleusercontent.com', // Standard OAuth Client ID placeholder
+                    client_id: googleClientId.trim(),
                     callback: (response: any) => {
                         if (response?.credential) {
                             handleGoogleCredential(response.credential);
@@ -59,22 +68,26 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     }
                 });
                 window.google.accounts.id.renderButton(googleBtnRef.current, {
-                    theme: 'dark',
+                    theme: 'filled_blue',
                     size: 'large',
                     width: 320,
                     text: 'signin_with'
                 });
             } catch (e) {
-                console.warn('Google GSI init warning:', e);
+                console.warn('Google GSI init notice:', e);
             }
         }
-    }, []);
+    }, [isGoogleModalOpen, googleClientId]);
 
-    const handleSimulatedGoogleSignIn = () => {
-        const email = prompt("Enter your Google Account email to test Google Sign-In:");
-        if (email) {
-            handleGoogleCredential('', email);
-        }
+    const handleSaveClientId = (id: string) => {
+        setGoogleClientId(id);
+        localStorage.setItem('gypri_google_client_id', id);
+    };
+
+    const handleGoogleEmailSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (!googleEmailInput.trim()) return;
+        handleGoogleCredential(undefined, googleEmailInput.trim());
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -121,14 +134,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     </div>
                 </div>
 
-                {/* Google Sign In Section */}
-                <div className="space-y-3 pt-2">
-                    <div ref={googleBtnRef} className="flex justify-center min-h-[44px]"></div>
-                    
+                {/* Google Sign In Action */}
+                <div className="pt-2">
                     <button
                         type="button"
-                        onClick={handleSimulatedGoogleSignIn}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white hover:bg-gray-100 text-gray-900 font-bold text-xs rounded-xl shadow-md transition active:scale-95"
+                        onClick={() => { setError(''); setIsGoogleModalOpen(true); }}
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-100 text-gray-900 font-extrabold text-xs rounded-xl shadow-md transition active:scale-95 border border-gray-200"
                     >
                         <svg className="w-4 h-4" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -218,6 +229,105 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     </p>
                 </div>
             </div>
+
+            {/* Google Sign-In Modal */}
+            {isGoogleModalOpen && createPortal(
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-y-auto">
+                    <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-modal-pop my-auto flex flex-col">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+                            <div className="flex items-center gap-3">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                </svg>
+                                <h2 className="text-base font-extrabold text-white">Google Account Sign-In</h2>
+                            </div>
+                            <button onClick={() => setIsGoogleModalOpen(false)} className="text-gray-400 hover:text-white transition">
+                                <CloseIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4 text-xs">
+                            <p className="text-gray-300">
+                                Enter your Google Account email. The system will verify if your Google email is assigned to an active user account.
+                            </p>
+
+                            {/* Render Google OAuth Button if Client ID is configured */}
+                            {googleClientId && (
+                                <div className="p-3 bg-brand-darker border border-brand-border rounded-xl flex justify-center">
+                                    <div ref={googleBtnRef}></div>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleGoogleEmailSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-300 mb-1">Google Email Address *</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        placeholder="e.g. ondrej.moudry@gypri.cz"
+                                        value={googleEmailInput}
+                                        onChange={e => setGoogleEmailInput(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsGoogleModalOpen(false)}
+                                        className="flex-1 px-4 py-2.5 bg-brand-darker border border-brand-border text-gray-300 hover:text-white font-bold text-xs rounded-xl transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="flex-1 px-4 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl transition shadow disabled:opacity-50"
+                                    >
+                                        {isLoading ? 'Verifying Email...' : 'Verify & Sign In'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {/* Google OAuth Client ID optional toggle */}
+                            <div className="pt-2 border-t border-brand-border/60">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowClientIdConfig(!showClientIdConfig)}
+                                    className="text-[11px] text-gray-400 hover:text-brand-teal transition font-mono"
+                                >
+                                    {showClientIdConfig ? '▲ Hide Google OAuth Client ID Config' : '⚙️ Google Cloud OAuth Client ID Config (Optional)'}
+                                </button>
+                                {showClientIdConfig && (
+                                    <div className="mt-2 p-3 bg-brand-darker border border-brand-border rounded-xl space-y-2">
+                                        <label className="block text-[11px] font-semibold text-gray-400">Google Cloud OAuth Client ID</label>
+                                        <input
+                                            type="text"
+                                            value={googleClientId}
+                                            onChange={e => handleSaveClientId(e.target.value)}
+                                            placeholder="xyz.apps.googleusercontent.com"
+                                            className="w-full px-3 py-2 bg-brand-dark border border-brand-border rounded-lg text-white text-[11px] font-mono focus:outline-none focus:border-brand-teal"
+                                        />
+                                        <p className="text-[10px] text-gray-500">
+                                            If you have a Google Cloud Console Client ID for native popup OAuth, paste it here.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 };
