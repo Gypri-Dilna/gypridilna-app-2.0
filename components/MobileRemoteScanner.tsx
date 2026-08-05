@@ -336,26 +336,6 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     </button>
                 )}
 
-                {/* Permanent Zoom Level Pills (1.0x, 1.5x, 2.0x, 2.5x) */}
-                {isScanning && (
-                    <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
-                        {[1.0, 1.5, 2.0, 2.5].map((z) => (
-                            <button
-                                key={z}
-                                type="button"
-                                onClick={() => handleZoomChange(z)}
-                                className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg transition ${
-                                    zoomFactor === z
-                                        ? 'bg-brand-teal text-black shadow'
-                                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                                }`}
-                            >
-                                {z.toFixed(1)}x
-                            </button>
-                        ))}
-                    </div>
-                )}
-
                 {!isScanning && (
                     <div className="p-6 text-center space-y-3 absolute inset-0 bg-brand-darker flex flex-col items-center justify-center">
                         <QrCodeIcon className="h-12 w-12 text-brand-teal animate-bounce" />
