@@ -19,8 +19,11 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [scannedFeedback, setScannedFeedback] = useState<{ title: string; location_code: string; mode: 'pc' | 'local' } | null>(null);
 
-    // Permanent Zoom Factor (2.0x)
-    const zoomFactor = 2.0;
+    const scanModeRef = useRef(scanMode);
+    useEffect(() => { scanModeRef.current = scanMode; }, [scanMode]);
+
+    const pairedSessionIdRef = useRef(pairedSessionId);
+    useEffect(() => { pairedSessionIdRef.current = pairedSessionId; }, [pairedSessionId]);
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isProcessingRef = useRef<boolean>(false);
@@ -106,22 +109,26 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     return;
                 }
 
-                const item = await onLookupItem(decodedText);
-                const title = item ? item.title : 'Inventory Item Tag';
-                const location_code = item ? item.location_code : decodedText;
+                try {
+                    const item = await onLookupItem(decodedText);
+                    const title = item ? item.title : 'Inventory Item Tag';
+                    const location_code = item ? item.location_code : decodedText;
 
-                if (scanMode === 'pc') {
-                    const targetSession = pairedSessionId || 'default';
-                    fetch('/api/inventory/remote-scan', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_id: targetSession, qr_code: decodedText })
-                    }).catch(() => {});
+                    if (scanModeRef.current === 'pc') {
+                        const targetSession = pairedSessionIdRef.current || 'default';
+                        fetch('/api/inventory/remote-scan', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ session_id: targetSession, qr_code: decodedText })
+                        }).catch(() => {});
 
-                    setScannedFeedback({ title, location_code, mode: 'pc' });
-                } else {
-                    setScannedItem(item);
-                    setScannedFeedback({ title, location_code, mode: 'local' });
+                        setScannedFeedback({ title, location_code, mode: 'pc' });
+                    } else {
+                        setScannedItem(item);
+                        setScannedFeedback({ title, location_code, mode: 'local' });
+                    }
+                } catch (e) {
+                    console.warn("Lookup item error:", e);
                 }
 
                 setTimeout(() => {
@@ -134,7 +141,6 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             try {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length > 0) {
-                    // Pick the last camera in device list (Camera 4/4)
                     const mainRearCamera = devices[devices.length - 1];
                     await html5QrCode.start(mainRearCamera.id, scanConfig, handleSuccess, () => {});
                     setIsScanning(true);
@@ -162,13 +168,25 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             setIsScanning(false);
             setErrorMsg("Grant camera permissions in phone settings to scan items.");
         }
-    }, [onLookupItem, scanMode, pairedSessionId, applyHardwareZoomAndFocus, zoomFactor]);
+    }, [onLookupItem, applyHardwareZoomAndFocus, zoomFactor]);
 
     useEffect(() => {
-        startCamera();
+        let isMounted = true;
+        const timer = setTimeout(() => {
+            if (isMounted) {
+                startCamera();
+            }
+        }, 100);
+
         return () => {
-            if (scannerRef.current && scannerRef.current.isScanning) {
-                scannerRef.current.stop().catch(() => {});
+            isMounted = false;
+            clearTimeout(timer);
+            if (scannerRef.current) {
+                try {
+                    if (scannerRef.current.isScanning) {
+                        scannerRef.current.stop().catch(() => {});
+                    }
+                } catch (e) {}
             }
         };
     }, [startCamera]);
