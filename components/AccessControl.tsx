@@ -3,6 +3,7 @@ import { Chip, AccessLog, User } from '../types';
 import { ChipManagement } from './ChipManagement';
 import { LogsViewer } from './LogsViewer';
 import { ScanIcon, RemoteIcon, ClipboardIcon } from './icons';
+import { SlideToUnlockButton } from './SlideToUnlockButton';
 
 interface AccessControlProps {
     user: User;
@@ -68,13 +69,9 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                         )}
 
                         {(user.is_admin || user.permissions.remote_opening) && (
-                            <button
-                                onClick={onRemoteOpening}
-                                className="flex items-center gap-2 px-5 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl transition"
-                            >
-                                <RemoteIcon className="h-4 w-4" />
-                                Vzdáleně otevřít dveře
-                            </button>
+                            <div className="w-full sm:w-auto">
+                                <SlideToUnlockButton onUnlock={onRemoteOpening} className="sm:w-[220px]" />
+                            </div>
                         )}
                     </div>
                 </div>
