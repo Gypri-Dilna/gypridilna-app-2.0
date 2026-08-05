@@ -305,27 +305,29 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Item Title *</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Item Title * (Max 24 chars)</label>
                         <input
                             type="text"
                             required
+                            maxLength={24}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="e.g. Bosch Cordless Drill 18V"
-                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal"
+                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Category *</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">Category * (Max 16 chars)</label>
                             <input
                                 type="text"
                                 required
+                                maxLength={16}
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 placeholder="e.g. Power Tools"
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal"
+                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                             />
                         </div>
                         <div>

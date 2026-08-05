@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
 class InventoryItemBase(BaseModel):
-    title: str
-    category: str
+    title: str = Field(..., max_length=24, description="Title limited to 24 characters")
+    category: str = Field(..., max_length=16, description="Category limited to 16 characters")
     quantity: int = 1
     unit: str = "pcs"
     min_quantity: int = 1
@@ -19,8 +19,8 @@ class InventoryItemCreate(InventoryItemBase):
     pass
 
 class InventoryItemUpdate(BaseModel):
-    title: Optional[str] = None
-    category: Optional[str] = None
+    title: Optional[str] = Field(None, max_length=24)
+    category: Optional[str] = Field(None, max_length=16)
     quantity: Optional[int] = None
     unit: Optional[str] = None
     min_quantity: Optional[int] = None
