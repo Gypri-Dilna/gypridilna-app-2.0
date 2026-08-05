@@ -19,6 +19,10 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [scannedFeedback, setScannedFeedback] = useState<{ title: string; location_code: string; mode: 'pc' | 'local' } | null>(null);
 
+    // Camera devices list for manual switching if device has multi-lenses
+    const [availableCameras, setAvailableCameras] = useState<{ id: string; label: string }[]>([]);
+    const [currentCamIdx, setCurrentCamIdx] = useState<number>(0);
+
     // Zoom state
     const [zoomFactor, setZoomFactor] = useState<number>(2.0);
 
@@ -37,17 +41,14 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
                     const constraints: any = { advanced: [] };
 
-                    // 1. Continuous Auto Focus
                     if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
                         constraints.advanced.push({ focusMode: 'continuous' });
                     }
 
-                    // 2. Continuous Auto Exposure
                     if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
                         constraints.advanced.push({ exposureMode: 'continuous' });
                     }
 
-                    // 3. WebRTC Hardware Optical/Sensor Zoom
                     if (capabilities.zoom) {
                         const min = capabilities.zoom.min || 1;
                         const max = capabilities.zoom.max || 5;
@@ -70,7 +71,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         applyHardwareZoomAndFocus(newZoom);
     };
 
-    const startCamera = useCallback(async () => {
+    const startCameraWithId = useCallback(async (cameraIdOrConfig: any) => {
         setErrorMsg(null);
         isProcessingRef.current = false;
 
@@ -86,16 +87,11 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             const html5QrCode = new Html5Qrcode("remote-mobile-reader", false);
             scannerRef.current = html5QrCode;
 
-            // Advanced Scan Config requesting HD video resolution & crisp 30FPS for clear focus
             const scanConfig = {
-                fps: 30,
+                fps: 25,
                 qrbox: (w: number, h: number) => {
                     const size = Math.floor(Math.min(w, h) * 0.70);
                     return { width: size, height: size };
-                },
-                videoConstraints: {
-                    width: { min: 1280, ideal: 1920 },
-                    height: { min: 720, ideal: 1080 }
                 }
             };
 
@@ -103,12 +99,10 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 if (isProcessingRef.current) return;
                 isProcessingRef.current = true;
 
-                // Vibrate mobile device for physical feedback
                 if (typeof window !== 'undefined' && 'vibrate' in navigator) {
                     try { navigator.vibrate([80, 40, 80]); } catch (e) {}
                 }
 
-                // Check if scanning a PC Pairing Code (e.g. PAIR:session_xyz)
                 if (decodedText.startsWith('PAIR:')) {
                     const newSession = decodedText.replace('PAIR:', '').trim();
                     setPairedSessionId(newSession);
@@ -121,13 +115,11 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     return;
                 }
 
-                // Fetch item title locally
                 const item = await onLookupItem(decodedText);
                 const title = item ? item.title : 'Inventory Item Tag';
                 const location_code = item ? item.location_code : decodedText;
 
                 if (scanMode === 'pc') {
-                    // Broadcast scanned QR code over API to paired Workstation PC
                     const targetSession = pairedSessionId || 'default';
                     fetch('/api/inventory/remote-scan', {
                         method: 'POST',
@@ -137,61 +129,79 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
                     setScannedFeedback({ title, location_code, mode: 'pc' });
                 } else {
-                    // Local Phone Scan Mode
                     setScannedItem(item);
                     setScannedFeedback({ title, location_code, mode: 'local' });
                 }
 
-                // NON-STOP CONTINUOUS SCANNING: Auto-unlock frame lock in 1.4s without closing camera
                 setTimeout(() => {
                     setScannedFeedback(null);
                     isProcessingRef.current = false;
                 }, 1400);
             };
 
-            // Attempt 1: Standard WebRTC facingMode "environment" (100% guarantees Rear Back camera selection in mobile browsers)
-            try {
-                await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
-                setIsScanning(true);
-                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
-                return;
-            } catch (e1) {
-                console.warn("facingMode environment start attempt failed:", e1);
-            }
-
-            // Attempt 2: Enumerate camera devices and strictly filter out front/selfie cameras
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length > 0) {
-                    // Strictly exclude front/selfie/user cameras
-                    const backOnly = devices.filter(d => 
-                        !/front|user|selfie/i.test(d.label || '')
-                    );
-
-                    // Pick back camera (rear sensors are typically at the end of the device list)
-                    const chosenCamera = backOnly.length > 0 
-                        ? (backOnly.find(d => /back|rear|environment/i.test(d.label || '')) || backOnly[backOnly.length - 1])
-                        : devices[devices.length - 1];
-
-                    await html5QrCode.start(chosenCamera.id, scanConfig, handleSuccess, () => {});
-                    setIsScanning(true);
-                    setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
-                    return;
-                }
-            } catch (eEnum) {
-                console.warn("Camera device list enumeration failed:", eEnum);
-            }
-
-            // Attempt 3: User facing camera absolute fallback
-            await html5QrCode.start({ facingMode: "user" }, scanConfig, handleSuccess, () => {});
+            await html5QrCode.start(cameraIdOrConfig, scanConfig, handleSuccess, () => {});
             setIsScanning(true);
+            setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
 
         } catch (err: any) {
-            console.error("Mobile camera start error:", err);
-            setIsScanning(false);
-            setErrorMsg("Grant camera permissions in phone settings to scan items.");
+            console.error("Camera start error with config:", cameraIdOrConfig, err);
+            throw err;
         }
     }, [onLookupItem, scanMode, pairedSessionId, applyHardwareZoomAndFocus, zoomFactor]);
+
+    const startCamera = useCallback(async () => {
+        try {
+            // Attempt 1: Exact environment facing mode (Strict Rear Camera)
+            await startCameraWithId({ facingMode: { exact: "environment" } });
+            return;
+        } catch (eExact) {
+            console.warn("Exact environment facingMode failed:", eExact);
+        }
+
+        try {
+            // Attempt 2: Ideal environment facing mode
+            await startCameraWithId({ facingMode: "environment" });
+            return;
+        } catch (eIdeal) {
+            console.warn("Ideal environment facingMode failed:", eIdeal);
+        }
+
+        // Attempt 3: Enumerate cameras & pick non-front camera
+        try {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length > 0) {
+                setAvailableCameras(devices);
+                const nonFront = devices.filter(d => !/front|user|selfie/i.test(d.label || ''));
+                const chosen = nonFront[nonFront.length - 1] || devices[devices.length - 1];
+                const chosenIdx = devices.findIndex(d => d.id === chosen.id);
+                if (chosenIdx >= 0) setCurrentCamIdx(chosenIdx);
+
+                await startCameraWithId(chosen.id);
+                return;
+            }
+        } catch (eDevices) {
+            console.warn("Camera enumeration failed:", eDevices);
+        }
+
+        setErrorMsg("Grant camera permissions in phone settings to scan items.");
+    }, [startCameraWithId]);
+
+    const handleSwitchCamera = async () => {
+        if (availableCameras.length <= 1) return;
+        const nextIdx = (currentCamIdx + 1) % availableCameras.length;
+        setCurrentCamIdx(nextIdx);
+
+        if (scannerRef.current && scannerRef.current.isScanning) {
+            try {
+                await scannerRef.current.stop();
+            } catch (e) {}
+        }
+        try {
+            await startCameraWithId(availableCameras[nextIdx].id);
+        } catch (e) {
+            setErrorMsg("Could not switch to selected camera.");
+        }
+    };
 
     useEffect(() => {
         startCamera();
@@ -290,6 +300,18 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     }
                 `}</style>
                 <div id="remote-mobile-reader" className="w-full rounded-2xl overflow-hidden" />
+
+                {/* Camera Switcher Button (Top Left) */}
+                {isScanning && availableCameras.length > 1 && (
+                    <button
+                        type="button"
+                        onClick={handleSwitchCamera}
+                        className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10 shadow-lg text-[10px] font-mono text-gray-200 hover:text-white hover:bg-white/20 transition"
+                    >
+                        <CameraIcon className="h-3.5 w-3.5 text-brand-teal" />
+                        <span>Přepnout ({currentCamIdx + 1}/{availableCameras.length})</span>
+                    </button>
+                )}
 
                 {/* Permanent Zoom Level Pills (1.0x, 1.5x, 2.0x, 2.5x) */}
                 {isScanning && (
