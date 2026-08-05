@@ -96,48 +96,42 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Tisková fronta button - HIDDEN on mobile, Greyed out on desktop if driver missing */}
-                    {!isMobile && onOpenPrintQueue && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (isPrinterAvailable) {
-                                    onOpenPrintQueue();
-                                } else {
-                                    showToast("Driver nenainstalován (tiskový ovladač b-PAC není dostupný na tomto PC)", "error");
-                                }
-                            }}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition group ${
-                                isPrinterAvailable
-                                    ? 'bg-brand-darker hover:bg-slate-800 text-gray-200 border-brand-border'
-                                    : 'bg-slate-900/80 text-gray-500 border-slate-800 cursor-not-allowed opacity-75'
-                            }`}
-                            title={isPrinterAvailable ? "Tisková fronta štítků" : "Driver nenainstalován"}
-                        >
-                            <PrinterIcon className={`h-4 w-4 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
-                            <span>Tisková fronta</span>
-                            <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold ${
-                                isPrinterAvailable && queueCount > 0 
-                                    ? 'bg-brand-teal text-black font-extrabold animate-pulse' 
-                                    : 'bg-slate-800 text-gray-500 border border-brand-border/40'
-                            }`}>
-                                {queueCount}
-                            </span>
-                        </button>
-                    )}
+                    {/* Show Add Item & Print Queue buttons ONLY on PC with active b-PAC driver (HIDDEN on mobile or without driver) */}
+                    {!isMobile && isPrinterAvailable && (
+                        <>
+                            {onOpenPrintQueue && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenPrintQueue}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 text-xs font-bold rounded-xl border border-brand-border transition group"
+                                    title="Tisková fronta štítků"
+                                >
+                                    <PrinterIcon className="h-4 w-4 text-brand-teal" />
+                                    <span>Tisková fronta</span>
+                                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold ${
+                                        queueCount > 0 
+                                            ? 'bg-brand-teal text-black font-extrabold animate-pulse' 
+                                            : 'bg-slate-800 text-gray-400 border border-brand-border'
+                                    }`}>
+                                        {queueCount}
+                                    </span>
+                                </button>
+                            )}
 
-                    {canEdit && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setEditingItem(null);
-                                setIsAddModalOpen(true);
-                            }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black text-xs font-bold rounded-xl transition"
-                        >
-                            <PlusIcon className="h-4 w-4" />
-                            Přidat novou položku
-                        </button>
+                            {canEdit && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingItem(null);
+                                        setIsAddModalOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black text-xs font-bold rounded-xl transition"
+                                >
+                                    <PlusIcon className="h-4 w-4" />
+                                    Přidat novou položku
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

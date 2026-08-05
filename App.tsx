@@ -489,6 +489,7 @@ const App: React.FC = () => {
                             onDelete={handleDeleteInventoryItem}
                             onDeleteCategory={handleDeleteCategory}
                             onAddToQueue={handleAddToPrintQueue}
+                            isPrinterAvailable={isPrinterAvailable}
                         />
                     );
                 }

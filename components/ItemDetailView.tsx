@@ -18,6 +18,7 @@ interface ItemDetailViewProps {
     onDelete: (id: number) => Promise<void>;
     onDeleteCategory?: (categoryName: string) => Promise<void>;
     onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
+    isPrinterAvailable?: boolean;
 }
 
 export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
@@ -27,12 +28,22 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     onBack,
     onUpdateItem,
     onDelete,
-    onAddToQueue
+    onAddToQueue,
+    isPrinterAvailable = false
 }) => {
     const [isPrintingLabel, setIsPrintingLabel] = useState(false);
     const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
     const parsedLoc = parseLocationCode(item.location_code);
     const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
+
+    // Mobile device detection
+    const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <div className="space-y-6 font-sans max-w-4xl mx-auto item-page-slide-up">
@@ -64,13 +75,15 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </button>
 
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsPrintingLabel(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-darker hover:bg-brand-teal/20 text-brand-teal font-bold text-xs rounded-xl border border-brand-border transition"
-                    >
-                        <PrinterIcon className="h-4 w-4" />
-                        Print Label
-                    </button>
+                    {(!isMobile && isPrinterAvailable) && (
+                        <button
+                            onClick={() => setIsPrintingLabel(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-brand-darker hover:bg-brand-teal/20 text-brand-teal font-bold text-xs rounded-xl border border-brand-border transition"
+                        >
+                            <PrinterIcon className="h-4 w-4" />
+                            Print Label
+                        </button>
+                    )}
 
                     {canEdit && (
                         <>
