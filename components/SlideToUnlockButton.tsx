@@ -9,7 +9,7 @@ interface SlideToUnlockButtonProps {
 
 export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     onUnlock,
-    label = 'Vzdáleně otevřít dveře',
+    label = 'Potažením otevřít dveře',
     className = ''
 }) => {
     const [dragX, setDragX] = useState<number>(0);
@@ -18,99 +18,79 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     const [isUnlockingLoading, setIsUnlockingLoading] = useState<boolean>(false);
 
     const trackRef = useRef<HTMLDivElement>(null);
-    const handleRef = useRef<HTMLDivElement>(null);
     const startXRef = useRef<number>(0);
 
-    const handleWidth = 48; // width of thumb in px
+    const handleSize = 44; // 44px circular handle
 
     const getMaxSlide = () => {
         if (!trackRef.current) return 200;
-        return trackRef.current.clientWidth - handleWidth - 8; // 8px for padding
+        return trackRef.current.clientWidth - handleSize - 8; // 4px padding each side
     };
 
-    // Touch Event Handlers
-    const handleTouchStart = (e: React.TouchEvent) => {
+    const currentMax = getMaxSlide();
+    const progress = currentMax > 0 ? Math.min(1, Math.max(0, dragX / currentMax)) : 0;
+
+    // Start Drag (Touch or Mouse)
+    const startDrag = (clientX: number) => {
         if (isUnlocked || isUnlockingLoading) return;
         setIsDragging(true);
-        startXRef.current = e.touches[0].clientX - dragX;
+        startXRef.current = clientX - dragX;
     };
 
-    const handleTouchMove = (e: React.TouchEvent) => {
+    const moveDrag = (clientX: number) => {
         if (!isDragging || isUnlocked || isUnlockingLoading) return;
-        const maxSlide = getMaxSlide();
-        const currentX = e.touches[0].clientX - startXRef.current;
-        const clampedX = Math.max(0, Math.min(currentX, maxSlide));
+        const max = getMaxSlide();
+        const currentX = clientX - startXRef.current;
+        const clampedX = Math.max(0, Math.min(currentX, max));
         setDragX(clampedX);
 
-        if (clampedX >= maxSlide * 0.88) {
+        if (clampedX >= max * 0.85) {
             triggerUnlock();
         }
     };
 
-    const handleTouchEnd = () => {
+    const endDrag = () => {
         if (!isDragging) return;
         setIsDragging(false);
-        const maxSlide = getMaxSlide();
-        if (dragX < maxSlide * 0.88 && !isUnlocked) {
-            setDragX(0); // Snap back
+        const max = getMaxSlide();
+        if (dragX < max * 0.85 && !isUnlocked) {
+            setDragX(0); // Spring snap back
         }
     };
 
-    // Mouse Event Handlers
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (isUnlocked || isUnlockingLoading) return;
-        setIsDragging(true);
-        startXRef.current = e.clientX - dragX;
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging || isUnlocked || isUnlockingLoading) return;
-        const maxSlide = getMaxSlide();
-        const currentX = e.clientX - startXRef.current;
-        const clampedX = Math.max(0, Math.min(currentX, maxSlide));
-        setDragX(clampedX);
-
-        if (clampedX >= maxSlide * 0.88) {
-            triggerUnlock();
-        }
-    };
-
-    const handleMouseUp = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        const maxSlide = getMaxSlide();
-        if (dragX < maxSlide * 0.88 && !isUnlocked) {
-            setDragX(0); // Snap back
-        }
-    };
-
+    // Global Event Listeners for smooth mouse / touch drag everywhere
     useEffect(() => {
+        const onMouseMove = (e: MouseEvent) => moveDrag(e.clientX);
+        const onMouseUp = () => endDrag();
+        const onTouchMove = (e: TouchEvent) => moveDrag(e.touches[0].clientX);
+        const onTouchEnd = () => endDrag();
+
         if (isDragging) {
-            const onMouseMove = (e: MouseEvent) => handleMouseMove(e);
-            const onMouseUp = () => handleMouseUp();
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mouseup', onMouseUp);
-            return () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-            };
+            window.addEventListener('touchmove', onTouchMove);
+            window.addEventListener('touchend', onTouchEnd);
         }
+
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+        };
     }, [isDragging, dragX]);
 
     const triggerUnlock = async () => {
         setIsDragging(false);
-        const maxSlide = getMaxSlide();
-        setDragX(maxSlide);
+        const max = getMaxSlide();
+        setDragX(max);
         setIsUnlocked(true);
         setIsUnlockingLoading(true);
 
-        // Haptic feedback on mobile if supported
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
             try {
-                navigator.vibrate([40, 30, 40]);
-            } catch (e) {
-                // Ignore vibration unsupported error
-            }
+                navigator.vibrate([50, 30, 50]);
+            } catch (e) {}
         }
 
         try {
@@ -119,7 +99,6 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
             console.error('Unlock error:', err);
         } finally {
             setIsUnlockingLoading(false);
-            // Reset slider back after 2.5s
             setTimeout(() => {
                 setIsUnlocked(false);
                 setDragX(0);
@@ -128,79 +107,69 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     };
 
     return (
-        <div className={`w-full ${className}`}>
-            {/* Desktop Button (md:flex) */}
-            <button
-                onClick={async () => {
-                    setIsUnlockingLoading(true);
-                    try {
-                        await onUnlock();
-                    } finally {
-                        setIsUnlockingLoading(false);
-                    }
-                }}
-                disabled={isUnlockingLoading}
-                className="hidden md:flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover disabled:opacity-50 text-black font-extrabold text-xs rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 cursor-pointer"
+        <div className={`w-full max-w-sm ${className}`}>
+            {/* Slide-to-Unlock Round Pill Track */}
+            <div
+                ref={trackRef}
+                className={`relative w-full h-[52px] rounded-full p-1 flex items-center select-none overflow-hidden transition-all duration-300 ${
+                    isUnlocked
+                        ? 'bg-emerald-950/80 border-2 border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.4)]'
+                        : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
+                }`}
             >
-                <RemoteIcon className={`h-4 w-4 ${isUnlockingLoading ? 'animate-spin' : ''}`} />
-                {isUnlockingLoading ? 'Otevírám dveře...' : label}
-            </button>
-
-            {/* Mobile Touch Slide-to-Unlock Control (block md:hidden) */}
-            <div className="block md:hidden w-full select-none touch-pan-y">
+                {/* Active Gradient Fill Trail */}
                 <div
-                    ref={trackRef}
-                    className={`relative w-full h-[52px] bg-brand-darker border rounded-2xl p-1 flex items-center overflow-hidden transition-all duration-300 ${
+                    className={`absolute left-0 top-0 bottom-0 rounded-full transition-all ${
                         isUnlocked
-                            ? 'border-emerald-400 bg-emerald-950/40 shadow-[0_0_20px_rgba(52,211,153,0.3)]'
-                            : 'border-brand-teal/40 hover:border-brand-teal shadow-md'
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-400'
+                            : 'bg-gradient-to-r from-[#3aa398]/10 via-[#3aa398]/30 to-[#3aa398]/60'
+                    }`}
+                    style={{
+                        width: `${dragX + handleSize}px`,
+                        transition: isDragging ? 'none' : 'width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                />
+
+                {/* Shimmer Text & Chevron Arrow Guide */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
+                    {isUnlocked ? (
+                        <div className="flex items-center gap-2 text-emerald-300 font-extrabold text-xs tracking-wider uppercase font-mono animate-pulse">
+                            <span>🔓 Dveře Odemčeny!</span>
+                        </div>
+                    ) : (
+                        <div
+                            className="flex items-center gap-1.5 font-bold text-xs tracking-wide text-gray-300 transition-opacity duration-200"
+                            style={{ opacity: Math.max(0, 1 - progress * 1.8) }}
+                        >
+                            <span className="bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-clip-text text-transparent animate-pulse">
+                                {label}
+                            </span>
+                            <span className="text-[#3aa398] font-mono font-black animate-pulse">›››</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Circular Slider Handle Button */}
+                <div
+                    onMouseDown={(e) => startDrag(e.clientX)}
+                    onTouchStart={(e) => startDrag(e.touches[0].clientX)}
+                    style={{
+                        transform: `translateX(${dragX}px)`,
+                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                    }}
+                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center font-bold shadow-xl cursor-grab active:cursor-grabbing transition-colors duration-300 ${
+                        isUnlocked
+                            ? 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.8)] scale-105'
+                            : 'bg-[#3aa398] text-black shadow-[0_0_12px_rgba(58,163,152,0.5)] hover:bg-[#46c2b5]'
                     }`}
                 >
-                    {/* Glowing Teal Progress Fill Behind Thumb */}
-                    <div
-                        className={`absolute left-0 top-0 bottom-0 rounded-2xl transition-colors duration-300 ${
-                            isUnlocked
-                                ? 'bg-emerald-500/30'
-                                : 'bg-gradient-to-r from-brand-teal/10 via-brand-teal/25 to-brand-teal/40'
-                        }`}
-                        style={{
-                            width: `${dragX + handleWidth}px`,
-                            transition: isDragging ? 'none' : 'width 0.3s ease-out'
-                        }}
-                    />
-
-                    {/* Animated Shimmer Text Track Label */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
-                        {isUnlocked ? (
-                            <span className="text-xs font-black uppercase font-mono tracking-wider text-emerald-300 animate-pulse flex items-center gap-1.5">
-                                🔓 Dveře Odemčeny!
-                            </span>
-                        ) : (
-                            <span className="text-[11px] font-extrabold uppercase font-sans tracking-wide text-gray-300 animate-pulse flex items-center gap-1">
-                                Potažením otevřít <span className="text-brand-teal text-sm">➔</span>
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Sliding Thumb Handle */}
-                    <div
-                        ref={handleRef}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onMouseDown={handleMouseDown}
-                        style={{
-                            transform: `translateX(${dragX}px)`,
-                            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
-                        }}
-                        className={`relative z-10 w-11 h-11 rounded-xl flex items-center justify-center font-bold shadow-lg cursor-grab active:cursor-grabbing transition-colors duration-300 ${
-                            isUnlocked
-                                ? 'bg-emerald-400 text-black shadow-emerald-400/50 scale-105 animate-bounce'
-                                : 'bg-brand-teal text-black shadow-brand-teal/40 hover:bg-brand-teal-hover'
-                        }`}
-                    >
-                        <RemoteIcon className={`h-5 w-5 ${isUnlockingLoading ? 'animate-spin' : (isUnlocked ? 'scale-110' : '')}`} />
-                    </div>
+                    {isUnlockingLoading ? (
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    ) : isUnlocked ? (
+                        <span className="text-base animate-bounce">🔓</span>
+                    ) : (
+                        <RemoteIcon className="h-5 w-5" />
+                    )}
                 </div>
             </div>
         </div>
