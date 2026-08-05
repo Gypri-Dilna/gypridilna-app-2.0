@@ -325,8 +325,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         }
 
         onSave({
-            title: title.slice(0, 24),
-            category: finalCategory.slice(0, 16),
+            title: title.slice(0, 30),
+            category: finalCategory.slice(0, 22),
             quantity: 1,
             unit: "pcs",
             min_quantity: 0,
@@ -353,20 +353,20 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         <div className="flex justify-between items-center mb-1">
                             <label className="block text-xs font-semibold text-gray-300">Název položky / Title *</label>
                             <span className={`text-xs font-mono font-bold transition-colors ${
-                                title.length >= 24 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
+                                title.length >= 30 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                             }`}>
-                                {title.length}/24
+                                {title.length}/30
                             </span>
                         </div>
                         <input
                             type="text"
                             required
-                            maxLength={24}
+                            maxLength={30}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="např. Bosch Cordless Drill 18V"
                             className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                title.length >= 24 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
+                                title.length >= 30 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
                             }`}
                         />
                     </div>
@@ -377,9 +377,9 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             <div className="flex justify-between items-center mb-1">
                                 <label className="block text-xs font-semibold text-gray-300">Kategorie / Category *</label>
                                 <span className={`text-xs font-mono font-bold transition-colors ${
-                                    activeCategory.length >= 16 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
+                                    activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                                 }`}>
-                                    {activeCategory.length}/16
+                                    {activeCategory.length}/22
                                 </span>
                             </div>
 
@@ -402,12 +402,12 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                 <input
                                     type="text"
                                     required
-                                    maxLength={16}
+                                    maxLength={22}
                                     value={customCategory}
                                     onChange={(e) => setCustomCategory(e.target.value)}
                                     placeholder="Zadejte název kategorie..."
                                     className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                        customCategory.length >= 16 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
+                                        customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
                                     }`}
                                 />
                             )}

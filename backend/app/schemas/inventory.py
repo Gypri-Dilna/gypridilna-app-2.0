@@ -3,8 +3,8 @@ from typing import Optional
 from datetime import datetime
 
 class InventoryItemBase(BaseModel):
-    title: str = Field(..., max_length=24, description="Title limited to 24 characters")
-    category: str = Field(..., max_length=16, description="Category limited to 16 characters")
+    title: str = Field(..., max_length=30, description="Title limited to 30 characters")
+    category: str = Field(..., max_length=22, description="Category limited to 22 characters")
     quantity: int = 1
     unit: str = "pcs"
     min_quantity: int = 1
@@ -19,8 +19,8 @@ class InventoryItemCreate(InventoryItemBase):
     pass
 
 class InventoryItemUpdate(BaseModel):
-    title: Optional[str] = Field(None, max_length=24)
-    category: Optional[str] = Field(None, max_length=16)
+    title: Optional[str] = Field(None, max_length=30)
+    category: Optional[str] = Field(None, max_length=22)
     quantity: Optional[int] = None
     unit: Optional[str] = None
     min_quantity: Optional[int] = None
