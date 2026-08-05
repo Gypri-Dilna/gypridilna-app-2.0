@@ -17,6 +17,7 @@ interface ItemDetailViewProps {
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDelete: (id: number) => Promise<void>;
     onDeleteCategory?: (categoryName: string) => Promise<void>;
+    onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
 }
 
 export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
@@ -25,7 +26,8 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     allItems = [],
     onBack,
     onUpdateItem,
-    onDelete
+    onDelete,
+    onAddToQueue
 }) => {
     const [isPrintingLabel, setIsPrintingLabel] = useState(false);
     const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
@@ -184,6 +186,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     isOpen={isPrintingLabel}
                     onClose={() => setIsPrintingLabel(false)}
                     item={item}
+                    onAddToQueue={onAddToQueue}
                 />
             )}
 
@@ -219,8 +222,9 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
     // Categories dropdown list derived dynamically from existing items
     const existingCategories = React.useMemo(() => {
         const set = new Set(allItems.map(i => i.category).filter(Boolean));
-        const defaults = ['Power Tools', '3D Printing', 'Electronics', 'Consumables', 'Fasteners'];
-        defaults.forEach(d => set.add(d));
+        if (set.size === 0) {
+            set.add('General');
+        }
         return Array.from(set).sort();
     }, [allItems]);
 

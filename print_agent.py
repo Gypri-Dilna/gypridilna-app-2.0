@@ -129,6 +129,114 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
         print(f"[PRINT AGENT EXCEPTION] {str(e)}")
         return False, f"b-PAC Print Exception: {str(e)}"
 
+def print_batch_bpac(items: list) -> tuple[bool, str]:
+    """
+    Executes Brother b-PAC COM SDK to batch print multiple labels with chain printing (minimal tape cut waste).
+    """
+    is_bpac_ready, bpac_msg = check_bpac_com_available()
+    if not is_bpac_ready:
+        return False, f"b-PAC SDK Error: {bpac_msg}"
+
+    if not items or len(items) == 0:
+        return False, "Print queue is empty."
+
+    success_count = 0
+    errors = []
+
+    # Group items by tape_size (18mm vs 9mm) to reuse templates
+    by_tape = {}
+    for item_data in items:
+        ts = item_data.get("tape_size", "18mm")
+        if ts not in by_tape:
+            by_tape[ts] = []
+        by_tape[ts].append(item_data)
+
+    for tape_size, batch in by_tape.items():
+        template_filename = "label_18mm.lbx" if tape_size == "18mm" else "label_9mm.lbx"
+        template_path = os.path.join(TEMPLATES_DIR, template_filename)
+
+        if not os.path.exists(template_path):
+            errors.append(f"Template file missing: '{template_filename}'")
+            continue
+
+        try:
+            doc = win32com.client.Dispatch("bpac.Document")
+            if not doc.Open(template_path):
+                errors.append(f"Failed to open template: '{template_filename}'")
+                continue
+
+            printer_name = ""
+            try:
+                if hasattr(doc, 'Printer') and doc.Printer:
+                    template_printer = getattr(doc.Printer, 'Name', '')
+                    installed_printers = getattr(doc.Printer, 'GetInstalledPrinters', ())
+                    if installed_printers and isinstance(installed_printers, (tuple, list)) and len(installed_printers) > 0:
+                        if template_printer in installed_printers:
+                            printer_name = template_printer
+                        else:
+                            printer_name = installed_printers[0]
+                    elif template_printer:
+                        printer_name = template_printer
+            except Exception:
+                pass
+
+            print(f"[PRINT BATCH] Starting batch of {len(batch)} items ({tape_size}) on printer '{printer_name or 'Default'}'")
+
+            start_ok = doc.StartPrint(printer_name, 0)
+            if not start_ok:
+                try:
+                    if callable(doc.Close): doc.Close()
+                except Exception: pass
+                errors.append(f"b-PAC StartPrint failed for {tape_size} batch.")
+                continue
+
+            batch_len = len(batch)
+            for idx, label_data in enumerate(batch):
+                title = label_data.get("title", "")
+                location_code = label_data.get("location_code", "")
+                qr_code = label_data.get("qr_code", location_code)
+                category = label_data.get("category", "")
+
+                try:
+                    obj_title = doc.GetObject("title")
+                    if obj_title: obj_title.Text = title
+
+                    obj_loc = doc.GetObject("location_code")
+                    if obj_loc: obj_loc.Text = location_code
+
+                    obj_cat = doc.GetObject("category")
+                    if obj_cat: obj_cat.Text = category
+
+                    obj_qr = doc.GetObject("qr_code")
+                    if obj_qr: obj_qr.Text = qr_code
+                except Exception as fe:
+                    print(f"[PRINT BATCH WARNING] Field error on item #{idx+1}: {fe}")
+
+                # Use Chain Print (0x00000004) for all except the last item in batch to minimize cut waste!
+                print_option = 0x00000004 if idx < batch_len - 1 else 0x00000000
+                p_ok = doc.PrintOut(1, print_option)
+                if p_ok:
+                    success_count += 1
+
+            try:
+                if callable(doc.EndPrint): doc.EndPrint()
+            except Exception: pass
+
+            try:
+                if callable(doc.Close): doc.Close()
+            except Exception: pass
+
+        except Exception as batch_ex:
+            errors.append(f"Batch print error ({tape_size}): {str(batch_ex)}")
+
+    if success_count > 0:
+        msg = f"Úspěšně vytisknuto {success_count} štítků v dávce s minimálním odpadem pásky!"
+        if errors:
+            msg += f" (Chyby: {'; '.join(errors)})"
+        return True, msg
+    else:
+        return False, f"Chyba dávkového tisku: {'; '.join(errors)}"
+
 class PrintAgentHandler(BaseHTTPRequestHandler):
     def _send_cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -160,7 +268,31 @@ class PrintAgentHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        if self.path in ["/print-label", "/api/print-label"]:
+        if self.path in ["/print-queue", "/api/print-queue"]:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                items = data.get("items", [])
+                success, message = print_batch_bpac(items)
+                
+                status_code = 200 if success else 400
+                self.send_response(status_code)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                
+                response = {"success": success, "message": message}
+                self.wfile.write(json.dumps(response).encode())
+            except Exception as err:
+                self.send_response(500)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": str(err)}).encode())
+
+        elif self.path in ["/print-label", "/api/print-label"]:
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             

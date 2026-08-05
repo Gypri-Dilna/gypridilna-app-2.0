@@ -18,6 +18,7 @@ interface InventoryCatalogProps {
     onDeleteCategory?: (categoryName: string) => Promise<void>;
     onSelectItem: (item: InventoryItem) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
+    onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
 }
 
 export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
@@ -28,7 +29,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onDeleteItem,
     onDeleteCategory,
     onSelectItem,
-    showToast
+    showToast,
+    onAddToQueue
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -241,6 +243,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     isOpen={!!printingItem}
                     onClose={() => setPrintingItem(null)}
                     item={printingItem}
+                    onAddToQueue={onAddToQueue}
                 />
             )}
 

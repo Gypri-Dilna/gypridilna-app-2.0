@@ -79,4 +79,10 @@ export interface PrintLabelData {
     unit: string;
 }
 
+export interface PrintQueueItem {
+    item: InventoryItem;
+    tape_size: '18mm' | '9mm';
+    addedAt: number;
+}
+
 type float = number;

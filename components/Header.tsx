@@ -16,6 +16,8 @@ interface HeaderProps {
     onLogout: () => void;
     user: User;
     showToast: (message: string, type: 'success' | 'error') => void;
+    queueCount?: number;
+    onOpenPrintQueue?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,7 +25,9 @@ export const Header: React.FC<HeaderProps> = ({
     setActiveTab,
     onLogout,
     user,
-    showToast
+    showToast,
+    queueCount = 0,
+    onOpenPrintQueue
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -147,8 +151,30 @@ export const Header: React.FC<HeaderProps> = ({
                         </nav>
                     </div>
 
+                    {/* Print Queue Quick Action (Desktop Sidebar) */}
+                    {onOpenPrintQueue && (
+                        <div className="pt-3 border-t border-brand-border">
+                            <button
+                                onClick={onOpenPrintQueue}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 text-xs font-bold rounded-xl border border-brand-border transition group"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">📋</span>
+                                    <span>Tisková fronta</span>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold transition ${
+                                    queueCount > 0
+                                        ? 'bg-brand-teal text-black shadow-sm shadow-brand-teal/40 animate-pulse'
+                                        : 'bg-slate-800 text-gray-400 border border-brand-border'
+                                }`}>
+                                    {queueCount}
+                                </span>
+                            </button>
+                        </div>
+                    )}
+
                     {/* User Card & Logout */}
-                    <div className="pt-4 border-t border-brand-border space-y-3">
+                    <div className="pt-3 border-t border-brand-border space-y-3">
                         <div className="p-3 bg-brand-darker rounded-xl border border-brand-border">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-lg">
@@ -188,12 +214,26 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                 </div>
 
-                <button
-                    onClick={openMobileMenu}
-                    className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
-                >
-                    <Menu className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    {onOpenPrintQueue && (
+                        <button
+                            onClick={onOpenPrintQueue}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-brand-darker hover:bg-slate-800 text-white text-xs font-bold rounded-xl border border-brand-border transition"
+                        >
+                            <span>📋</span>
+                            <span className="bg-brand-teal text-black px-1.5 py-0.2 rounded-full font-mono text-[10px] font-extrabold">
+                                {queueCount}
+                            </span>
+                        </button>
+                    )}
+
+                    <button
+                        onClick={openMobileMenu}
+                        className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Bi-Directional Animated Mobile Slide Drawer Overlay (Slide-In & Slide-Out) */}

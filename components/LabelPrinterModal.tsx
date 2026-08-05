@@ -9,9 +9,10 @@ interface LabelPrinterModalProps {
     isOpen: boolean;
     onClose: () => void;
     item: InventoryItem | null;
+    onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
 }
 
-export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, onClose, item }) => {
+export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, onClose, item, onAddToQueue }) => {
     const [tapeSize, setTapeSize] = useState<'18mm' | '9mm'>('18mm');
     const [isPrinting, setIsPrinting] = useState<boolean>(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -40,6 +41,13 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
             setStatusMsg({ type: 'error', text: 'Chyba připojení k tiskovému serveru b-PAC.' });
         } finally {
             setIsPrinting(false);
+        }
+    };
+
+    const handleQueueClick = () => {
+        if (onAddToQueue && item) {
+            onAddToQueue(item, tapeSize);
+            onClose();
         }
     };
 
@@ -126,23 +134,34 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-1">
+                    {/* Action Buttons: Choice of Print Now, Add to Queue, or Print Later */}
+                    <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2.5 text-xs font-bold text-gray-300 bg-slate-800 rounded-xl hover:bg-slate-700 transition"
+                            className="px-3.5 py-2.5 text-xs font-bold text-gray-400 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl transition text-center"
                         >
-                            Zavřít
+                            Vytisknout později
                         </button>
+
+                        {onAddToQueue && (
+                            <button
+                                type="button"
+                                onClick={handleQueueClick}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-brand-teal bg-brand-teal/10 hover:bg-brand-teal/20 border border-brand-teal/40 rounded-xl transition active:scale-95 text-center"
+                            >
+                                <span>📋 Přidat do fronty</span>
+                            </button>
+                        )}
+
                         <button
                             type="button"
                             onClick={handlePrintBPac}
                             disabled={isPrinting}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-black bg-brand-teal hover:bg-brand-teal-hover disabled:opacity-50 rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-black bg-brand-teal hover:bg-brand-teal-hover disabled:opacity-50 rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 text-center"
                         >
                             <PrinterIcon className="h-4 w-4" />
-                            {isPrinting ? 'Tisknu přes b-PAC...' : `Vytisknout štítek (${tapeSize})`}
+                            {isPrinting ? 'Tisknu...' : `Vytisknout teď (${tapeSize})`}
                         </button>
                     </div>
                 </div>

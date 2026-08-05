@@ -260,6 +260,49 @@ def print_inventory_label(
     except Exception as ex:
         raise HTTPException(status_code=500, detail=f"Print error: {str(ex)}")
 
+PRINTER_QUEUE_URL = os.getenv("PRINTER_QUEUE_URL", "http://127.0.0.1:5001/print-queue")
+
+@router.post("/print-queue")
+def print_inventory_queue(
+    payload: dict,
+    db: Session = Depends(get_db)
+):
+    items = payload.get("items", [])
+    if not items:
+        raise HTTPException(status_code=400, detail="Tisková fronta je prázdná.")
+
+    try:
+        req = urllib.request.Request(
+            PRINTER_QUEUE_URL,
+            data=json.dumps({"items": items}).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(req, timeout=15) as response:
+            res_body = response.read().decode('utf-8')
+            res_json = json.loads(res_body)
+            if response.status == 200 and res_json.get("success"):
+                return {"status": "success", "message": res_json.get("message")}
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=res_json.get("message", "Chyba dávkového tisku b-PAC.")
+                )
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = e.read().decode('utf-8')
+            err_json = json.loads(err_body)
+            msg = err_json.get("message") or err_json.get("detail") or str(e)
+        except Exception:
+            msg = f"Print Agent HTTP {e.code}: {str(e)}"
+        raise HTTPException(status_code=400, detail=msg)
+    except urllib.error.URLError as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Tiskový server b-PAC není dostupný na {PRINTER_QUEUE_URL}. Zkontrolujte, že běží print_agent.py na PC s tiskárnou."
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Chyba tisku fronty: {str(ex)}")
+
 # Session-based remote scan state for PC <-> Mobile pairing
 paired_sessions = {}
 

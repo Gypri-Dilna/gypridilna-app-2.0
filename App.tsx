@@ -8,7 +8,8 @@ import { UserManagement } from './components/UserManagement';
 import { ItemDetailView } from './components/ItemDetailView';
 import { Header, TabType } from './components/Header';
 import { Toast } from './components/Toast';
-import { User, Chip, AccessLog, InventoryItem } from './types';
+import { User, Chip, AccessLog, InventoryItem, PrintQueueItem } from './types';
+import { PrintQueueModal } from './components/PrintQueueModal';
 
 const API_BASE_URL = '';
 
@@ -41,6 +42,75 @@ const App: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    // Print Queue State with localStorage persistence
+    const [printQueue, setPrintQueue] = useState<PrintQueueItem[]>(() => {
+        try {
+            const saved = localStorage.getItem('gypri_print_queue');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [isPrintQueueOpen, setIsPrintQueueOpen] = useState<boolean>(false);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('gypri_print_queue', JSON.stringify(printQueue));
+        } catch (e) {
+            console.error('Failed to persist print queue:', e);
+        }
+    }, [printQueue]);
+
+    const handleAddToPrintQueue = (item: InventoryItem, tape_size: '18mm' | '9mm') => {
+        const newItem: PrintQueueItem = {
+            item,
+            tape_size,
+            addedAt: Date.now()
+        };
+        setPrintQueue(prev => [...prev, newItem]);
+        showToast(`Položka '${item.title}' přidána do tiskové fronty (${tape_size})`, 'success');
+    };
+
+    const handleRemoveFromPrintQueue = (index: number) => {
+        setPrintQueue(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleClearPrintQueue = () => {
+        setPrintQueue([]);
+        showToast('Tisková fronta byla vyprázdněna.', 'success');
+    };
+
+    const handleUpdateQueueItemTape = (index: number, tape_size: '18mm' | '9mm') => {
+        setPrintQueue(prev => prev.map((q, i) => i === index ? { ...q, tape_size } : q));
+    };
+
+    const handlePrintQueueBatch = async () => {
+        if (printQueue.length === 0) return;
+        
+        const payloadItems = printQueue.map(q => ({
+            title: q.item.title,
+            location_code: q.item.location_code,
+            qr_code: q.item.qr_code || q.item.location_code,
+            category: q.item.category || 'General',
+            tape_size: q.tape_size
+        }));
+
+        const res = await fetch(`${API_BASE_URL}/api/inventory/print-queue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: payloadItems })
+        });
+
+        const data = await res.json();
+        if (res.ok && (data.status === 'success' || data.success)) {
+            showToast(data.message || `Úspěšně vytisknuto ${printQueue.length} štítků z fronty!`, 'success');
+            setPrintQueue([]);
+            setIsPrintQueueOpen(false);
+        } else {
+            throw new Error(data.detail || data.message || 'Chyba dávkového tisku b-PAC.');
+        }
+    };
 
     const showToast = useCallback((message: string, type: 'success' | 'error') => {
         setToast({ message, type });
@@ -399,6 +469,7 @@ const App: React.FC = () => {
                             onUpdateItem={handleUpdateInventoryItem}
                             onDelete={handleDeleteInventoryItem}
                             onDeleteCategory={handleDeleteCategory}
+                            onAddToQueue={handleAddToPrintQueue}
                         />
                     );
                 }
@@ -412,6 +483,7 @@ const App: React.FC = () => {
                         onDeleteCategory={handleDeleteCategory}
                         onSelectItem={(item) => handleSelectItem(item, 'inventory')}
                         showToast={showToast}
+                        onAddToQueue={handleAddToPrintQueue}
                     />
                 );
             case 'scanner':
@@ -424,6 +496,7 @@ const App: React.FC = () => {
                             onBack={handleCloseItemDetail}
                             onUpdateItem={handleUpdateInventoryItem}
                             onDelete={handleDeleteInventoryItem}
+                            onAddToQueue={handleAddToPrintQueue}
                         />
                     );
                 }
@@ -463,12 +536,28 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         user={user}
                         showToast={showToast}
+                        queueCount={printQueue.length}
+                        onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
                     />
                     <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
                         <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
                             {renderActiveTabContent()}
                         </div>
                     </main>
+
+                    {/* Print Queue Batch Modal */}
+                    {isPrintQueueOpen && (
+                        <PrintQueueModal
+                            isOpen={isPrintQueueOpen}
+                            onClose={() => setIsPrintQueueOpen(false)}
+                            queue={printQueue}
+                            onRemoveFromQueue={handleRemoveFromPrintQueue}
+                            onClearQueue={handleClearPrintQueue}
+                            onUpdateQueueItemTape={handleUpdateQueueItemTape}
+                            onPrintQueue={handlePrintQueueBatch}
+                            showToast={showToast}
+                        />
+                    )}
                 </div>
             ) : (
                 <div className="relative z-10">
