@@ -4,8 +4,6 @@ import {
     RefreshIcon, RemoteIcon, UsersIcon, ShieldIcon, 
     ArrowUpRight, BoxesIcon
 } from './icons';
-import { BoltGlyphChain } from './BoltGlyph';
-
 import { SlideToUnlockButton } from './SlideToUnlockButton';
 
 interface DashboardProps {

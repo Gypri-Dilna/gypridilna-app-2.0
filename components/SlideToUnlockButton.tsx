@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LockClosedIcon, LockOpenIcon, BoltGlyphIcon } from './icons';
+import { LockClosedIcon, LockOpenIcon } from './icons';
 
 interface SlideToUnlockButtonProps {
     onUnlock: () => Promise<void>;
@@ -79,7 +79,33 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
             window.removeEventListener('touchmove', onTouchMove);
             window.removeEventListener('touchend', onTouchEnd);
         };
-    }, [isDragging]);
+    }, [isDragging, dragX]);
+
+    const triggerUnlock = async () => {
+        setIsDragging(false);
+        const max = getMaxSlide();
+        setDragX(max);
+        setIsUnlocked(true);
+        setIsUnlockingLoading(true);
+
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+                navigator.vibrate([50, 30, 50]);
+            } catch (e) {}
+        }
+
+        try {
+            await onUnlock();
+        } catch (err) {
+            console.error('Unlock error:', err);
+        } finally {
+            setIsUnlockingLoading(false);
+            setTimeout(() => {
+                setIsUnlocked(false);
+                setDragX(0);
+            }, 2500);
+        }
+    };
 
     return (
         <div className={`w-full min-w-[240px] sm:min-w-[320px] md:min-w-[360px] max-w-md shrink-0 select-none ${className}`}>
@@ -92,7 +118,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
                 }`}
             >
-                {/* Active Fill Trail */}
+                {/* Active Fill Trail (Matches handle 44px height & 22px radius perfectly) */}
                 <div
                     className={`absolute left-1 top-1 bottom-1 rounded-full transition-all ${
                         isUnlocked
@@ -105,14 +131,13 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                     }}
                 />
 
-                {/* Shimmer Text & Chevron Arrow Guide */}
+                {/* Shimmer Text & Chevron Arrow Guide (Hidden when unlocked to keep track clean) */}
                 {!isUnlocked && (
                     <div 
                         className="absolute inset-0 flex items-center justify-center pointer-events-none pl-14 pr-4 transition-opacity duration-200"
                         style={{ opacity: Math.max(0, 1 - progress * 1.8) }}
                     >
                         <div className="flex items-center gap-1.5 font-bold text-xs tracking-wide text-gray-300 whitespace-nowrap overflow-hidden">
-                            <BoltGlyphIcon className="h-4 w-4 text-[#3aa398] animate-spin-slow shrink-0" />
                             <span className="bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-clip-text text-transparent animate-pulse whitespace-nowrap">
                                 {label}
                             </span>
@@ -121,7 +146,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                     </div>
                 )}
 
-                {/* Circular Slider Handle Button */}
+                {/* Circular Slider Handle Button (Flush against edges) */}
                 <div
                     onMouseDown={(e) => startDrag(e.clientX)}
                     onTouchStart={(e) => startDrag(e.touches[0].clientX)}
@@ -135,29 +160,14 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                             : 'bg-[#3aa398] text-black shadow-[0_0_10px_rgba(58,163,152,0.4)] hover:bg-[#46c2b5]'
                     }`}
                 >
-                    {isUnlocked ? (
-                        <LockOpenIcon className="h-5 w-5 animate-bounce text-black" />
+                    {isUnlockingLoading ? (
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    ) : isUnlocked ? (
+                        <LockOpenIcon className="h-5 w-5 text-black animate-pulse" />
                     ) : (
-                        <div className="relative flex items-center justify-center">
-                            <LockClosedIcon className="h-5 w-5 text-black" />
-                            {/* Embedded Brand Bolt Glyph Watermark inside circle handle */}
-                            <BoltGlyphIcon 
-                                className="absolute -top-1 -right-1 h-3.5 w-3.5 text-black/70 transition-transform duration-300"
-                                style={{ transform: `rotate(${progress * 360}deg)` }}
-                            />
-                        </div>
+                        <LockClosedIcon className="h-5 w-5 text-black" />
                     )}
                 </div>
-
-                {/* Unlocked Message */}
-                {isUnlocked && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none pr-4">
-                        <span className="font-mono font-extrabold text-xs text-emerald-400 animate-pulse tracking-wide flex items-center gap-1.5">
-                            <BoltGlyphIcon className="h-4 w-4 text-emerald-400 animate-spin" />
-                            DVEŘE ODEMČENY!
-                        </span>
-                    </div>
-                )}
             </div>
         </div>
     );
