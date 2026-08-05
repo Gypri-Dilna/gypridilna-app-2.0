@@ -103,42 +103,54 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         <div className="flex justify-center p-6 bg-brand-bg border border-brand-border rounded-xl">
                             {tapeSize === '18mm' ? (
                                 /* 18mm Standard Tape Preview */
-                                <div className="w-[260px] h-[72px] bg-white text-black p-1.5 flex items-center justify-between rounded shadow-md border border-gray-300 select-none overflow-hidden">
-                                    <div className="bg-white p-1 rounded flex-shrink-0">
-                                        <QRCodeSVG value={item.location_code || item.qr_code} size={52} level="M" includeMargin={false} />
+                                <div className="w-[320px] h-[76px] bg-white text-black p-2 flex items-center gap-3 rounded-lg shadow-lg border border-gray-400 select-none overflow-hidden font-sans relative">
+                                    <div className="bg-white p-0.5 rounded flex-shrink-0 border border-gray-100">
+                                        <QRCodeSVG value={item.location_code || item.qr_code} size={54} level="M" includeMargin={false} />
                                     </div>
-                                    <div className="flex-1 px-2 min-w-0 flex flex-col justify-center">
-                                        <div className="flex items-center gap-1 mb-0.5">
-                                            <Logo variant="full" className="h-2.5 w-auto flex-shrink-0" />
-                                            <span className="text-[8px] font-black uppercase tracking-tight text-gray-900 leading-none truncate">
-                                                gypri dílna
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <Logo variant="full" className="h-3 w-auto flex-shrink-0" />
+                                            <span className="text-[9px] font-black uppercase tracking-tight text-gray-900 leading-none">
+                                                GYPRI DÍLNA
                                             </span>
                                         </div>
-                                        <p className="text-[10px] font-extrabold text-black leading-snug truncate">{item.title}</p>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="bg-black text-white text-[9px] font-mono font-bold px-1 py-0.5 rounded leading-none">
+                                        <p className="text-[10.5px] font-extrabold text-black leading-snug truncate">{item.title}</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="bg-black text-white text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-black leading-none">
                                                 {item.location_code}
                                             </span>
-                                            <span className="text-[8px] font-mono text-gray-600 truncate">{item.category}</span>
+                                            {item.category && (
+                                                <span className="text-[8.5px] font-mono text-gray-600 truncate">{item.category}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                /* 9mm Compact Tape Preview */
-                                <div className="w-[260px] h-[44px] bg-white text-black p-1 flex items-center gap-2 rounded shadow-md border border-gray-300 select-none overflow-hidden">
+                                /* 9mm Compact Tape Preview matching P-touch Editor template */
+                                <div className="w-[320px] h-[48px] bg-white text-black p-1.5 flex items-center gap-2.5 rounded-lg shadow-lg border border-gray-400 select-none overflow-hidden font-sans relative">
+                                    {/* Left: QR Code */}
                                     <div className="bg-white p-0.5 rounded flex-shrink-0">
-                                        <QRCodeSVG value={item.location_code || item.qr_code} size={34} level="M" includeMargin={false} />
+                                        <QRCodeSVG value={item.location_code || item.qr_code} size={36} level="M" includeMargin={false} />
                                     </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <p className="text-[9px] font-extrabold text-black leading-tight truncate">{item.title}</p>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="bg-black text-white text-[8.5px] font-mono font-bold px-1 py-0.5 rounded leading-none">
-                                                {item.location_code}
+                                    
+                                    {/* Middle: Logo & Location Code Stack */}
+                                    <div className="flex flex-col items-start justify-center flex-shrink-0 gap-0.5 pr-2 border-r border-gray-300">
+                                        <div className="flex items-center gap-1">
+                                            <Logo variant="full" className="h-2.5 w-auto flex-shrink-0" />
+                                            <span className="text-[7.5px] font-black uppercase tracking-tighter text-gray-900 leading-none">
+                                                GYPRI DÍLNA
                                             </span>
-                                            {item.category && (
-                                                <span className="text-[7.5px] font-mono text-gray-600 truncate">{item.category}</span>
-                                            )}
                                         </div>
+                                        <span className="bg-black text-white text-[8.5px] font-mono font-extrabold px-1 py-0.5 rounded border border-black leading-none mt-0.5">
+                                            {item.location_code}
+                                        </span>
+                                    </div>
+
+                                    {/* Right: Item Title */}
+                                    <div className="flex-1 min-w-0 flex items-center">
+                                        <p className="text-[9.5px] font-extrabold text-black leading-tight truncate">
+                                            {item.title}
+                                        </p>
                                     </div>
                                 </div>
                             )}
