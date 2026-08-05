@@ -149,33 +149,42 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 }, 1400);
             };
 
-            // Enumerate camera devices to pick the Primary Rear Main Camera Sensor (avoids noisy ultra-wide / macro lenses)
+            // Attempt 1: Standard WebRTC facingMode "environment" (100% guarantees Rear Back camera selection in mobile browsers)
+            try {
+                await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
+                setIsScanning(true);
+                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+                return;
+            } catch (e1) {
+                console.warn("facingMode environment start attempt failed:", e1);
+            }
+
+            // Attempt 2: Enumerate camera devices and strictly filter out front/selfie cameras
             try {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length > 0) {
-                    // Filter for rear/back cameras, preferring the main 1x sensor (usually index 0 or labeled '0' / 'main' / 'back')
-                    const rearCameras = devices.filter(d => 
-                        /back|rear|environment/i.test(d.label) || (!/front|user/i.test(d.label))
+                    // Strictly exclude front/selfie/user cameras
+                    const backOnly = devices.filter(d => 
+                        !/front|user|selfie/i.test(d.label || '')
                     );
 
-                    // Prefer camera labeled '0' or primary main sensor to avoid noisy wide/macro lens
-                    const primaryCamera = rearCameras.find(d => /0|main|primary/i.test(d.label)) 
-                        || rearCameras[0] 
-                        || devices[devices.length - 1];
+                    // Pick back camera (rear sensors are typically at the end of the device list)
+                    const chosenCamera = backOnly.length > 0 
+                        ? (backOnly.find(d => /back|rear|environment/i.test(d.label || '')) || backOnly[backOnly.length - 1])
+                        : devices[devices.length - 1];
 
-                    await html5QrCode.start(primaryCamera.id, scanConfig, handleSuccess, () => {});
+                    await html5QrCode.start(chosenCamera.id, scanConfig, handleSuccess, () => {});
                     setIsScanning(true);
                     setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
                     return;
                 }
             } catch (eEnum) {
-                console.warn("Camera enumeration fallback:", eEnum);
+                console.warn("Camera device list enumeration failed:", eEnum);
             }
 
-            // Fallback to facingMode environment
-            await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
+            // Attempt 3: User facing camera absolute fallback
+            await html5QrCode.start({ facingMode: "user" }, scanConfig, handleSuccess, () => {});
             setIsScanning(true);
-            setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
 
         } catch (err: any) {
             console.error("Mobile camera start error:", err);
