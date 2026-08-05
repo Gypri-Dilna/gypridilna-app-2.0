@@ -25,6 +25,9 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const pairedSessionIdRef = useRef(pairedSessionId);
     useEffect(() => { pairedSessionIdRef.current = pairedSessionId; }, [pairedSessionId]);
 
+    // Permanent 2.0x Default Hardware Zoom
+    const zoomFactor = 2.0;
+
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isProcessingRef = useRef<boolean>(false);
 
