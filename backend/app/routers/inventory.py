@@ -220,6 +220,14 @@ def print_inventory_label(
                     status_code=400, 
                     detail=res_json.get("message", "b-PAC Printer Agent reported an error.")
                 )
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = e.read().decode('utf-8')
+            err_json = json.loads(err_body)
+            msg = err_json.get("message") or err_json.get("detail") or str(e)
+        except Exception:
+            msg = f"Print Agent HTTP {e.code}: {str(e)}"
+        raise HTTPException(status_code=400, detail=msg)
     except urllib.error.URLError as e:
         raise HTTPException(
             status_code=503, 

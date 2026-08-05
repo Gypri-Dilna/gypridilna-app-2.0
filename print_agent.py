@@ -53,6 +53,7 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
         
         # Open template
         if not doc.Open(template_path):
+            print(f"[PRINT AGENT ERROR] Failed to open template: '{template_path}'")
             return False, f"Failed to open b-PAC template: '{template_filename}'"
 
         # Set text fields
@@ -60,6 +61,8 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
         location_code = data.get("location_code", "")
         qr_code = data.get("qr_code", location_code)
         category = data.get("category", "")
+
+        print(f"[PRINT AGENT] Printing label ({tape_size}): Title='{title}', Location='{location_code}', Category='{category}'")
 
         # Set Named Fields in P-touch Editor Template
         try:
@@ -75,17 +78,28 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
             obj_qr = doc.GetObject("qr_code")
             if obj_qr: obj_qr.Text = qr_code
         except Exception as field_err:
-            print(f"Warning setting fields: {field_err}")
+            print(f"[PRINT AGENT WARNING] Error setting template fields: {field_err}")
 
         # Execute Print job to Brother PT-D460BTVP
-        doc.StartPrint("", 0)
-        doc.PrintOut(1, 0)
+        start_ok = doc.StartPrint("", 0)
+        if not start_ok:
+            doc.Close()
+            print("[PRINT AGENT ERROR] doc.StartPrint() failed.")
+            return False, "b-PAC StartPrint failed. Make sure PT-D460BTVP printer driver is installed and printer is powered ON."
+
+        print_ok = doc.PrintOut(1, 0)
         doc.EndPrint()
         doc.Close()
 
+        if not print_ok:
+            print("[PRINT AGENT ERROR] doc.PrintOut() failed.")
+            return False, "b-PAC PrintOut failed. Check printer USB/Bluetooth connection and tape cassette."
+
+        print(f"[PRINT AGENT SUCCESS] Label printed successfully!")
         return True, f"Successfully printed {tape_size} label for '{title}' ({location_code}) on PT-D460BTVP!"
 
     except Exception as e:
+        print(f"[PRINT AGENT EXCEPTION] {str(e)}")
         return False, f"b-PAC Print Exception: {str(e)}"
 
 class PrintAgentHandler(BaseHTTPRequestHandler):
