@@ -283,18 +283,6 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 `}</style>
                 <div id="remote-mobile-reader" className="w-full rounded-2xl overflow-hidden" />
 
-                {/* Always-visible Camera Switcher Button (Top Left) */}
-                {isScanning && (
-                    <button
-                        type="button"
-                        onClick={handleSwitchCamera}
-                        className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-brand-teal/40 shadow-lg text-[11px] font-mono font-bold text-brand-teal hover:text-white hover:bg-brand-teal/20 transition active:scale-95"
-                    >
-                        <CameraIcon className="h-3.5 w-3.5" />
-                        <span>Přepnout fotoaparát {availableCameras.length > 0 ? `(${currentCamIdx + 1}/${availableCameras.length})` : ''}</span>
-                    </button>
-                )}
-
                 {!isScanning && (
                     <div className="p-6 text-center space-y-3 absolute inset-0 bg-brand-darker flex flex-col items-center justify-center">
                         <QrCodeIcon className="h-12 w-12 text-brand-teal animate-bounce" />
