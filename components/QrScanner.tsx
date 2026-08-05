@@ -21,6 +21,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const lastScanTimeRef = useRef<number>(Date.now());
     const isProcessingRef = useRef<boolean>(false);
+    const lastRemoteTimestampRef = useRef<number>(0);
 
     const [pcSessionId] = useState<string>(() => {
         if (propSessionId) return propSessionId;
