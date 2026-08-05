@@ -118,15 +118,15 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
                 }`}
             >
-                {/* Active Gradient Fill Trail */}
+                {/* Active Fill Trail (Matches handle 44px height & 22px radius perfectly) */}
                 <div
-                    className={`absolute left-0 top-0 bottom-0 rounded-full transition-all ${
+                    className={`absolute left-1 top-1 bottom-1 rounded-full transition-all ${
                         isUnlocked
-                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-400'
-                            : 'bg-gradient-to-r from-[#3aa398]/10 via-[#3aa398]/30 to-[#3aa398]/60'
+                            ? 'bg-emerald-500/40 border border-emerald-400/40 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
+                            : 'bg-gradient-to-r from-[#3aa398]/10 via-[#3aa398]/25 to-[#3aa398]/50'
                     }`}
                     style={{
-                        width: `${dragX + handleSize + 4}px`,
+                        width: `${dragX + handleSize}px`,
                         transition: isDragging ? 'none' : 'width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }}
                 />
