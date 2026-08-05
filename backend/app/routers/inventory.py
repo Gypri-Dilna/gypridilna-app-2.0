@@ -180,6 +180,30 @@ def delete_inventory_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Inventory item deleted"}
 
+@router.delete("/categories/{category_name}")
+def delete_category(category_name: str, db: Session = Depends(get_db)):
+    clean_cat = category_name.strip()
+    if not clean_cat or clean_cat.lower() == "general":
+        raise HTTPException(status_code=400, detail="Cannot delete default system category 'General'.")
+
+    # Find all items assigned to this category and move them to General
+    items_to_update = db.query(InventoryItem).filter(InventoryItem.category == clean_cat).all()
+    count = len(items_to_update)
+    
+    for item in items_to_update:
+        item.category = "General"
+        item.last_updated = datetime.now(timezone.utc)
+
+    audit = SystemAuditLog(
+        action="CATEGORY_DELETED",
+        performed_by="System User",
+        details=f"Deleted category '{clean_cat}' ({count} items reassigned to 'General')"
+    )
+    db.add(audit)
+
+    db.commit()
+    return {"message": f"Kategorie '{clean_cat}' byla smazána ({count} položek přesunuto do General)."}
+
 import urllib.request
 import json
 import os

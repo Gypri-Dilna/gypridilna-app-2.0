@@ -231,6 +231,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         }
                         setIsAddModalOpen(false);
                     }}
+                    onOpenCategoryManager={() => setIsCategoryManagerOpen(true)}
                 />
             )}
 
@@ -263,16 +264,18 @@ interface FormModalProps {
     item: InventoryItem | null;
     allItems: InventoryItem[];
     onSave: (data: any) => Promise<void>;
+    onOpenCategoryManager?: () => void;
 }
 
-const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
+const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave, onOpenCategoryManager }) => {
     const [title, setTitle] = useState(item?.title || '');
 
     // Categories dropdown list derived dynamically from existing items
     const existingCategories = useMemo(() => {
         const set = new Set(allItems.map(i => i.category).filter(Boolean));
-        const defaults = ['Power Tools', '3D Printing', 'Electronics', 'Consumables', 'Fasteners'];
-        defaults.forEach(d => set.add(d));
+        if (set.size === 0) {
+            set.add('General');
+        }
         return Array.from(set).sort();
     }, [allItems]);
 
@@ -375,7 +378,18 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         {/* Category Dropdown & Custom Input + Live Letter Counter */}
                         <div>
                             <div className="flex justify-between items-center mb-1">
-                                <label className="block text-xs font-semibold text-gray-300">Kategorie / Category *</label>
+                                <div className="flex items-center gap-2">
+                                    <label className="block text-xs font-semibold text-gray-300">Kategorie / Category *</label>
+                                    {onOpenCategoryManager && (
+                                        <button
+                                            type="button"
+                                            onClick={onOpenCategoryManager}
+                                            className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono"
+                                        >
+                                            Správa
+                                        </button>
+                                    )}
+                                </div>
                                 <span className={`text-xs font-mono font-bold transition-colors ${
                                     activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                                 }`}>
