@@ -8,7 +8,7 @@ export interface ParsedLocation {
 }
 
 export function parseLocationCode(code: string): ParsedLocation | null {
-    if (!code) return null;
+    if (!code || typeof code !== 'string') return null;
     const clean = code.trim().toUpperCase();
     
     // Match XY-ZAAA (e.g. 12-0123, 34-5674)

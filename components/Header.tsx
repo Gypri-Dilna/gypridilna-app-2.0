@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    DashboardIcon, ScanIcon, LogoutIcon, 
-    Menu, X, UserManagementIcon, UserIcon, KeyIcon, 
+import {
+    DashboardIcon, ScanIcon, LogoutIcon,
+    Menu, X, UserManagementIcon, UserIcon, KeyIcon,
     InventoryIcon, QrCodeIcon, SearchIcon
 } from './icons';
 import { Logo } from './Logo';
@@ -134,11 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
                                     <button
                                         key={item.id}
                                         onClick={() => setActiveTab(item.id as TabType)}
-                                        className={`flex items-center w-full px-3.5 py-2.5 text-xs font-bold rounded-xl transition ${
-                                            isActive
+                                        className={`flex items-center w-full px-3.5 py-2.5 text-xs font-bold rounded-xl transition ${isActive
                                                 ? 'bg-brand-teal text-black'
                                                 : 'text-gray-300 hover:bg-brand-darker hover:text-white'
-                                        }`}
+                                            }`}
                                     >
                                         <Icon className={`h-4 w-4 mr-3 ${isActive ? 'text-black' : 'text-brand-teal'}`} />
                                         <span>{item.label}</span>
@@ -201,18 +200,16 @@ export const Header: React.FC<HeaderProps> = ({
             {(isMobileMenuOpen || isClosing) && (
                 <div className="md:hidden fixed inset-0 z-[90]">
                     {/* Dimmed Blurred Backdrop with Fade-In / Fade-Out */}
-                    <div 
+                    <div
                         onClick={closeMobileMenu}
-                        className={`fixed inset-0 bg-black/65 backdrop-blur-sm ${
-                            isClosing ? 'backdrop-fade-out' : 'backdrop-fade-in'
-                        }`}
+                        className={`fixed inset-0 bg-black/65 backdrop-blur-sm ${isClosing ? 'backdrop-fade-out' : 'backdrop-fade-in'
+                            }`}
                     />
 
                     {/* Sliding Side Drawer with Slide-In & Slide-Out Animations */}
-                    <div 
-                        className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm h-[100dvh] bg-brand-dark border-l border-brand-border shadow-2xl z-[100] p-6 flex flex-col font-sans overflow-y-auto ${
-                            isClosing ? 'drawer-slide-out' : 'drawer-slide-in'
-                        }`}
+                    <div
+                        className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm h-[100dvh] bg-brand-dark border-l border-brand-border shadow-2xl z-[100] p-6 flex flex-col font-sans overflow-y-auto ${isClosing ? 'drawer-slide-out' : 'drawer-slide-in'
+                            }`}
                     >
                         {/* Drawer Header */}
                         <div className="flex justify-between items-center pb-4 border-b border-brand-border">
@@ -222,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
                                     <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
                                 </span>
                             </div>
-                            <button 
-                                onClick={closeMobileMenu} 
+                            <button
+                                onClick={closeMobileMenu}
                                 className="p-2 text-gray-400 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition"
                             >
                                 <X className="h-5 w-5" />
@@ -242,11 +239,10 @@ export const Header: React.FC<HeaderProps> = ({
                                             setActiveTab(item.id as TabType);
                                             closeMobileMenu();
                                         }}
-                                        className={`flex items-center w-full px-4 py-3.5 text-xs font-bold rounded-xl transition transform active:scale-98 ${
-                                            isActive
+                                        className={`flex items-center w-full px-4 py-3.5 text-xs font-bold rounded-xl transition transform active:scale-98 ${isActive
                                                 ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
                                                 : 'text-gray-200 bg-brand-darker border border-brand-border hover:bg-slate-800'
-                                        }`}
+                                            }`}
                                     >
                                         <Icon className={`h-4 w-4 mr-3 flex-shrink-0 ${isActive ? 'text-black' : 'text-brand-teal'}`} />
                                         <span>{item.label}</span>

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem, User } from '../types';
-import { 
-    InventoryIcon, SearchIcon, PlusIcon, 
-    PrinterIcon, FilterIcon, TrashIcon, EditIcon, 
-    ArrowUpRight
+import {
+    InventoryIcon, SearchIcon, PlusIcon,
+    PrinterIcon, FilterIcon, TrashIcon, EditIcon,
+    ArrowUpRight, ChevronRightIcon
 } from './icons';
 import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
 import { LabelPrinterModal } from './LabelPrinterModal';
@@ -19,7 +19,7 @@ interface InventoryCatalogProps {
 }
 
 export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
-    items,
+    items = [],
     user,
     onAddItem,
     onUpdateItem,
@@ -42,20 +42,21 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 
     // Categories list derived dynamically
     const categories = useMemo(() => {
-        const set = new Set(items.map(i => i.category));
+        const set = new Set(items.map(i => i.category || 'Uncategorized'));
         return ['ALL', ...Array.from(set).sort()];
     }, [items]);
 
     const filteredItems = useMemo(() => {
         return items.filter(item => {
-            if (selectedCategory !== 'ALL' && item.category !== selectedCategory) return false;
+            const itemCat = item.category || 'Uncategorized';
+            if (selectedCategory !== 'ALL' && itemCat !== selectedCategory) return false;
             if (search) {
                 const term = search.toLowerCase();
                 return (
-                    item.title.toLowerCase().includes(term) ||
-                    item.location_code.toLowerCase().includes(term) ||
-                    item.qr_code.toLowerCase().includes(term) ||
-                    item.zone.toLowerCase().includes(term)
+                    (item.title || '').toLowerCase().includes(term) ||
+                    (item.location_code || '').toLowerCase().includes(term) ||
+                    (item.qr_code || '').toLowerCase().includes(term) ||
+                    (item.zone || '').toLowerCase().includes(term)
                 );
             }
             return true;
@@ -73,7 +74,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         <InventoryIcon className="h-6 w-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Katalog dílenských zásob</h1>
+                        <h1 className="text-2xl font-extrabold text-white tracking-tight">Inventář dílny</h1>
                         <p className="text-xs text-gray-300">Seznam položek a index umístění (schéma XY-ZAAA)</p>
                     </div>
                 </div>
@@ -247,9 +248,9 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
-    
+
     // Auto-calculate initial sequence ID if creating new item
-    const initialSeq = item 
+    const initialSeq = item
         ? (parsedInitial ? parsedInitial.itemId : '001')
         : getNextSequenceForItem(allItems, 1, 2, 0);
 

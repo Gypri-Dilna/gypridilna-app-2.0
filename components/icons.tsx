@@ -41,5 +41,6 @@ export {
     ArrowUpRight,
     ArrowDownLeft,
     ArrowLeft as ArrowLeftIcon,
-    Tag as TagIcon
+    Tag as TagIcon,
+    ChevronRight as ChevronRightIcon
 } from 'lucide-react';
