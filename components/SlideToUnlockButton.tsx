@@ -114,7 +114,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                 ref={trackRef}
                 className={`relative w-full h-[52px] min-w-[240px] rounded-full p-1 flex items-center select-none overflow-hidden transition-colors duration-300 ${
                     isUnlocked
-                        ? 'bg-emerald-950/80 border border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)]'
+                        ? 'bg-emerald-950/40 border border-emerald-500/30'
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
                 }`}
             >
@@ -122,7 +122,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                 <div
                     className={`absolute left-1 top-1 bottom-1 rounded-full transition-all ${
                         isUnlocked
-                            ? 'bg-emerald-500/40 border border-emerald-400/40 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
+                            ? 'bg-emerald-500/20 border border-emerald-500/20'
                             : 'bg-gradient-to-r from-[#3aa398]/10 via-[#3aa398]/25 to-[#3aa398]/50'
                     }`}
                     style={{
@@ -154,10 +154,10 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                         transform: `translateX(${dragX}px)`,
                         transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                     }}
-                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center shadow-xl cursor-grab active:cursor-grabbing transition-colors duration-300 shrink-0 ${
+                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing transition-colors duration-300 shrink-0 ${
                         isUnlocked
-                            ? 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.8)]'
-                            : 'bg-[#3aa398] text-black shadow-[0_0_12px_rgba(58,163,152,0.5)] hover:bg-[#46c2b5]'
+                            ? 'bg-emerald-500 text-black shadow-md'
+                            : 'bg-[#3aa398] text-black shadow-[0_0_10px_rgba(58,163,152,0.4)] hover:bg-[#46c2b5]'
                     }`}
                 >
                     {isUnlockingLoading ? (
