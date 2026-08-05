@@ -44,3 +44,9 @@ export {
     Tag as TagIcon,
     ChevronRight as ChevronRightIcon
 } from 'lucide-react';
+
+export const BoltGlyphIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+    <svg viewBox="0 0 750 750" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" clipRule="evenodd" d="M 545.332 79.742 L 204.492 79.742 L 34.070 374.863 L 204.492 669.980 L 545.332 669.980 L 715.753 374.863 Z M 374.914 545.25 C 280.792 545.25 204.492 468.964 204.492 374.863 C 204.492 280.761 280.792 204.476 374.914 204.476 C 469.035 204.476 545.332 280.761 545.332 374.863 C 545.332 468.964 469.035 545.25 374.914 545.25 Z" />
+    </svg>
+);
