@@ -12,7 +12,7 @@ interface QrScannerProps {
     pcSessionId?: string;
 }
 
-export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, onClose, pcSessionId: propSessionId }) => {
+const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, onClose, pcSessionId: propSessionId }) => {
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [isScanning, setIsScanning] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -422,5 +422,43 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
                 </div>
             )}
         </div>
+    );
+};
+
+class QrScannerErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: string | null }> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error: any) {
+        return { hasError: true, error: error?.message || 'Chyba skeneru' };
+    }
+    componentDidCatch(error: any, errorInfo: any) {
+        console.error("QrScannerErrorBoundary caught error:", error, errorInfo);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="bg-brand-dark border border-brand-border rounded-2xl p-6 max-w-xl mx-auto space-y-4 text-center font-sans my-8 shadow-2xl">
+                    <h3 className="text-base font-bold text-rose-400">Chyba při načítání QR skeneru</h3>
+                    <p className="text-xs text-gray-300 font-mono">{this.state.error}</p>
+                    <button
+                        onClick={() => this.setState({ hasError: false, error: null })}
+                        className="px-5 py-2.5 bg-brand-teal text-black font-extrabold text-xs rounded-xl hover:bg-brand-teal-hover transition shadow"
+                    >
+                        Obnovit skener
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+export const QrScanner: React.FC<QrScannerProps> = (props) => {
+    return (
+        <QrScannerErrorBoundary>
+            <QrScannerInner {...props} />
+        </QrScannerErrorBoundary>
     );
 };
