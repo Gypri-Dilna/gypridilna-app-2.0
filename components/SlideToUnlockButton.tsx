@@ -107,11 +107,11 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     };
 
     return (
-        <div className={`w-full max-w-sm ${className}`}>
+        <div className={`w-full min-w-[240px] sm:min-w-[280px] max-w-sm shrink-0 select-none ${className}`}>
             {/* Slide-to-Unlock Round Pill Track */}
             <div
                 ref={trackRef}
-                className={`relative w-full h-[52px] rounded-full p-1 flex items-center select-none overflow-hidden transition-all duration-300 ${
+                className={`relative w-full h-[52px] min-w-[240px] rounded-full p-1 flex items-center select-none overflow-hidden transition-all duration-300 ${
                     isUnlocked
                         ? 'bg-emerald-950/80 border-2 border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.4)]'
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
@@ -133,18 +133,18 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                 {/* Shimmer Text & Chevron Arrow Guide */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
                     {isUnlocked ? (
-                        <div className="flex items-center gap-2 text-emerald-300 font-extrabold text-xs tracking-wider uppercase font-mono animate-pulse">
+                        <div className="flex items-center gap-2 text-emerald-300 font-extrabold text-xs tracking-wider uppercase font-mono animate-pulse whitespace-nowrap">
                             <span>🔓 Dveře Odemčeny!</span>
                         </div>
                     ) : (
                         <div
-                            className="flex items-center gap-1.5 font-bold text-xs tracking-wide text-gray-300 transition-opacity duration-200"
+                            className="flex items-center gap-1.5 font-bold text-xs tracking-wide text-gray-300 transition-opacity duration-200 whitespace-nowrap"
                             style={{ opacity: Math.max(0, 1 - progress * 1.8) }}
                         >
-                            <span className="bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-clip-text text-transparent animate-pulse">
+                            <span className="bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-clip-text text-transparent animate-pulse whitespace-nowrap">
                                 {label}
                             </span>
-                            <span className="text-[#3aa398] font-mono font-black animate-pulse">›››</span>
+                            <span className="text-[#3aa398] font-mono font-black animate-pulse whitespace-nowrap">›››</span>
                         </div>
                     )}
                 </div>
@@ -157,7 +157,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                         transform: `translateX(${dragX}px)`,
                         transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                     }}
-                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center font-bold shadow-xl cursor-grab active:cursor-grabbing transition-colors duration-300 ${
+                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center font-bold shadow-xl cursor-grab active:cursor-grabbing transition-colors duration-300 shrink-0 ${
                         isUnlocked
                             ? 'bg-emerald-400 text-black shadow-[0_0_15px_rgba(52,211,153,0.8)] scale-105'
                             : 'bg-[#3aa398] text-black shadow-[0_0_12px_rgba(58,163,152,0.5)] hover:bg-[#46c2b5]'

@@ -69,18 +69,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <p className="text-xs text-gray-300 mt-1">Přístupový systém RFID & Správa dílenského skladu</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     <button
                         onClick={onRefresh}
-                        className="p-2.5 bg-brand-darker hover:bg-slate-800 text-gray-300 rounded-xl border border-brand-border transition"
+                        className="p-2.5 bg-brand-darker hover:bg-slate-800 text-gray-300 rounded-xl border border-brand-border transition shrink-0"
                         title="Synchronizovat data"
                     >
                         <RefreshIcon className="h-5 w-5" />
                     </button>
                     {(user.is_admin || user.permissions.remote_opening) && (
-                        <div className="w-full sm:w-auto">
-                            <SlideToUnlockButton onUnlock={onRemoteOpening} className="sm:w-[220px]" />
-                        </div>
+                        <SlideToUnlockButton onUnlock={onRemoteOpening} className="flex-1 sm:flex-initial" />
                     )}
                 </div>
             </div>

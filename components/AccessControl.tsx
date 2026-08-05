@@ -69,9 +69,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                         )}
 
                         {(user.is_admin || user.permissions.remote_opening) && (
-                            <div className="w-full sm:w-auto">
-                                <SlideToUnlockButton onUnlock={onRemoteOpening} className="sm:w-[220px]" />
-                            </div>
+                            <SlideToUnlockButton onUnlock={onRemoteOpening} className="w-full sm:w-auto" />
                         )}
                     </div>
                 </div>
