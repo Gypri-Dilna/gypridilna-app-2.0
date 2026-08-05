@@ -187,6 +187,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     onClose={() => setIsPrintingLabel(false)}
                     item={item}
                     onAddToQueue={onAddToQueue}
+                    showPrintLater={false}
                 />
             )}
 

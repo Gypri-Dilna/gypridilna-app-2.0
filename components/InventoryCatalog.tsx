@@ -96,7 +96,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             onClick={onOpenPrintQueue}
                             className="flex items-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 text-xs font-bold rounded-xl border border-brand-border transition group"
                         >
-                            <span>📋 Tisková fronta</span>
+                            <PrinterIcon className="h-4 w-4 text-brand-teal" />
+                            <span>Tisková fronta</span>
                             <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold ${
                                 queueCount > 0 ? 'bg-brand-teal text-black font-extrabold animate-pulse' : 'bg-slate-800 text-gray-400 border border-brand-border'
                             }`}>
@@ -107,6 +108,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 
                     {canEdit && (
                         <button
+                            type="button"
                             onClick={() => {
                                 setEditingItem(null);
                                 setIsAddModalOpen(true);
@@ -245,6 +247,12 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         } else {
                             await onAddItem(itemData);
                             showToast("Položka byla úspěšně přidána do zásob", "success");
+                            // Open print selection modal (Print Now / Add to Queue / Print Later)
+                            const newItem = items.find(i => i.location_code === itemData.location_code) || {
+                                id: Date.now(),
+                                ...itemData
+                            };
+                            setPrintingItem(newItem as InventoryItem);
                         }
                         setIsAddModalOpen(false);
                     }}

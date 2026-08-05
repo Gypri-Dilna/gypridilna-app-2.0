@@ -10,9 +10,16 @@ interface LabelPrinterModalProps {
     onClose: () => void;
     item: InventoryItem | null;
     onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
+    showPrintLater?: boolean;
 }
 
-export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, onClose, item, onAddToQueue }) => {
+export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    item, 
+    onAddToQueue,
+    showPrintLater = true 
+}) => {
     const [tapeSize, setTapeSize] = useState<'18mm' | '9mm'>('18mm');
     const [isPrinting, setIsPrinting] = useState<boolean>(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -134,14 +141,14 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                         </div>
                     </div>
 
-                    {/* Action Buttons: Choice of Print Now, Add to Queue, or Print Later */}
+                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                         <button
                             type="button"
                             onClick={onClose}
                             className="px-3.5 py-2.5 text-xs font-bold text-gray-400 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl transition text-center"
                         >
-                            Vytisknout později
+                            {showPrintLater ? 'Vytisknout později' : 'Zavřít'}
                         </button>
 
                         {onAddToQueue && (
@@ -150,7 +157,8 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                 onClick={handleQueueClick}
                                 className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold text-brand-teal bg-brand-teal/10 hover:bg-brand-teal/20 border border-brand-teal/40 rounded-xl transition active:scale-95 text-center"
                             >
-                                <span>📋 Přidat do fronty</span>
+                                <PrinterIcon className="h-4 w-4 text-brand-teal" />
+                                <span>Přidat do fronty</span>
                             </button>
                         )}
 
