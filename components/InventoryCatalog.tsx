@@ -83,7 +83,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     </div>
                 </div>
 
-                {canEdit && isPrinterWorkstation && (
+                {canEdit && (
                     <button
                         onClick={() => {
                             setEditingItem(null);
