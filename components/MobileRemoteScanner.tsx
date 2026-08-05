@@ -19,12 +19,8 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [scannedFeedback, setScannedFeedback] = useState<{ title: string; location_code: string; mode: 'pc' | 'local' } | null>(null);
 
-    // Camera devices list for manual switching if device has multi-lenses
-    const [availableCameras, setAvailableCameras] = useState<{ id: string; label: string }[]>([]);
-    const [currentCamIdx, setCurrentCamIdx] = useState<number>(0);
-
-    // Zoom state
-    const [zoomFactor, setZoomFactor] = useState<number>(2.0);
+    // Permanent Zoom Factor (2.0x)
+    const zoomFactor = 2.0;
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isProcessingRef = useRef<boolean>(false);
@@ -66,12 +62,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         }
     }, []);
 
-    const handleZoomChange = (newZoom: number) => {
-        setZoomFactor(newZoom);
-        applyHardwareZoomAndFocus(newZoom);
-    };
-
-    const startCameraWithId = useCallback(async (cameraIdOrConfig: any) => {
+    const startCamera = useCallback(async () => {
         setErrorMsg(null);
         isProcessingRef.current = false;
 
@@ -139,94 +130,41 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 }, 1400);
             };
 
-            await html5QrCode.start(cameraIdOrConfig, scanConfig, handleSuccess, () => {});
+            // Enumerate cameras & strictly lock onto the last camera (Camera 4/4, Main Primary Rear Lens)
+            try {
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length > 0) {
+                    // Pick the last camera in device list (Camera 4/4)
+                    const mainRearCamera = devices[devices.length - 1];
+                    await html5QrCode.start(mainRearCamera.id, scanConfig, handleSuccess, () => {});
+                    setIsScanning(true);
+                    setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+                    return;
+                }
+            } catch (eEnum) {
+                console.warn("Camera list enumeration fallback:", eEnum);
+            }
+
+            // Fallback: Exact environment facing mode
+            try {
+                await html5QrCode.start({ facingMode: { exact: "environment" } }, scanConfig, handleSuccess, () => {});
+                setIsScanning(true);
+                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+                return;
+            } catch (e1) {}
+
+            await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
             setIsScanning(true);
             setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
 
         } catch (err: any) {
-            console.error("Camera start error with config:", cameraIdOrConfig, err);
-            throw err;
+            console.error("Camera start error:", err);
+            setIsScanning(false);
+            setErrorMsg("Grant camera permissions in phone settings to scan items.");
         }
     }, [onLookupItem, scanMode, pairedSessionId, applyHardwareZoomAndFocus, zoomFactor]);
 
-    const startCamera = useCallback(async () => {
-        try {
-            // Attempt 1: Exact environment facing mode (Strict Rear Camera)
-            await startCameraWithId({ facingMode: { exact: "environment" } });
-            return;
-        } catch (eExact) {
-            console.warn("Exact environment facingMode failed:", eExact);
-        }
-
-        try {
-            // Attempt 2: Ideal environment facing mode
-            await startCameraWithId({ facingMode: "environment" });
-            return;
-        } catch (eIdeal) {
-            console.warn("Ideal environment facingMode failed:", eIdeal);
-        }
-
-        // Attempt 3: Enumerate cameras & pick non-front camera
-        try {
-            const devices = await Html5Qrcode.getCameras();
-            if (devices && devices.length > 0) {
-                setAvailableCameras(devices);
-                const nonFront = devices.filter(d => !/front|user|selfie/i.test(d.label || ''));
-                const chosen = nonFront[nonFront.length - 1] || devices[devices.length - 1];
-                const chosenIdx = devices.findIndex(d => d.id === chosen.id);
-                if (chosenIdx >= 0) setCurrentCamIdx(chosenIdx);
-
-                await startCameraWithId(chosen.id);
-                return;
-            }
-        } catch (eDevices) {
-            console.warn("Camera enumeration failed:", eDevices);
-        }
-
-        setErrorMsg("Grant camera permissions in phone settings to scan items.");
-    }, [startCameraWithId]);
-
-    const handleSwitchCamera = async () => {
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            try {
-                await scannerRef.current.stop();
-            } catch (e) {}
-        }
-
-        // Freshly enumerate cameras if list was empty
-        let cams = availableCameras;
-        if (cams.length === 0) {
-            try {
-                cams = await Html5Qrcode.getCameras();
-                setAvailableCameras(cams);
-            } catch (e) {}
-        }
-
-        if (cams.length > 0) {
-            const nextIdx = (currentCamIdx + 1) % cams.length;
-            setCurrentCamIdx(nextIdx);
-            try {
-                await startCameraWithId(cams[nextIdx].id);
-            } catch (e) {
-                setErrorMsg("Chyba při přepnutí fotoaparátu.");
-            }
-        } else {
-            try {
-                await startCameraWithId({ facingMode: "user" });
-            } catch (e) {
-                setErrorMsg("Chyba při přepnutí fotoaparátu.");
-            }
-        }
-    };
-
     useEffect(() => {
-        // Enumerate camera devices on load so availableCameras is always populated
-        Html5Qrcode.getCameras().then((devices) => {
-            if (devices && devices.length > 0) {
-                setAvailableCameras(devices);
-            }
-        }).catch(() => {});
-
         startCamera();
         return () => {
             if (scannerRef.current && scannerRef.current.isScanning) {
