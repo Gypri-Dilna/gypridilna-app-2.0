@@ -80,16 +80,54 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
         }
     }, [isMobileDevice]);
 
-    useEffect(() => {
-        lastScanTimeRef.current = Date.now();
+    const [zoomFactor, setZoomFactor] = useState<number>(2.0);
+
+    const applyZoomAndFocus = useCallback((targetZoom: number) => {
+        try {
+            const videoElem = document.querySelector('#reader video') as HTMLVideoElement;
+            if (videoElem && videoElem.srcObject) {
+                const stream = videoElem.srcObject as MediaStream;
+                const track = stream.getVideoTracks()?.[0];
+
+                if (track) {
+                    const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
+                    const constraints: any = { advanced: [] };
+
+                    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                        constraints.advanced.push({ focusMode: 'continuous' });
+                    }
+
+                    if (capabilities.zoom) {
+                        const min = capabilities.zoom.min || 1;
+                        const max = capabilities.zoom.max || 5;
+                        const clamped = Math.min(max, Math.max(min, targetZoom));
+                        constraints.advanced.push({ zoom: clamped });
+                    }
+
+                    if (constraints.advanced.length > 0) {
+                        track.applyConstraints(constraints).catch(() => {});
+                    }
+                }
+
+                videoElem.style.transform = `scale(${targetZoom})`;
+                videoElem.style.transformOrigin = 'center center';
+                videoElem.style.transition = 'transform 0.2s ease-out';
+            }
+        } catch (e) {
+            console.warn("Zoom error:", e);
+        }
     }, []);
+
+    const handleZoomChange = (newZoom: number) => {
+        setZoomFactor(newZoom);
+        applyZoomAndFocus(newZoom);
+    };
 
     const startCamera = useCallback(async () => {
         if (!isMobileDevice) return;
         setErrorMsg(null);
         isProcessingRef.current = false;
 
-        // Clean up DOM container to prevent duplicate video stream elements
         const container = document.getElementById('reader');
         if (!container) {
             console.warn("Reader element not present in DOM.");
@@ -98,16 +136,15 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
         container.innerHTML = '';
 
         try {
-            // Check if mediaDevices API exists
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error("Camera API not supported on this browser context (HTTP connection).");
+                throw new Error("Camera API not supported on this browser context.");
             }
 
             const html5QrCode = new Html5Qrcode("reader", false);
             scannerRef.current = html5QrCode;
 
             const scanConfig = {
-                fps: 20,
+                fps: 25,
                 qrbox: (w: number, h: number) => {
                     const size = Math.floor(Math.min(w, h) * 0.7);
                     return { width: size, height: size };
@@ -118,14 +155,12 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
                 if (isProcessingRef.current) return;
                 isProcessingRef.current = true;
 
-                // Broadcast remote scan event so paired PC screen opens item page
                 fetch('/api/inventory/remote-scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ qr_code: decodedText })
                 }).catch(() => {});
 
-                // Stop camera hardware immediately to prevent subsequent video frame reads
                 if (scannerRef.current && scannerRef.current.isScanning) {
                     try {
                         await scannerRef.current.stop();
@@ -152,41 +187,40 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
                 }
             };
 
-            // Attempt 1: Facing Mode Environment (Rear camera)
             try {
                 await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
                 setIsScanning(true);
+                setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
                 return;
             } catch (e1) {
                 console.warn("Attempt 1 (environment facingMode) failed:", e1);
             }
 
-            // Attempt 2: Enumerate Cameras & select rear camera ID
             try {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length > 0) {
-                    // Pick the last camera (usually rear main sensor on Android)
                     const rearCamera = devices[devices.length - 1];
                     await html5QrCode.start(rearCamera.id, scanConfig, handleSuccess, () => {});
                     setIsScanning(true);
+                    setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
                     return;
                 }
             } catch (e2) {
                 console.warn("Attempt 2 (getCameras list) failed:", e2);
             }
 
-            // Attempt 3: Default fallback
             await html5QrCode.start({ facingMode: "user" }, scanConfig, handleSuccess, () => {});
             setIsScanning(true);
+            setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
 
         } catch (err: any) {
             console.error("All camera start attempts failed:", err);
             setIsScanning(false);
             if (!isInsecureOrigin) {
-                setErrorMsg("Camera permission denied or camera unavailable. Grant permission in Android settings or use manual lookup.");
+                setErrorMsg("Camera permission denied or camera unavailable.");
             }
         }
-    }, [isMobileDevice, onLookupItem, onSelectItem, isInsecureOrigin]);
+    }, [isMobileDevice, onLookupItem, onSelectItem, isInsecureOrigin, applyZoomAndFocus, zoomFactor]);
 
     useEffect(() => {
         if (!isMobileDevice) return;
