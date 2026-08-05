@@ -104,6 +104,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
             {/* Subtab Content */}
             {subTab === 'chips' ? (
                 <ChipManagement
+                    user={user}
                     chips={chips}
                     onAddChip={onAddChip}
                     onUpdateChip={onUpdateChip}

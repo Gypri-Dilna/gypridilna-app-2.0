@@ -139,11 +139,12 @@ const App: React.FC = () => {
         try {
             const canViewLogs = user.is_admin || user.permissions?.view_logs;
 
-            const [chipsRes, logsRes, invRes, printerRes] = await Promise.all([
+            const [chipsRes, logsRes, invRes, printerRes, usersRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/chips`),
                 canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
                 fetch(`${API_BASE_URL}/api/inventory`),
-                fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null)
+                fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null),
+                fetch(`${API_BASE_URL}/api/users`).catch(() => null)
             ]);
 
             if (chipsRes.ok) {
@@ -166,6 +167,18 @@ const App: React.FC = () => {
                 setIsPrinterAvailable(!!pData.available);
             } else {
                 setIsPrinterAvailable(false);
+            }
+
+            // Sync currently logged in user profile & permissions in real-time
+            if (usersRes && usersRes.ok) {
+                const usersData: User[] = await usersRes.json();
+                const updatedMe = usersData.find((u) => u.id === user.id);
+                if (updatedMe) {
+                    if (JSON.stringify(updatedMe) !== JSON.stringify(user)) {
+                        setUser(updatedMe);
+                        localStorage.setItem('savedUser', JSON.stringify(updatedMe));
+                    }
+                }
             }
         } catch (error) {
             if (!isSilent) {

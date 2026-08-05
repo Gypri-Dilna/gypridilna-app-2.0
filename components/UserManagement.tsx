@@ -41,7 +41,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 const me = data.find((u: User) => u.id === currentUser.id);
                 if (me) {
                     onUpdateCurrentUser(me);
-                    localStorage.setItem('rfid_user', JSON.stringify(me));
+                    localStorage.setItem('savedUser', JSON.stringify(me));
                 }
             }
         } catch (error) {
@@ -106,7 +106,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             // If updated user is currently logged in user, sync app state immediately!
             if (currentUser && currentUser.id === savedUser.id && onUpdateCurrentUser) {
                 onUpdateCurrentUser(savedUser);
-                localStorage.setItem('rfid_user', JSON.stringify(savedUser));
+                localStorage.setItem('savedUser', JSON.stringify(savedUser));
             }
 
             showToast(`Uživatel ${userData.username} byl úspěšně uložen.`, 'success');

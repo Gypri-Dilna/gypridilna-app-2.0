@@ -6,6 +6,7 @@ import { ChipModal } from './ChipModal';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ChipManagementProps {
+    user: User;
     chips: Chip[];
     onAddChip: (newChip: Omit<Chip, 'id'>) => void;
     onUpdateChip: (updatedChip: Chip) => void;
@@ -13,11 +14,13 @@ interface ChipManagementProps {
     showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip, onUpdateChip, onDeleteChip, showToast }) => {
+export const ChipManagement: React.FC<ChipManagementProps> = ({ user, chips, onAddChip, onUpdateChip, onDeleteChip, showToast }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [selectedChip, setSelectedChip] = useState<Chip | null>(null);
     const [chipToDelete, setChipToDelete] = useState<Chip | null>(null);
+
+    const canEditChips = user.is_admin || user.permissions?.add_chips !== false;
 
     const handleOpenAddModal = useCallback(() => {
         setSelectedChip(null);
@@ -64,12 +67,14 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-extrabold text-white tracking-tight">Seznam RFID čipů</h2>
-                <button
-                    onClick={handleOpenAddModal}
-                    className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
-                >
-                    Přidat nový čip
-                </button>
+                {canEditChips && (
+                    <button
+                        onClick={handleOpenAddModal}
+                        className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
+                    >
+                        Přidat nový čip
+                    </button>
+                )}
             </div>
             <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
                 {/* Desktop Table */}
@@ -77,17 +82,37 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                     <table className="w-full text-sm text-left text-gray-300">
                         <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
                             <tr>
+                                {canEditChips && <th scope="col" className="px-4 py-4 w-24">AKCE</th>}
                                 <th scope="col" className="px-6 py-4">JMÉNO</th>
                                 <th scope="col" className="px-6 py-4">ID ČIPU</th>
                                 <th scope="col" className="px-6 py-4">STAV</th>
                                 <th scope="col" className="px-6 py-4">TYP</th>
                                 <th scope="col" className="px-6 py-4">PLATNOST DO</th>
-                                <th scope="col" className="px-6 py-4 text-right">AKCE</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
                             {chips.map((chip) => (
                                 <tr key={chip.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
+                                    {canEditChips && (
+                                        <td className="px-4 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-1.5">
+                                                <button 
+                                                    onClick={() => handleOpenEditModal(chip)} 
+                                                    className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                    title="Upravit čip"
+                                                >
+                                                    <EditIcon className="h-4 w-4" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleOpenConfirmModal(chip)} 
+                                                    className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                    title="Smazat čip"
+                                                >
+                                                    <TrashIcon className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                                     <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{chip.name}</td>
                                     <td className="px-6 py-4 font-mono text-gray-300">{chip.chip_id}</td>
                                     <td className="px-6 py-4">
@@ -105,24 +130,6 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ chips, onAddChip
                                             <span className="text-gray-300">Trvalý</span>}
                                     </td>
                                     <td className="px-6 py-4 text-gray-300">{chip.valid_until ? new Date(chip.valid_until).toLocaleDateString() : 'Bez omezení'}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button 
-                                                onClick={() => handleOpenEditModal(chip)} 
-                                                className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
-                                                title="Upravit čip"
-                                            >
-                                                <EditIcon className="h-4 w-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleOpenConfirmModal(chip)} 
-                                                className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white font-bold rounded-xl shadow transition inline-flex items-center justify-center"
-                                                title="Smazat čip"
-                                            >
-                                                <TrashIcon className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
