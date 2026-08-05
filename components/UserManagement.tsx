@@ -6,9 +6,16 @@ import { UserModal } from './UserModal';
 interface UserManagementProps {
     chips: Chip[];
     showToast: (message: string, type: 'success' | 'error') => void;
+    currentUser?: User | null;
+    onUpdateCurrentUser?: (user: User) => void;
 }
 
-export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast }) => {
+export const UserManagement: React.FC<UserManagementProps> = ({ 
+    chips, 
+    showToast,
+    currentUser,
+    onUpdateCurrentUser
+}) => {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,17 +35,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
             if (!response.ok) throw new Error('Failed to fetch users');
             const data = await response.json();
             setUsers(data);
+
+            // Sync currently logged in user if updated
+            if (currentUser && onUpdateCurrentUser) {
+                const me = data.find((u: User) => u.id === currentUser.id);
+                if (me) {
+                    onUpdateCurrentUser(me);
+                    localStorage.setItem('rfid_user', JSON.stringify(me));
+                }
+            }
         } catch (error) {
             console.error(error);
             showToast('Error fetching users.', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, currentUser, onUpdateCurrentUser]);
 
     useEffect(() => {
         fetchUsers();
-    }, [fetchUsers]);
+    }, []);
 
     const handleAddUser = () => {
         setEditingUser(null);
@@ -59,13 +75,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
             });
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to delete user');
+                throw new Error(data.error || data.detail || 'Failed to delete user');
             }
-            showToast('User deleted successfully.', 'success');
+            showToast('Uživatel byl úspěšně smazán.', 'success');
             fetchUsers();
         } catch (error: any) {
             console.error(error);
-            showToast(error.message || 'Error deleting user.', 'error');
+            showToast(error.message || 'Chyba při mazání uživatele.', 'error');
         }
     };
 
@@ -82,15 +98,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to save user');
+                throw new Error(data.error || data.detail || 'Failed to save user');
             }
 
-            showToast(`User ${userData.username} saved successfully.`, 'success');
+            const savedUser = await response.json();
+
+            // If updated user is currently logged in user, sync app state immediately!
+            if (currentUser && currentUser.id === savedUser.id && onUpdateCurrentUser) {
+                onUpdateCurrentUser(savedUser);
+                localStorage.setItem('rfid_user', JSON.stringify(savedUser));
+            }
+
+            showToast(`Uživatel ${userData.username} byl úspěšně uložen.`, 'success');
             setIsModalOpen(false);
             fetchUsers();
         } catch (error: any) {
             console.error(error);
-            showToast(error.message || 'Error saving user.', 'error');
+            showToast(error.message || 'Chyba při ukládání uživatele.', 'error');
         }
     };
 
@@ -190,7 +214,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                                     <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{u.username}</td>
                                     <td className="px-6 py-4 font-mono text-gray-300">{u.email || <span className="text-gray-500 italic">Nenastaven</span>}</td>
                                     <td className="px-6 py-4 font-semibold">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${
+                                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider whitespace-nowrap leading-none ${
                                             u.is_admin 
                                                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
                                                 : 'bg-brand-darker text-gray-300 border border-brand-border'

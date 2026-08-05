@@ -11,41 +11,57 @@ interface UserModalProps {
     chips: Chip[];
 }
 
+const DEFAULT_PERMISSIONS: Permissions = {
+    service_mode: false,
+    add_chips: false,
+    view_logs: false,
+    remote_opening: false,
+    erase_logs: false,
+    inventory_edit: true
+};
+
 export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user, chips }) => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [chipId, setChipId] = useState<string | null>(null);
-    const [permissions, setPermissions] = useState<Permissions>({
-        service_mode: false,
-        add_chips: false,
-        view_logs: false,
-        remote_opening: false,
-        erase_logs: false
-    });
+    const [permissions, setPermissions] = useState<Permissions>(DEFAULT_PERMISSIONS);
+
+    // Lock background page scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         if (user) {
-            setUsername(user.username);
+            setUsername(user.username || '');
             setEmail(user.email || '');
             setPassword(''); // Don't show password
-            setIsAdmin(user.is_admin);
-            setChipId(user.chip_id);
-            setPermissions(user.permissions);
+            setIsAdmin(user.is_admin || false);
+            setChipId(user.chip_id || null);
+            setPermissions({
+                service_mode: user.permissions?.service_mode ?? false,
+                add_chips: user.permissions?.add_chips ?? false,
+                view_logs: user.permissions?.view_logs ?? false,
+                remote_opening: user.permissions?.remote_opening ?? false,
+                erase_logs: user.permissions?.erase_logs ?? false,
+                inventory_edit: user.permissions?.inventory_edit ?? true,
+            });
         } else {
             setUsername('');
             setEmail('');
             setPassword('');
             setIsAdmin(false);
             setChipId(null);
-            setPermissions({
-                service_mode: false,
-                add_chips: false,
-                view_logs: false,
-                remote_opening: false,
-                erase_logs: false
-            });
+            setPermissions(DEFAULT_PERMISSIONS);
         }
     }, [user, isOpen]);
 
@@ -74,13 +90,13 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-y-auto">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-backdrop-fade font-sans overflow-hidden">
             <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto max-h-[85vh] flex flex-col">
-                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker flex-shrink-0">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-base font-extrabold text-white">
                         {user ? 'Upravit uživatele' : 'Přidat nového uživatele'}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition">
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-slate-800">
                         <CloseIcon className="h-5 w-5" />
                     </button>
                 </div>
@@ -130,9 +146,9 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                             id="isAdmin"
                             checked={isAdmin}
                             onChange={e => setIsAdmin(e.target.checked)}
-                            className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0"
+                            className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0 cursor-pointer"
                         />
-                        <label htmlFor="isAdmin" className="text-xs font-bold text-white cursor-pointer">
+                        <label htmlFor="isAdmin" className="text-xs font-bold text-white cursor-pointer select-none">
                             Administrátor (Plný přístup k systému)
                         </label>
                     </div>
@@ -147,18 +163,19 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                                         add_chips: 'Správa čipů',
                                         view_logs: 'Prohlížení historie',
                                         remote_opening: 'Vzdálené otevírání',
-                                        erase_logs: 'Mazání historie'
+                                        erase_logs: 'Mazání historie',
+                                        inventory_edit: 'Úprava skladu'
                                     };
                                     return (
                                         <div key={key} className="flex items-center gap-2">
                                             <input
                                                 type="checkbox"
                                                 id={`perm-${key}`}
-                                                checked={value}
+                                                checked={!!value}
                                                 onChange={() => togglePermission(key as keyof Permissions)}
-                                                className="h-4 w-4 rounded bg-brand-dark border-brand-border text-brand-teal focus:ring-0"
+                                                className="h-4 w-4 rounded bg-brand-dark border-brand-border text-brand-teal focus:ring-0 cursor-pointer"
                                             />
-                                            <label htmlFor={`perm-${key}`} className="text-xs text-gray-300 cursor-pointer">
+                                            <label htmlFor={`perm-${key}`} className="text-xs text-gray-300 cursor-pointer select-none">
                                                 {czechLabels[key] || key.replace('_', ' ')}
                                             </label>
                                         </div>

@@ -531,7 +531,7 @@ const App: React.FC = () => {
                     />
                 );
             case 'users':
-                return <UserManagement chips={chips} showToast={showToast} />;
+                return <UserManagement chips={chips} showToast={showToast} currentUser={user} onUpdateCurrentUser={setUser} />;
             default:
                 return null;
         }
