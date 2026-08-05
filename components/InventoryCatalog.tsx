@@ -21,6 +21,7 @@ interface InventoryCatalogProps {
     onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
     queueCount?: number;
     onOpenPrintQueue?: () => void;
+    isPrinterAvailable?: boolean;
 }
 
 export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
@@ -34,7 +35,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     showToast,
     onAddToQueue,
     queueCount = 0,
-    onOpenPrintQueue
+    onOpenPrintQueue,
+    isPrinterAvailable = false
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -43,37 +45,41 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
 
+    // Responsive mobile device detection
+    const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Check permissions
     const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
-    // Check if the current browser is running on the Printer Workstation (PC B / localhost)
-    const isPrinterWorkstation = useMemo(() => {
-        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-        const hasFlag = localStorage.getItem('is_printer_workstation') === 'true';
-        return isLocal || hasFlag;
-    }, []);
-
-    // Categories list derived dynamically
-    const categories = useMemo(() => {
-        const set = new Set(items.map(i => i.category || 'Uncategorized'));
-        return ['ALL', ...Array.from(set).sort()];
-    }, [items]);
-
+    // Filter items by category & search query
     const filteredItems = useMemo(() => {
-        return items.filter(item => {
-            const itemCat = item.category || 'Uncategorized';
-            if (selectedCategory !== 'ALL' && itemCat !== selectedCategory) return false;
-            if (search) {
-                const term = search.toLowerCase();
-                return (
-                    (item.title || '').toLowerCase().includes(term) ||
-                    (item.location_code || '').toLowerCase().includes(term) ||
-                    (item.notes || '').toLowerCase().includes(term)
-                );
-            }
-            return true;
+        return items.filter((item) => {
+            const matchesSearch =
+                item.title.toLowerCase().includes(search.toLowerCase()) ||
+                (item.location_code && item.location_code.toLowerCase().includes(search.toLowerCase())) ||
+                (item.notes && item.notes.toLowerCase().includes(search.toLowerCase()));
+
+            const matchesCategory =
+                selectedCategory === 'ALL' || item.category === selectedCategory;
+
+            return matchesSearch && matchesCategory;
         });
     }, [items, search, selectedCategory]);
+
+    // Unique category names
+    const categories = useMemo(() => {
+        const set = new Set<string>();
+        items.forEach((item) => {
+            if (item.category) set.add(item.category);
+        });
+        return ['ALL', ...Array.from(set).sort()];
+    }, [items]);
 
     return (
         <div className="space-y-6 font-sans">
@@ -90,16 +96,30 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {onOpenPrintQueue && (
+                    {/* Tisková fronta button - HIDDEN on mobile, Greyed out on desktop if driver missing */}
+                    {!isMobile && onOpenPrintQueue && (
                         <button
                             type="button"
-                            onClick={onOpenPrintQueue}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 text-xs font-bold rounded-xl border border-brand-border transition group"
+                            onClick={() => {
+                                if (isPrinterAvailable) {
+                                    onOpenPrintQueue();
+                                } else {
+                                    showToast("Driver nenainstalován (tiskový ovladač b-PAC není dostupný na tomto PC)", "error");
+                                }
+                            }}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl border transition group ${
+                                isPrinterAvailable
+                                    ? 'bg-brand-darker hover:bg-slate-800 text-gray-200 border-brand-border'
+                                    : 'bg-slate-900/80 text-gray-500 border-slate-800 cursor-not-allowed opacity-75'
+                            }`}
+                            title={isPrinterAvailable ? "Tisková fronta štítků" : "Driver nenainstalován"}
                         >
-                            <PrinterIcon className="h-4 w-4 text-brand-teal" />
+                            <PrinterIcon className={`h-4 w-4 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
                             <span>Tisková fronta</span>
                             <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold ${
-                                queueCount > 0 ? 'bg-brand-teal text-black font-extrabold animate-pulse' : 'bg-slate-800 text-gray-400 border border-brand-border'
+                                isPrinterAvailable && queueCount > 0 
+                                    ? 'bg-brand-teal text-black font-extrabold animate-pulse' 
+                                    : 'bg-slate-800 text-gray-500 border border-brand-border/40'
                             }`}>
                                 {queueCount}
                             </span>
@@ -247,12 +267,14 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         } else {
                             await onAddItem(itemData);
                             showToast("Položka byla úspěšně přidána do zásob", "success");
-                            // Open print selection modal (Print Now / Add to Queue / Print Later)
-                            const newItem = items.find(i => i.location_code === itemData.location_code) || {
-                                id: Date.now(),
-                                ...itemData
-                            };
-                            setPrintingItem(newItem as InventoryItem);
+                            // Open print selection modal ONLY on desktop WITH active b-PAC printer driver!
+                            if (!isMobile && isPrinterAvailable) {
+                                const newItem = items.find(i => i.location_code === itemData.location_code) || {
+                                    id: Date.now(),
+                                    ...itemData
+                                };
+                                setPrintingItem(newItem as InventoryItem);
+                            }
                         }
                         setIsAddModalOpen(false);
                     }}

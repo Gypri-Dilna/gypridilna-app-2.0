@@ -130,17 +130,20 @@ const App: React.FC = () => {
         }
     }, []);
 
+    const [isPrinterAvailable, setIsPrinterAvailable] = useState<boolean>(false);
+
     // Fetch all platform data safely without trigger loops
-    const fetchAllData = useCallback(async () => {
+    const fetchAllData = useCallback(async (isSilent = false) => {
         if (!isAuthenticated || !user) return;
-        setIsLoading(true);
+        if (!isSilent) setIsLoading(true);
         try {
             const canViewLogs = user.is_admin || user.permissions?.view_logs;
 
-            const [chipsRes, logsRes, invRes] = await Promise.all([
+            const [chipsRes, logsRes, invRes, printerRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/chips`),
                 canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
-                fetch(`${API_BASE_URL}/api/inventory`)
+                fetch(`${API_BASE_URL}/api/inventory`),
+                fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null)
             ]);
 
             if (chipsRes.ok) {
@@ -157,17 +160,33 @@ const App: React.FC = () => {
                 const invData = await invRes.json();
                 setInventoryItems(invData);
             }
+
+            if (printerRes && printerRes.ok) {
+                const pData = await printerRes.json();
+                setIsPrinterAvailable(!!pData.available);
+            } else {
+                setIsPrinterAvailable(false);
+            }
         } catch (error) {
-            console.error('Data sync error:', error);
-            showToast('Error syncing with backend server.', 'error');
+            if (!isSilent) {
+                console.error('Data sync error:', error);
+                showToast('Error syncing with backend server.', 'error');
+            }
         } finally {
-            setIsLoading(false);
+            if (!isSilent) setIsLoading(false);
         }
     }, [isAuthenticated, user, showToast]);
 
+    // Initial fetch & setup 4-second real-time auto-polling interval
     useEffect(() => {
         if (isAuthenticated) {
-            fetchAllData();
+            fetchAllData(false);
+
+            const interval = setInterval(() => {
+                fetchAllData(true); // silent background update
+            }, 4000);
+
+            return () => clearInterval(interval);
         }
     }, [isAuthenticated, fetchAllData]);
 
@@ -486,6 +505,7 @@ const App: React.FC = () => {
                         onAddToQueue={handleAddToPrintQueue}
                         queueCount={printQueue.length}
                         onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
+                        isPrinterAvailable={isPrinterAvailable}
                     />
                 );
             case 'scanner':

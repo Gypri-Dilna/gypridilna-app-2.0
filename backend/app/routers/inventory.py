@@ -318,12 +318,25 @@ def broadcast_remote_scan(payload: dict):
         return {"status": "broadcasted", "session_id": session_id, "qr_code": qr_code}
     raise HTTPException(status_code=400, detail="Missing qr_code payload")
 
-@router.get("/remote-scan/latest")
-def get_latest_remote_scan(session_id: str = "default", since: float = 0.0):
-    session_data = paired_sessions.get(session_id, {"qr_code": None, "timestamp": 0.0})
-    if session_data["timestamp"] > since:
-        return session_data
-    return {"qr_code": None, "timestamp": session_data["timestamp"]}
+@router.get("/printer-status")
+def get_printer_status():
+    """
+    Checks if local b-PAC Python print agent (print_agent.py on port 5001) is running and b-PAC is ready.
+    """
+    agent_status_url = os.getenv("PRINTER_AGENT_STATUS_URL", "http://127.0.0.1:5001/status")
+    try:
+        req = urllib.request.Request(agent_status_url, headers={'User-Agent': 'FastAPI-Backend'})
+        with urllib.request.urlopen(req, timeout=2) as response:
+            if response.status == 200:
+                res_data = json.loads(response.read().decode('utf-8'))
+                if res_data.get("bpac_available"):
+                    return {"available": True, "message": "Driver b-PAC připraven"}
+                else:
+                    return {"available": False, "message": res_data.get("detail", "Driver nenainstalován")}
+    except Exception:
+        pass
+    return {"available": False, "message": "Driver nenainstalován"}
+
 
 
 
