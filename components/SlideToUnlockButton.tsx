@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LockClosedIcon, LockOpenIcon } from './icons';
+import { LockClosedIcon, LockOpenIcon, BoltGlyphIcon } from './icons';
 
 interface SlideToUnlockButtonProps {
     onUnlock: () => Promise<void>;
