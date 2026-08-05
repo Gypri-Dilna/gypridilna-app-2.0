@@ -11,6 +11,54 @@ import { Toast } from './components/Toast';
 import { User, Chip, AccessLog, InventoryItem, PrintQueueItem } from './types';
 import { PrintQueueModal } from './components/PrintQueueModal';
 
+interface ErrorBoundaryProps {
+    children: React.ReactNode;
+    onReset?: () => void;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("Caught UI ErrorBoundary Exception:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-8 text-center bg-brand-dark border border-rose-500/30 rounded-2xl max-w-xl mx-auto my-12 font-sans space-y-4 shadow-2xl">
+                    <div className="text-rose-400 font-extrabold text-lg">⚠️ Chybový stav aplikace</div>
+                    <p className="text-xs text-gray-300">
+                        {this.state.error?.message || "Došlo k neočekávané chybě při vykreslování."}
+                    </p>
+                    <button
+                        onClick={() => {
+                            this.setState({ hasError: false, error: null });
+                            if (this.props.onReset) this.props.onReset();
+                        }}
+                        className="px-5 py-2.5 bg-brand-teal text-black font-extrabold text-xs rounded-xl shadow transition hover:bg-brand-teal-hover"
+                    >
+                        Obnovit zobrazení
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const API_BASE_URL = '';
 
 const parseResponseError = async (res: Response, fallbackMessage: string): Promise<string> => {
@@ -607,9 +655,11 @@ const App: React.FC = () => {
                         onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
                     />
                     <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
-                        <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
-                            {renderActiveTabContent()}
-                        </div>
+                        <ErrorBoundary onReset={() => { setSelectedItem(null); setActiveTab('dashboard'); }}>
+                            <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
+                                {renderActiveTabContent()}
+                            </div>
+                        </ErrorBoundary>
                     </main>
 
                     {/* Print Queue Batch Modal */}

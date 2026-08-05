@@ -33,9 +33,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 }) => {
     const [isPrintingLabel, setIsPrintingLabel] = useState(false);
     const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
-    const parsedLoc = parseLocationCode(item.location_code);
-    const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
-
+    
     // Mobile device detection
     const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
@@ -44,6 +42,25 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Null guard to prevent blank screen crash
+    if (!item) {
+        return (
+            <div className="p-8 text-center text-gray-400 font-sans bg-brand-dark border border-brand-border rounded-2xl max-w-xl mx-auto my-12">
+                <p className="text-sm font-bold text-white mb-2">Položka nebyla nalezena</p>
+                <p className="text-xs text-gray-400 mb-4">Položka možná byla smazána nebo přesunuta.</p>
+                <button 
+                    onClick={onBack} 
+                    className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl transition shadow"
+                >
+                    Zpět do katalogu
+                </button>
+            </div>
+        );
+    }
+
+    const parsedLoc = parseLocationCode(item.location_code || '');
+    const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
     return (
         <div className="space-y-6 font-sans max-w-4xl mx-auto item-page-slide-up">
@@ -235,7 +252,10 @@ interface EditModalProps {
 }
 
 const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
-    const [title, setTitle] = useState(item.title || '');
+    const itemCategory = item?.category || 'General';
+    const itemLocation = item?.location_code || '11-0001';
+
+    const [title, setTitle] = useState(item?.title || '');
 
     // Lock background page scroll when modal is open
     React.useEffect(() => {
@@ -256,22 +276,22 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
     }, [allItems]);
 
     const [selectedCatOption, setSelectedCatOption] = useState<string>(
-        existingCategories.includes(item.category) ? item.category : '__NEW__'
+        existingCategories.includes(itemCategory) ? itemCategory : '__NEW__'
     );
     const [customCategory, setCustomCategory] = useState<string>(
-        !existingCategories.includes(item.category) ? item.category : ''
+        !existingCategories.includes(itemCategory) ? itemCategory : ''
     );
 
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
-    const parsedInitial = parseLocationCode(item.location_code);
+    const parsedInitial = parseLocationCode(itemLocation);
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
     const [itemNum, setItemNum] = useState<string>(parsedInitial ? parsedInitial.itemId : '001');
-    const [notes, setNotes] = useState(item.notes || '');
+    const [notes, setNotes] = useState(item?.notes || '');
 
-    if (!isOpen) return null;
+    if (!isOpen || !item) return null;
 
     const computedLocationCode = formatLocationCode(rack, sector, box, itemNum);
 
