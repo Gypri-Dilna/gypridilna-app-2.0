@@ -40,11 +40,6 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
         return userAgentMobile || screenMobile;
     }, []);
 
-    // On mobile devices, render dedicated MobileRemoteScanner
-    if (isMobileDevice) {
-        return <MobileRemoteScanner onLookupItem={onLookupItem} onSelectItem={onSelectItem} onClose={onClose} />;
-    }
-
     // PC Screen: Poll for remote mobile phone scan events on pcSessionId
     useEffect(() => {
         if (isMobileDevice) return;
@@ -254,6 +249,10 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem
             setErrorMsg(`No item found matching: "${manualCode}"`);
         }
     };
+
+    if (isMobileDevice) {
+        return <MobileRemoteScanner onLookupItem={onLookupItem} onSelectItem={onSelectItem} onClose={onClose} />;
+    }
 
     return (
         <div className="bg-brand-dark border border-brand-border rounded-2xl p-6 max-w-xl mx-auto space-y-5 font-sans">
