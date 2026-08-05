@@ -187,23 +187,46 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     }, [startCameraWithId]);
 
     const handleSwitchCamera = async () => {
-        if (availableCameras.length <= 1) return;
-        const nextIdx = (currentCamIdx + 1) % availableCameras.length;
-        setCurrentCamIdx(nextIdx);
-
         if (scannerRef.current && scannerRef.current.isScanning) {
             try {
                 await scannerRef.current.stop();
             } catch (e) {}
         }
-        try {
-            await startCameraWithId(availableCameras[nextIdx].id);
-        } catch (e) {
-            setErrorMsg("Could not switch to selected camera.");
+
+        // Freshly enumerate cameras if list was empty
+        let cams = availableCameras;
+        if (cams.length === 0) {
+            try {
+                cams = await Html5Qrcode.getCameras();
+                setAvailableCameras(cams);
+            } catch (e) {}
+        }
+
+        if (cams.length > 0) {
+            const nextIdx = (currentCamIdx + 1) % cams.length;
+            setCurrentCamIdx(nextIdx);
+            try {
+                await startCameraWithId(cams[nextIdx].id);
+            } catch (e) {
+                setErrorMsg("Chyba při přepnutí fotoaparátu.");
+            }
+        } else {
+            try {
+                await startCameraWithId({ facingMode: "user" });
+            } catch (e) {
+                setErrorMsg("Chyba při přepnutí fotoaparátu.");
+            }
         }
     };
 
     useEffect(() => {
+        // Enumerate camera devices on load so availableCameras is always populated
+        Html5Qrcode.getCameras().then((devices) => {
+            if (devices && devices.length > 0) {
+                setAvailableCameras(devices);
+            }
+        }).catch(() => {});
+
         startCamera();
         return () => {
             if (scannerRef.current && scannerRef.current.isScanning) {
@@ -301,15 +324,15 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 `}</style>
                 <div id="remote-mobile-reader" className="w-full rounded-2xl overflow-hidden" />
 
-                {/* Camera Switcher Button (Top Left) */}
-                {isScanning && availableCameras.length > 1 && (
+                {/* Always-visible Camera Switcher Button (Top Left) */}
+                {isScanning && (
                     <button
                         type="button"
                         onClick={handleSwitchCamera}
-                        className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10 shadow-lg text-[10px] font-mono text-gray-200 hover:text-white hover:bg-white/20 transition"
+                        className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-brand-teal/40 shadow-lg text-[11px] font-mono font-bold text-brand-teal hover:text-white hover:bg-brand-teal/20 transition active:scale-95"
                     >
-                        <CameraIcon className="h-3.5 w-3.5 text-brand-teal" />
-                        <span>Přepnout ({currentCamIdx + 1}/{availableCameras.length})</span>
+                        <CameraIcon className="h-3.5 w-3.5" />
+                        <span>Přepnout fotoaparát {availableCameras.length > 0 ? `(${currentCamIdx + 1}/${availableCameras.length})` : ''}</span>
                     </button>
                 )}
 
