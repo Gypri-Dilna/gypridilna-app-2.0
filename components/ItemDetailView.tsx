@@ -75,15 +75,22 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </button>
 
                 <div className="flex items-center gap-2">
-                    {(!isMobile && isPrinterAvailable) && (
-                        <button
-                            onClick={() => setIsPrintingLabel(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-brand-darker hover:bg-brand-teal/20 text-brand-teal font-bold text-xs rounded-xl border border-brand-border transition"
-                        >
-                            <PrinterIcon className="h-4 w-4" />
-                            Print Label
-                        </button>
-                    )}
+                    <button
+                        onClick={() => {
+                            if (isPrinterAvailable) {
+                                setIsPrintingLabel(true);
+                            }
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border transition ${
+                            isPrinterAvailable
+                                ? 'bg-brand-darker hover:bg-brand-teal/20 text-brand-teal border-brand-border'
+                                : 'bg-slate-900/80 text-gray-500 border-slate-800 cursor-not-allowed opacity-75'
+                        }`}
+                        title={isPrinterAvailable ? "Vytisknout štítek" : "Driver nenainstalován"}
+                    >
+                        <PrinterIcon className={`h-4 w-4 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
+                        Print Label
+                    </button>
 
                     {canEdit && (
                         <>
@@ -128,7 +135,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                 </div>
 
-                {/* Parsed Location Breakdown (Montserrat labels, Mono numbers) */}
+                {/* Location Grid breakdown */}
                 {parsedLoc && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-brand-border/60 font-sans">
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
@@ -172,21 +179,19 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         <ClipboardIcon className="h-4 w-4 text-brand-teal" />
                         Item Details
                     </h3>
-
                     <div className="space-y-3 text-xs">
-                        <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[10px] uppercase font-sans font-semibold">QR Payload / SKU</span>
-                            <span className="text-brand-teal font-mono font-bold text-sm block mt-0.5">{item.qr_code}</span>
+                        <div className="flex justify-between py-2 border-b border-brand-border/60">
+                            <span className="text-gray-400">Category:</span>
+                            <span className="font-semibold text-white">{item.category}</span>
                         </div>
-
-                        {item.notes ? (
-                            <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                                <span className="text-gray-400 block text-[10px] uppercase font-sans font-semibold">Notes & Description</span>
-                                <p className="text-gray-200 mt-1 leading-relaxed">{item.notes}</p>
-                            </div>
-                        ) : (
-                            <div className="bg-brand-darker p-3 rounded-xl border border-brand-border text-gray-500 font-sans text-[11px]">
-                                No additional notes recorded.
+                        <div className="flex justify-between py-2 border-b border-brand-border/60">
+                            <span className="text-gray-400">Umístění (ID):</span>
+                            <span className="font-mono font-bold text-amber-400">{item.location_code}</span>
+                        </div>
+                        {item.notes && (
+                            <div className="pt-2">
+                                <span className="text-gray-400 block mb-1">Notes:</span>
+                                <p className="text-gray-300 bg-brand-darker p-3 rounded-xl border border-brand-border leading-relaxed font-sans">{item.notes}</p>
                             </div>
                         )}
                     </div>
@@ -221,7 +226,6 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     );
 };
 
-// Edit Item Modal
 interface EditModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -231,42 +235,41 @@ interface EditModalProps {
 }
 
 const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
-    const [title, setTitle] = useState(item.title);
+    const [title, setTitle] = useState(item.title || '');
 
-    // Categories dropdown list derived dynamically from existing items
-    const existingCategories = React.useMemo(() => {
-        const set = new Set(allItems.map(i => i.category).filter(Boolean));
-        if (set.size === 0) {
-            set.add('General');
+    // Lock background page scroll when modal is open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
         }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    const existingCategories = useMemo(() => {
+        const set = new Set(allItems.map(i => i.category).filter(Boolean));
+        if (set.size === 0) set.add('General');
         return Array.from(set).sort();
     }, [allItems]);
 
     const [selectedCatOption, setSelectedCatOption] = useState<string>(
-        item.category && existingCategories.includes(item.category) ? item.category : '__NEW__'
+        existingCategories.includes(item.category) ? item.category : '__NEW__'
     );
     const [customCategory, setCustomCategory] = useState<string>(
-        item.category && !existingCategories.includes(item.category) ? item.category : (selectedCatOption === '__NEW__' ? item.category : '')
+        !existingCategories.includes(item.category) ? item.category : ''
     );
 
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
-    const parsedInitial = parseLocationCode(item.location_code || '12-0001');
+    const parsedInitial = parseLocationCode(item.location_code);
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
     const [itemNum, setItemNum] = useState<string>(parsedInitial ? parsedInitial.itemId : '001');
     const [notes, setNotes] = useState(item.notes || '');
-
-    React.useEffect(() => {
-        const nextSeq = getNextSequenceForItem(allItems, rack, sector, box);
-        // Keep existing item sequence if rack/sector/box haven't changed
-        if (parsedInitial && rack === parsedInitial.rack && sector === parsedInitial.sector && box === parsedInitial.box) {
-            setItemNum(parsedInitial.itemId);
-        } else {
-            setItemNum(nextSeq);
-        }
-    }, [rack, sector, box, allItems, item, parsedInitial]);
 
     if (!isOpen) return null;
 
@@ -287,14 +290,14 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-sans overflow-y-auto">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop my-auto">
-                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-sans overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-lg font-bold text-white">Upravit položku</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                     {/* Item Title Input + Live Letter Counter */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
@@ -317,11 +320,11 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Category Dropdown & Custom Input + Live Letter Counter */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Category Dropdown & Custom Input */}
                         <div>
                             <div className="flex justify-between items-center mb-1">
-                                <label className="block text-xs font-semibold text-gray-300 font-sans">Kategorie / Category *</label>
+                                <label className="block text-xs font-semibold text-gray-300 font-sans">Kategorie *</label>
                                 <span className={`text-xs font-mono font-bold transition-colors ${
                                     activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                                 }`}>
@@ -366,44 +369,53 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         </div>
                     </div>
 
+                    {/* Location Scheme (XY-ZAAA) with 100% Perfectly Aligned Baseline Input Boxes */}
                     <div className="p-4 bg-brand-darker border border-brand-border rounded-xl space-y-3">
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-4 gap-2 items-end">
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400 font-sans">Rack (X)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Rack (X)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="1"
                                     max="9"
                                     value={rack}
                                     onChange={(e) => setRack(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400 font-sans">Sector/Shelf (Y)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Sector (Y)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={sector}
                                     onChange={(e) => setSector(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400 font-sans">Box # (Z)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Box (Z)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={box}
                                     onChange={(e) => setBox(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400 font-sans">Item ID (AAA)</label>
-                                <div className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border/60 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">ID (AAA)</label>
+                                </div>
+                                <div className="w-full px-1.5 py-1.5 bg-slate-950 border border-brand-teal/40 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
                                     {itemNum}
                                 </div>
                             </div>
@@ -416,7 +428,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={2}
-                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal"
+                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                         />
                     </div>
 
@@ -430,7 +442,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold rounded-xl text-xs transition"
+                            className="flex-1 px-4 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold rounded-xl text-xs shadow-lg transition"
                         >
                             Save Changes
                         </button>

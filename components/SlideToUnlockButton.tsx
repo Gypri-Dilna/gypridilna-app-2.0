@@ -108,11 +108,11 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     };
 
     return (
-        <div className={`w-full min-w-[240px] sm:min-w-[280px] max-w-sm shrink-0 select-none ${className}`}>
+        <div className={`w-full min-w-[240px] sm:min-w-[320px] md:min-w-[360px] max-w-md shrink-0 select-none ${className}`}>
             {/* Slide-to-Unlock Round Pill Track */}
             <div
                 ref={trackRef}
-                className={`relative w-full h-[52px] min-w-[240px] rounded-full p-1 flex items-center select-none overflow-hidden transition-colors duration-300 ${
+                className={`relative w-full h-[52px] min-w-[240px] sm:min-w-[320px] md:min-w-[360px] rounded-full p-1 flex items-center select-none overflow-hidden transition-colors duration-300 ${
                     isUnlocked
                         ? 'bg-emerald-950/40 border border-emerald-500/30'
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
