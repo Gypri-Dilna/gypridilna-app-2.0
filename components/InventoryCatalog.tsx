@@ -241,7 +241,23 @@ interface FormModalProps {
 
 const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave }) => {
     const [title, setTitle] = useState(item?.title || '');
-    const [category, setCategory] = useState(item?.category || 'Power Tools');
+
+    // Categories dropdown list derived dynamically from existing items
+    const existingCategories = useMemo(() => {
+        const set = new Set(allItems.map(i => i.category).filter(Boolean));
+        const defaults = ['Power Tools', '3D Printing', 'Electronics', 'Consumables', 'Fasteners'];
+        defaults.forEach(d => set.add(d));
+        return Array.from(set).sort();
+    }, [allItems]);
+
+    const [selectedCatOption, setSelectedCatOption] = useState<string>(
+        item?.category && existingCategories.includes(item.category) ? item.category : (item?.category ? '__NEW__' : existingCategories[0] || 'Power Tools')
+    );
+    const [customCategory, setCustomCategory] = useState<string>(
+        item?.category && !existingCategories.includes(item.category) ? item.category : ''
+    );
+
+    const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
     // XY-ZAAA Fields
     const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
@@ -274,15 +290,17 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         e.preventDefault();
         setCodeError('');
 
+        const finalCategory = activeCategory.trim() || 'General';
+
         const validated = parseLocationCode(computedLocationCode);
         if (!validated) {
-            setCodeError('Location code must strictly follow XY-ZAAA scheme (e.g. 12-0001, 34-5012)');
+            setCodeError('Kód umístění musí striktně odpovídat schématu XY-ZAAA (např. 12-0001)');
             return;
         }
 
         onSave({
-            title,
-            category,
+            title: title.slice(0, 24),
+            category: finalCategory.slice(0, 16),
             quantity: 1,
             unit: "pcs",
             min_quantity: 0,
@@ -299,39 +317,77 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans">
             <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
-                    <h2 className="text-lg font-bold text-white">{item ? 'Edit Inventory Item' : 'Add New Inventory Item'}</h2>
+                    <h2 className="text-lg font-bold text-white">{item ? 'Upravit položku' : 'Přidat novou položku'}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                    {/* Item Title Input + Live Letter Counter */}
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Item Title * (Max 24 chars)</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-semibold text-gray-300">Název položky / Title *</label>
+                            <span className={`text-xs font-mono font-bold transition-colors ${
+                                title.length >= 24 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
+                            }`}>
+                                {title.length}/24
+                            </span>
+                        </div>
                         <input
                             type="text"
                             required
                             maxLength={24}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g. Bosch Cordless Drill 18V"
-                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
+                            placeholder="např. Bosch Cordless Drill 18V"
+                            className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
+                                title.length >= 24 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
+                            }`}
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
+                        {/* Category Dropdown & Custom Input + Live Letter Counter */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Category * (Max 16 chars)</label>
-                            <input
-                                type="text"
-                                required
-                                maxLength={16}
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                placeholder="e.g. Power Tools"
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
-                            />
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-xs font-semibold text-gray-300">Kategorie / Category *</label>
+                                <span className={`text-xs font-mono font-bold transition-colors ${
+                                    activeCategory.length >= 16 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
+                                }`}>
+                                    {activeCategory.length}/16
+                                </span>
+                            </div>
+
+                            <select
+                                value={selectedCatOption}
+                                onChange={(e) => setSelectedCatOption(e.target.value)}
+                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans mb-2"
+                            >
+                                {existingCategories.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
+                                ))}
+                                <option value="__NEW__" className="text-brand-teal font-bold bg-slate-900">
+                                    + Přidat novou kategorii...
+                                </option>
+                            </select>
+
+                            {selectedCatOption === '__NEW__' && (
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={16}
+                                    value={customCategory}
+                                    onChange={(e) => setCustomCategory(e.target.value)}
+                                    placeholder="Zadejte název kategorie..."
+                                    className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
+                                        customCategory.length >= 16 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
+                                    }`}
+                                />
+                            )}
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Location ID / QR Payload</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">Kód umístění / Location ID</label>
                             <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
                                 {computedLocationCode}
                             </div>
