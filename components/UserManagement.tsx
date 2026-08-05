@@ -96,7 +96,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
 
     return (
         <div className="font-sans space-y-6">
-            <div className="flex justify-between items-center mb-6">
+            {/* Top Banner Card (Styled matching all other pages) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-brand-dark border border-brand-border p-6 rounded-2xl">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
                         <UserManagementIcon className="h-6 w-6" />
@@ -108,13 +109,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={fetchUsers} 
-                        className="p-2.5 bg-brand-darker border border-brand-border text-gray-300 hover:text-white rounded-xl transition shadow"
-                        title="Obnovit seznam"
-                    >
-                        <RefreshIcon className="h-4 w-4"/>
-                    </button>
                     <button
                         onClick={handleAddUser}
                         className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition flex items-center gap-2"
@@ -125,9 +119,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                 </div>
             </div>
 
-            {/* Google OAuth Client ID Configuration Card */}
-            <div className="bg-brand-dark border border-brand-border rounded-xl p-5 shadow-md font-sans">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Google OAuth Client ID Configuration Card (Responsive & Overflow-proof) */}
+            <div className="bg-brand-dark border border-brand-border rounded-2xl p-6 shadow-md font-sans">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-sm font-bold text-white flex items-center gap-2">
                             <span>🔑</span> Nastavení Google OAuth 2.0 Client ID
@@ -136,17 +130,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                             Zadejte Google Cloud Client ID pro aktivaci přihlašování přes Google pro přiřazené e-maily.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
                         <input
                             type="text"
                             placeholder="např. 123456789-xyz.apps.googleusercontent.com"
                             value={googleClientId}
                             onChange={e => setGoogleClientId(e.target.value)}
-                            className="flex-1 sm:w-80 px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                            className="w-full sm:w-80 px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
                         />
                         <button
                             onClick={handleSaveClientId}
-                            className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow transition whitespace-nowrap"
+                            className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow transition shrink-0 text-center"
                         >
                             Uložit Client ID
                         </button>
@@ -154,16 +148,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                 </div>
             </div>
 
-            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
+            {/* User Management Table - Action Column First for Mobile Usability */}
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-md overflow-hidden font-sans">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-300">
-                        <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
+                        <thead className="text-xs uppercase bg-brand-darker text-gray-400 font-bold tracking-wider border-b border-brand-border">
                             <tr>
+                                <th scope="col" className="px-4 py-4 w-24">AKCE</th>
                                 <th scope="col" className="px-6 py-4">UŽIVATELSKÉ JMÉNO</th>
                                 <th scope="col" className="px-6 py-4">GOOGLE EMAIL</th>
                                 <th scope="col" className="px-6 py-4">ROLE</th>
                                 <th scope="col" className="px-6 py-4">PROPOJENÝ ČIP</th>
-                                <th scope="col" className="px-6 py-4 text-right">AKCE</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
@@ -173,22 +168,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                                 </tr>
                             ) : users.length > 0 ? users.map(u => (
                                 <tr key={u.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
-                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{u.username}</td>
-                                    <td className="px-6 py-4 font-mono text-gray-300">{u.email || <span className="text-gray-500 italic">Nenastaven</span>}</td>
-                                    <td className="px-6 py-4 font-semibold">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${
-                                            u.is_admin 
-                                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
-                                                : 'bg-brand-darker text-gray-300 border border-brand-border'
-                                        }`}>
-                                            {u.is_admin ? 'Administrátor' : 'Standardní uživatel'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-mono text-gray-300">
-                                        {u.chip_id ? chips.find(c => c.chip_id === u.chip_id)?.name || u.chip_id : <span className="text-gray-500 italic">Žádný</span>}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                    {/* Action Buttons Column FIRST on left side */}
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-1.5">
                                             <button 
                                                 onClick={() => handleEditUser(u)} 
                                                 className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
@@ -204,6 +186,20 @@ export const UserManagement: React.FC<UserManagementProps> = ({ chips, showToast
                                                 <TrashIcon className="h-4 w-4" />
                                             </button>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{u.username}</td>
+                                    <td className="px-6 py-4 font-mono text-gray-300">{u.email || <span className="text-gray-500 italic">Nenastaven</span>}</td>
+                                    <td className="px-6 py-4 font-semibold">
+                                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${
+                                            u.is_admin 
+                                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
+                                                : 'bg-brand-darker text-gray-300 border border-brand-border'
+                                        }`}>
+                                            {u.is_admin ? 'Administrátor' : 'Standardní uživatel'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-mono text-gray-300">
+                                        {u.chip_id ? chips.find(c => c.chip_id === u.chip_id)?.name || u.chip_id : <span className="text-gray-500 italic">Žádný</span>}
                                     </td>
                                 </tr>
                             )) : (

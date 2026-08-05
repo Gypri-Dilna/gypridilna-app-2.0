@@ -200,10 +200,10 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-brand-darker text-gray-400 font-mono text-[11px] uppercase tracking-wider border-b border-brand-border/60">
+                                <th scope="col" className="px-4 py-4 w-16 text-center">AKCE</th>
                                 <th scope="col" className="px-6 py-4">NÁZEV POLOŽKY</th>
                                 <th scope="col" className="px-6 py-4">KATEGORIE</th>
                                 <th scope="col" className="px-6 py-4">UMÍSTĚNÍ (ID)</th>
-                                <th scope="col" className="px-6 py-4 text-right">AKCE</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
@@ -211,6 +211,17 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 filteredItems.map((item) => {
                                     return (
                                         <tr key={item.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
+                                            {/* Action Button FIRST */}
+                                            <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                <button
+                                                    onClick={() => onSelectItem(item)}
+                                                    className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center"
+                                                    title="Zobrazit detail položky"
+                                                >
+                                                    <ChevronRightIcon className="h-4 w-4" />
+                                                </button>
+                                            </td>
+
                                             {/* Item Name */}
                                             <td className="px-6 py-4">
                                                 <button
@@ -236,17 +247,6 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                 <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-brand-darker rounded-lg border border-brand-border text-brand-teal font-bold text-xs">
                                                     <span>{item.location_code || 'N/A'}</span>
                                                 </div>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => onSelectItem(item)}
-                                                    className="p-2 bg-brand-darker border border-brand-border text-brand-teal hover:bg-brand-teal hover:text-black font-bold rounded-xl shadow transition inline-flex items-center justify-center gap-1.5"
-                                                    title="Zobrazit detail položky"
-                                                >
-                                                    <ChevronRightIcon className="h-4 w-4" />
-                                                </button>
                                             </td>
                                         </tr>
                                     );
