@@ -125,15 +125,20 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({ isOpen, on
                                 </div>
                             ) : (
                                 /* 9mm Compact Tape Preview */
-                                <div className="w-[240px] h-[40px] bg-white text-black p-1 flex items-center justify-between rounded shadow-md border border-gray-300 select-none overflow-hidden">
+                                <div className="w-[260px] h-[44px] bg-white text-black p-1 flex items-center gap-2 rounded shadow-md border border-gray-300 select-none overflow-hidden">
                                     <div className="bg-white p-0.5 rounded flex-shrink-0">
-                                        <QRCodeSVG value={item.location_code || item.qr_code} size={30} level="M" includeMargin={false} />
+                                        <QRCodeSVG value={item.location_code || item.qr_code} size={34} level="M" includeMargin={false} />
                                     </div>
-                                    <div className="flex-1 px-2 flex items-center justify-between">
-                                        <span className="bg-black text-white text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded leading-none">
-                                            {item.location_code}
-                                        </span>
-                                        <span className="text-[8px] font-bold text-gray-800 truncate max-w-[90px]">{item.title}</span>
+                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                        <p className="text-[9px] font-extrabold text-black leading-tight truncate">{item.title}</p>
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                            <span className="bg-black text-white text-[8.5px] font-mono font-bold px-1 py-0.5 rounded leading-none">
+                                                {item.location_code}
+                                            </span>
+                                            {item.category && (
+                                                <span className="text-[7.5px] font-mono text-gray-600 truncate">{item.category}</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
