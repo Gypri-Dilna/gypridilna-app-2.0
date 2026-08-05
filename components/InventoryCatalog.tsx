@@ -339,7 +339,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         });
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans">
             <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
