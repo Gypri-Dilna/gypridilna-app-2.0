@@ -24,6 +24,18 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({
     const [isPrinting, setIsPrinting] = useState<boolean>(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+    // Lock background page scroll when modal is open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen || !item) return null;
 
     const handlePrintBPac = async () => {

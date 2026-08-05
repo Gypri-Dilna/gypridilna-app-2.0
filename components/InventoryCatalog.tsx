@@ -318,6 +318,18 @@ interface FormModalProps {
 const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, item, allItems = [], onSave, onOpenCategoryManager }) => {
     const [title, setTitle] = useState(item?.title || '');
 
+    // Lock background page scroll when modal is open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Categories dropdown list derived dynamically from existing items
     const existingCategories = useMemo(() => {
         const set = new Set(allItems.map(i => i.category).filter(Boolean));
@@ -391,14 +403,14 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop">
-                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-hidden">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-lg font-bold text-white">{item ? 'Upravit položku' : 'Přidat novou položku'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
                     {/* Item Title Input + Live Letter Counter */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
@@ -422,23 +434,23 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Category Dropdown & Custom Input + Live Letter Counter */}
                         <div>
                             <div className="flex justify-between items-center mb-1">
-                                <div className="flex items-center gap-2">
-                                    <label className="block text-xs font-semibold text-gray-300">Kategorie / Category *</label>
+                                <div className="flex items-center gap-1">
+                                    <label className="block text-xs font-semibold text-gray-300 truncate">Kategorie *</label>
                                     {onOpenCategoryManager && (
                                         <button
                                             type="button"
                                             onClick={onOpenCategoryManager}
-                                            className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono"
+                                            className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono shrink-0 ml-1"
                                         >
-                                            Správa
+                                            (Správa)
                                         </button>
                                     )}
                                 </div>
-                                <span className={`text-xs font-mono font-bold transition-colors ${
+                                <span className={`text-xs font-mono font-bold transition-colors shrink-0 ${
                                     activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                                 }`}>
                                     {activeCategory.length}/22
@@ -482,7 +494,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         </div>
                     </div>
 
-                    {/* Location Code Generator Section (XY-ZAAA) */}
+                    {/* Location Code Generator Section (XY-ZAAA) with 100% Perfectly Aligned Baseline Input Boxes */}
                     <div className="p-4 bg-brand-darker border border-brand-border rounded-xl space-y-3">
                         <div className="flex justify-between items-center">
                             <label className="block text-xs font-bold text-brand-teal uppercase tracking-wider">
@@ -493,49 +505,61 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-2">
+                        {/* 4 Equal Columns with Fixed Height Labels for 100% Vertical Alignment */}
+                        <div className="grid grid-cols-4 gap-2 items-end">
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400">Rack (X)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Rack (X)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="1"
                                     max="9"
                                     value={rack}
                                     onChange={(e) => setRack(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400">Sector/Shelf (Y)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Sector (Y)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={sector}
                                     onChange={(e) => setSector(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400">Box # (Z: 0=None)</label>
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Box (Z)</label>
+                                </div>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={box}
                                     onChange={(e) => setBox(Number(e.target.value))}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center"
+                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-gray-400">Item ID (AAA)</label>
-                                <div className="w-full px-2 py-1.5 bg-slate-900 border border-brand-border/60 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
-                                    {itemNum}
+                                <div className="h-7 flex items-end justify-center pb-1">
+                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">ID (AAA)</label>
                                 </div>
+                                <input
+                                    type="text"
+                                    readOnly
+                                    value={itemNum}
+                                    className="w-full px-1.5 py-1.5 bg-slate-950 border border-brand-teal/40 rounded text-xs text-brand-teal font-mono font-bold text-center cursor-not-allowed"
+                                />
                             </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 font-mono">
-                            Auto-assigned sequence ID based on registration order at location <strong>{rack}{sector}-{box}</strong> (reuses deleted IDs).
+                        <p className="text-[10px] text-gray-400 text-center font-mono">
+                            Auto-assigned sequence ID based on registration order (Box 0 = žiadny box).
                         </p>
                     </div>
 

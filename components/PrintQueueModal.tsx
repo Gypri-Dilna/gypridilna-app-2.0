@@ -26,6 +26,18 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
 }) => {
     const [isPrinting, setIsPrinting] = useState<boolean>(false);
 
+    // Lock background page scroll when modal is open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleBatchPrint = async () => {
