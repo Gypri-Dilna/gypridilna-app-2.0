@@ -19,6 +19,8 @@ interface InventoryCatalogProps {
     onSelectItem: (item: InventoryItem) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
     onAddToQueue?: (item: InventoryItem, tapeSize: '18mm' | '9mm') => void;
+    queueCount?: number;
+    onOpenPrintQueue?: () => void;
 }
 
 export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
@@ -30,7 +32,9 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onDeleteCategory,
     onSelectItem,
     showToast,
-    onAddToQueue
+    onAddToQueue,
+    queueCount = 0,
+    onOpenPrintQueue
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -38,6 +42,9 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
+
+    // Check permissions
+    const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
     // Check if the current browser is running on the Printer Workstation (PC B / localhost)
     const isPrinterWorkstation = useMemo(() => {
@@ -61,15 +68,12 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                 return (
                     (item.title || '').toLowerCase().includes(term) ||
                     (item.location_code || '').toLowerCase().includes(term) ||
-                    (item.qr_code || '').toLowerCase().includes(term) ||
-                    (item.zone || '').toLowerCase().includes(term)
+                    (item.notes || '').toLowerCase().includes(term)
                 );
             }
             return true;
         });
     }, [items, search, selectedCategory]);
-
-    const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
     return (
         <div className="space-y-6 font-sans">
@@ -85,18 +89,35 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     </div>
                 </div>
 
-                {canEdit && (
-                    <button
-                        onClick={() => {
-                            setEditingItem(null);
-                            setIsAddModalOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black text-xs font-bold rounded-xl transition"
-                    >
-                        <PlusIcon className="h-4 w-4" />
-                        Přidat novou položku
-                    </button>
-                )}
+                <div className="flex items-center gap-3">
+                    {onOpenPrintQueue && (
+                        <button
+                            type="button"
+                            onClick={onOpenPrintQueue}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 text-xs font-bold rounded-xl border border-brand-border transition group"
+                        >
+                            <span>📋 Tisková fronta</span>
+                            <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-extrabold ${
+                                queueCount > 0 ? 'bg-brand-teal text-black font-extrabold animate-pulse' : 'bg-slate-800 text-gray-400 border border-brand-border'
+                            }`}>
+                                {queueCount}
+                            </span>
+                        </button>
+                    )}
+
+                    {canEdit && (
+                        <button
+                            onClick={() => {
+                                setEditingItem(null);
+                                setIsAddModalOpen(true);
+                            }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black text-xs font-bold rounded-xl transition"
+                        >
+                            <PlusIcon className="h-4 w-4" />
+                            Přidat novou položku
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Filter & Search Bar */}
@@ -135,18 +156,18 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             title="Správa a mazání kategorií"
                         >
                             <TrashIcon className="h-3.5 w-3.5 text-rose-400" />
-                            <span className="hidden sm:inline">Správa kategorií</span>
+                            <span className="hidden sm:inline">Správa</span>
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Inventory Table List */}
-            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
+            {/* Inventory Table */}
+            <div className="bg-brand-dark border border-brand-border rounded-2xl overflow-hidden shadow-xl">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-gray-300">
-                        <thead className="text-xs uppercase bg-[#343b47] text-gray-400 font-bold tracking-wider">
-                            <tr>
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-brand-darker text-gray-400 font-mono text-[11px] uppercase tracking-wider border-b border-brand-border/60">
                                 <th scope="col" className="px-6 py-4">NÁZEV POLOŽKY</th>
                                 <th scope="col" className="px-6 py-4">KATEGORIE</th>
                                 <th scope="col" className="px-6 py-4">UMÍSTĚNÍ (ID)</th>
@@ -220,16 +241,10 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     onSave={async (itemData) => {
                         if (editingItem) {
                             await onUpdateItem({ ...editingItem, ...itemData });
-                            showToast("Item updated successfully", "success");
+                            showToast("Položka byla úspěšně upravena", "success");
                         } else {
                             await onAddItem(itemData);
-                            showToast("Item added successfully", "success");
-                            // Open print modal immediately for the newly registered item
-                            const newItem = items.find(i => i.location_code === itemData.location_code) || {
-                                id: Date.now(),
-                                ...itemData
-                            };
-                            setPrintingItem(newItem as InventoryItem);
+                            showToast("Položka byla úspěšně přidána do zásob", "success");
                         }
                         setIsAddModalOpen(false);
                     }}

@@ -484,6 +484,8 @@ const App: React.FC = () => {
                         onSelectItem={(item) => handleSelectItem(item, 'inventory')}
                         showToast={showToast}
                         onAddToQueue={handleAddToPrintQueue}
+                        queueCount={printQueue.length}
+                        onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
                     />
                 );
             case 'scanner':
