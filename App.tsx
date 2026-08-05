@@ -345,11 +345,15 @@ const App: React.FC = () => {
                 throw new Error(err);
             }
             const saved = await res.json();
-            showToast(`Updated '${updatedItem.title}'.`, 'success');
+            showToast(`Položka '${updatedItem.title}' byla úspěšně upravena.`, 'success');
             await fetchAllData();
-            setSelectedItem(saved);
+
+            // Only keep selectedItem open if user was already viewing ItemDetailView
+            if (selectedItem && selectedItem.id === updatedItem.id) {
+                setSelectedItem(saved);
+            }
         } catch (e: any) {
-            showToast(e.message || 'Error updating item.', 'error');
+            showToast(e.message || 'Chyba při úpravě položky.', 'error');
         }
     };
 
@@ -360,11 +364,11 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to delete item');
                 throw new Error(err);
             }
-            showToast('Inventory item deleted.', 'success');
+            showToast('Položka byla smazána ze zásob.', 'success');
             setSelectedItem(null);
             fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error deleting item.', 'error');
+            showToast(e.message || 'Chyba při mazání položky.', 'error');
         }
     };
 
@@ -461,6 +465,22 @@ const App: React.FC = () => {
     const renderActiveTabContent = () => {
         if (!user) return null;
 
+        // Access guard: if non-admin tries accessing user management tab, redirect to dashboard
+        if (activeTab === 'users' && !user.is_admin) {
+            return (
+                <Dashboard
+                    user={user}
+                    chips={chips}
+                    logs={logs}
+                    inventoryItems={inventoryItems}
+                    onRemoteOpening={handleRemoteOpening}
+                    onToggleServiceMode={handleToggleServiceMode}
+                    onRefresh={fetchAllData}
+                    onNavigate={(tab) => handleTabChange(tab)}
+                />
+            );
+        }
+
         switch (activeTab) {
             case 'dashboard':
                 return (
@@ -546,7 +566,18 @@ const App: React.FC = () => {
             case 'users':
                 return <UserManagement chips={chips} showToast={showToast} currentUser={user} onUpdateCurrentUser={setUser} />;
             default:
-                return null;
+                return (
+                    <Dashboard
+                        user={user}
+                        chips={chips}
+                        logs={logs}
+                        inventoryItems={inventoryItems}
+                        onRemoteOpening={handleRemoteOpening}
+                        onToggleServiceMode={handleToggleServiceMode}
+                        onRefresh={fetchAllData}
+                        onNavigate={(tab) => handleTabChange(tab)}
+                    />
+                );
         }
     };
 
