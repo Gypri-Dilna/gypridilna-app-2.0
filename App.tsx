@@ -338,6 +338,23 @@ const App: React.FC = () => {
         setSelectedItem(null);
     };
 
+    const handleDeleteCategory = async (categoryName: string) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/inventory/categories/${encodeURIComponent(categoryName)}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(data.message || `Kategorie '${categoryName}' byla smazána.`, 'success');
+                await fetchAllData();
+            } else {
+                showToast(data.detail || 'Chyba při mazání kategorie.', 'error');
+            }
+        } catch (e: any) {
+            showToast('Nepodařilo se připojit k backendu.', 'error');
+        }
+    };
+
     // Render Active View scoped to active tab
     const renderActiveTabContent = () => {
         if (!user) return null;
@@ -381,6 +398,7 @@ const App: React.FC = () => {
                             onBack={handleCloseItemDetail}
                             onUpdateItem={handleUpdateInventoryItem}
                             onDelete={handleDeleteInventoryItem}
+                            onDeleteCategory={handleDeleteCategory}
                         />
                     );
                 }
@@ -391,6 +409,7 @@ const App: React.FC = () => {
                         onAddItem={handleAddInventoryItem}
                         onUpdateItem={handleUpdateInventoryItem}
                         onDeleteItem={handleDeleteInventoryItem}
+                        onDeleteCategory={handleDeleteCategory}
                         onSelectItem={(item) => handleSelectItem(item, 'inventory')}
                         showToast={showToast}
                     />

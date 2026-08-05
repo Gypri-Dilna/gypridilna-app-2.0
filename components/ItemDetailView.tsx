@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { InventoryItem, User } from '../types';
 import { 
     PrinterIcon, EditIcon, TrashIcon, ArrowLeftIcon, CloseIcon,
@@ -15,6 +16,7 @@ interface ItemDetailViewProps {
     onBack: () => void;
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDelete: (id: number) => Promise<void>;
+    onDeleteCategory?: (categoryName: string) => Promise<void>;
 }
 
 export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
@@ -266,9 +268,9 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
         });
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 font-sans">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
+    return createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-sans overflow-y-auto">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop my-auto">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
                     <h2 className="text-lg font-bold text-white">Upravit položku</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
@@ -417,6 +419,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

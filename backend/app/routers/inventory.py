@@ -79,6 +79,25 @@ def get_categories(db: Session = Depends(get_db)):
     categories = db.query(InventoryItem.category).distinct().all()
     return [c[0] for c in categories if c[0]]
 
+@router.delete("/categories/{category_name}")
+def delete_category(category_name: str, db: Session = Depends(get_db)):
+    clean_cat = category_name.strip()
+    if clean_cat.lower() in ["general", "all", "všechny"]:
+        raise HTTPException(status_code=400, detail="Nelze smazat výchozí systémovou kategorii.")
+    
+    updated_count = db.query(InventoryItem).filter(
+        InventoryItem.category == clean_cat
+    ).update({"category": "General"}, synchronize_session=False)
+    
+    audit = SystemAuditLog(
+        action="CATEGORY_DELETED",
+        performed_by="System User",
+        details=f"Deleted category '{clean_cat}', reassigned {updated_count} items to 'General'"
+    )
+    db.add(audit)
+    db.commit()
+    return {"status": "success", "message": f"Kategorie '{clean_cat}' byla smazána. {updated_count} položek bylo přesunuto do 'General'."}
+
 @router.get("/zones")
 def get_zones(db: Session = Depends(get_db)):
     zones = db.query(InventoryItem.zone).distinct().all()

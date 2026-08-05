@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { InventoryItem, User } from '../types';
 import {
     InventoryIcon, SearchIcon, PlusIcon,
     PrinterIcon, FilterIcon, TrashIcon, EditIcon,
-    ArrowUpRight, ChevronRightIcon
+    ArrowUpRight, ChevronRightIcon, CloseIcon
 } from './icons';
 import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
 import { LabelPrinterModal } from './LabelPrinterModal';
@@ -14,6 +15,7 @@ interface InventoryCatalogProps {
     onAddItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDeleteItem: (id: number) => Promise<void>;
+    onDeleteCategory?: (categoryName: string) => Promise<void>;
     onSelectItem: (item: InventoryItem) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
 }
@@ -24,12 +26,14 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    onDeleteCategory,
     onSelectItem,
     showToast
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
 
@@ -106,7 +110,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     />
                 </div>
 
-                {/* Category Select */}
+                {/* Category Select & Manage Categories Button */}
                 <div className="flex items-center gap-2">
                     <FilterIcon className="h-4 w-4 text-gray-400" />
                     <select
@@ -120,6 +124,18 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             </option>
                         ))}
                     </select>
+
+                    {canEdit && onDeleteCategory && (
+                        <button
+                            type="button"
+                            onClick={() => setIsCategoryManagerOpen(true)}
+                            className="px-3 py-2 bg-brand-darker border border-brand-border text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 hover:bg-slate-800"
+                            title="Správa a mazání kategorií"
+                        >
+                            <TrashIcon className="h-3.5 w-3.5 text-rose-400" />
+                            <span className="hidden sm:inline">Správa kategorií</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -224,6 +240,16 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     isOpen={!!printingItem}
                     onClose={() => setPrintingItem(null)}
                     item={printingItem}
+                />
+            )}
+
+            {/* Manage & Delete Categories Modal */}
+            {isCategoryManagerOpen && onDeleteCategory && (
+                <ManageCategoriesModal
+                    isOpen={isCategoryManagerOpen}
+                    onClose={() => setIsCategoryManagerOpen(false)}
+                    items={items}
+                    onDeleteCategory={onDeleteCategory}
                 />
             )}
         </div>
@@ -474,17 +500,126 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             onClick={onClose}
                             className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold rounded-xl text-xs transition"
                         >
-                            Cancel
+                            Zrušit
                         </button>
                         <button
                             type="submit"
                             className="flex-1 px-4 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold rounded-xl text-xs transition"
                         >
-                            Save Item
+                            Uložit položku
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
+    );
+};
+
+// Category Management Modal
+interface CategoryManagerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    items: InventoryItem[];
+    onDeleteCategory: (categoryName: string) => Promise<void>;
+}
+
+const ManageCategoriesModal: React.FC<CategoryManagerProps> = ({ isOpen, onClose, items = [], onDeleteCategory }) => {
+    const [deletingCat, setDeletingCat] = useState<string | null>(null);
+
+    const categoryStats = useMemo(() => {
+        const map = new Map<string, number>();
+        items.forEach(item => {
+            const cat = item.category || 'General';
+            map.set(cat, (map.get(cat) || 0) + 1);
+        });
+        return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    }, [items]);
+
+    if (!isOpen) return null;
+
+    const handleDelete = async (catName: string, count: number) => {
+        if (catName.toLowerCase() === 'general' || catName.toLowerCase() === 'všechny') {
+            alert('Systémovou kategorii "General" nelze smazat.');
+            return;
+        }
+
+        if (window.confirm(`Opravdu chcete smazat kategorii "${catName}"?\n\nVšechny položky (${count}) v této kategorii budou přesunuty do výchozí kategorie "General".`)) {
+            setDeletingCat(catName);
+            try {
+                await onDeleteCategory(catName);
+            } finally {
+                setDeletingCat(null);
+            }
+        }
+    };
+
+    return createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-backdrop-fade font-sans overflow-y-auto">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto flex flex-col">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-500/10 text-rose-400 rounded-lg">
+                            <TrashIcon className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-bold text-white">Správa a mazání kategorií</h2>
+                            <p className="text-xs text-gray-400">Přehled a správa všech kategorií v zásobách</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+                        <CloseIcon className="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+                    {categoryStats.length === 0 ? (
+                        <div className="text-center text-xs text-gray-400 py-6">Žádné kategorie nebyly nalezeny.</div>
+                    ) : (
+                        categoryStats.map(([catName, count]) => {
+                            const isSystemDefault = catName.toLowerCase() === 'general';
+                            return (
+                                <div
+                                    key={catName}
+                                    className="flex items-center justify-between p-3.5 bg-brand-darker border border-brand-border rounded-xl"
+                                >
+                                    <div>
+                                        <h4 className="text-xs font-bold text-white">{catName}</h4>
+                                        <p className="text-[11px] font-mono text-gray-400 mt-0.5">{count} {count === 1 ? 'položka' : (count < 5 ? 'položky' : 'položek')}</p>
+                                    </div>
+
+                                    {isSystemDefault ? (
+                                        <span className="text-[10px] font-mono font-bold text-gray-500 bg-slate-800 px-2 py-1 rounded">
+                                            Systémová
+                                        </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(catName, count)}
+                                            disabled={deletingCat === catName}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition active:scale-95 disabled:opacity-50"
+                                        >
+                                            <TrashIcon className="h-3.5 w-3.5" />
+                                            {deletingCat === catName ? 'Mazání...' : 'Smazat'}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                <div className="p-4 border-t border-brand-border bg-brand-darker flex justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-5 py-2 text-xs font-bold text-gray-300 bg-slate-800 hover:bg-slate-700 rounded-xl transition"
+                    >
+                        Zavřít
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 };
