@@ -83,13 +83,22 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
         # Execute Print job to Brother PT-D460BTVP
         start_ok = doc.StartPrint("", 0)
         if not start_ok:
-            doc.Close()
+            try:
+                if callable(doc.Close): doc.Close()
+            except Exception: pass
             print("[PRINT AGENT ERROR] doc.StartPrint() failed.")
             return False, "b-PAC StartPrint failed. Make sure PT-D460BTVP printer driver is installed and printer is powered ON."
 
         print_ok = doc.PrintOut(1, 0)
-        doc.EndPrint()
-        doc.Close()
+
+        # Safely finish print job and close document (EndPrint/Close are boolean properties in PyWin32 b-PAC)
+        try:
+            if callable(doc.EndPrint): doc.EndPrint()
+        except Exception: pass
+        
+        try:
+            if callable(doc.Close): doc.Close()
+        except Exception: pass
 
         if not print_ok:
             print("[PRINT AGENT ERROR] doc.PrintOut() failed.")
