@@ -80,14 +80,32 @@ def print_label_bpac(data: dict) -> tuple[bool, str]:
         except Exception as field_err:
             print(f"[PRINT AGENT WARNING] Error setting template fields: {field_err}")
 
+        # Determine target Brother printer driver name
+        printer_name = ""
+        try:
+            if hasattr(doc, 'Printer') and doc.Printer:
+                template_printer = getattr(doc.Printer, 'Name', '')
+                installed_printers = getattr(doc.Printer, 'GetInstalledPrinters', ())
+                if installed_printers and isinstance(installed_printers, (tuple, list)) and len(installed_printers) > 0:
+                    if template_printer in installed_printers:
+                        printer_name = template_printer
+                    else:
+                        printer_name = installed_printers[0]
+                elif template_printer:
+                    printer_name = template_printer
+        except Exception as p_err:
+            print(f"[PRINT AGENT WARNING] Printer auto-detect error: {p_err}")
+
+        print(f"[PRINT AGENT] Sending print job to target printer: '{printer_name or 'Default'}'")
+
         # Execute Print job to Brother PT-D460BTVP
-        start_ok = doc.StartPrint("", 0)
+        start_ok = doc.StartPrint(printer_name, 0)
         if not start_ok:
             try:
                 if callable(doc.Close): doc.Close()
             except Exception: pass
-            print("[PRINT AGENT ERROR] doc.StartPrint() failed.")
-            return False, "b-PAC StartPrint failed. Make sure PT-D460BTVP printer driver is installed and printer is powered ON."
+            print(f"[PRINT AGENT ERROR] doc.StartPrint('{printer_name}') failed.")
+            return False, f"b-PAC StartPrint failed for '{printer_name or 'Default'}'. Make sure PT-D460BTVP printer driver is installed and printer is powered ON."
 
         print_ok = doc.PrintOut(1, 0)
 
