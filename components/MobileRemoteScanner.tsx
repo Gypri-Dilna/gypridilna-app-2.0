@@ -42,7 +42,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         constraints.advanced.push({ focusMode: 'continuous' });
                     }
 
-                    // 2. Continuous Auto Exposure (Prevents blown out high contrast)
+                    // 2. Continuous Auto Exposure
                     if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
                         constraints.advanced.push({ exposureMode: 'continuous' });
                     }
@@ -94,10 +94,8 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     return { width: size, height: size };
                 },
                 videoConstraints: {
-                    facingMode: { ideal: "environment" },
                     width: { min: 1280, ideal: 1920 },
-                    height: { min: 720, ideal: 1080 },
-                    focusMode: { ideal: "continuous" }
+                    height: { min: 720, ideal: 1080 }
                 }
             };
 
@@ -151,18 +149,34 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 }, 1400);
             };
 
+            // Enumerate camera devices to pick the Primary Rear Main Camera Sensor (avoids noisy ultra-wide / macro lenses)
             try {
-                await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
-                setIsScanning(true);
-                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
-            } catch (e1) {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length > 0) {
-                    await html5QrCode.start(devices[devices.length - 1].id, scanConfig, handleSuccess, () => {});
+                    // Filter for rear/back cameras, preferring the main 1x sensor (usually index 0 or labeled '0' / 'main' / 'back')
+                    const rearCameras = devices.filter(d => 
+                        /back|rear|environment/i.test(d.label) || (!/front|user/i.test(d.label))
+                    );
+
+                    // Prefer camera labeled '0' or primary main sensor to avoid noisy wide/macro lens
+                    const primaryCamera = rearCameras.find(d => /0|main|primary/i.test(d.label)) 
+                        || rearCameras[0] 
+                        || devices[devices.length - 1];
+
+                    await html5QrCode.start(primaryCamera.id, scanConfig, handleSuccess, () => {});
                     setIsScanning(true);
                     setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+                    return;
                 }
+            } catch (eEnum) {
+                console.warn("Camera enumeration fallback:", eEnum);
             }
+
+            // Fallback to facingMode environment
+            await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
+            setIsScanning(true);
+            setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+
         } catch (err: any) {
             console.error("Mobile camera start error:", err);
             setIsScanning(false);
@@ -251,7 +265,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         max-height: 380px !important;
                         object-fit: cover !important;
                         border-radius: 0.75rem !important;
-                        filter: contrast(1.05) brightness(1.02) saturate(1.05) !important;
+                        filter: none !important;
                     }
                     #remote-mobile-reader canvas {
                         display: none !important;
