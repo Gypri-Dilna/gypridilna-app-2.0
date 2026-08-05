@@ -19,14 +19,14 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [scannedFeedback, setScannedFeedback] = useState<{ title: string; location_code: string; mode: 'pc' | 'local' } | null>(null);
 
-    // Camera Hardware Zoom & Continuous Autofocus State (Default Permanent 2.0x Zoom)
+    // Zoom state
     const [zoomFactor, setZoomFactor] = useState<number>(2.0);
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isProcessingRef = useRef<boolean>(false);
 
-    // Apply WebRTC Hardware Focus/Zoom + Digital Fallback Scale
-    const applyZoomAndFocus = useCallback((targetZoom: number) => {
+    // Smooth WebRTC Native Hardware Zoom & Focus Adjuster
+    const applyHardwareZoomAndFocus = useCallback((targetZoom: number) => {
         try {
             const videoElem = document.querySelector('#remote-mobile-reader video') as HTMLVideoElement;
             if (videoElem && videoElem.srcObject) {
@@ -37,12 +37,17 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
                     const constraints: any = { advanced: [] };
 
-                    // 1. Continuous Autofocus
+                    // 1. Continuous Auto Focus
                     if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
                         constraints.advanced.push({ focusMode: 'continuous' });
                     }
 
-                    // 2. WebRTC Hardware Zoom
+                    // 2. Continuous Auto Exposure (Prevents blown out high contrast)
+                    if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+                        constraints.advanced.push({ exposureMode: 'continuous' });
+                    }
+
+                    // 3. WebRTC Hardware Optical/Sensor Zoom
                     if (capabilities.zoom) {
                         const min = capabilities.zoom.min || 1;
                         const max = capabilities.zoom.max || 5;
@@ -54,20 +59,15 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         track.applyConstraints(constraints).catch(() => {});
                     }
                 }
-
-                // Digital CSS Zoom Transform Fallback
-                videoElem.style.transform = `scale(${targetZoom})`;
-                videoElem.style.transformOrigin = 'center center';
-                videoElem.style.transition = 'transform 0.2s ease-out';
             }
         } catch (e) {
-            console.warn("Zoom/Focus application error:", e);
+            console.warn("Hardware camera constraint error:", e);
         }
     }, []);
 
     const handleZoomChange = (newZoom: number) => {
         setZoomFactor(newZoom);
-        applyZoomAndFocus(newZoom);
+        applyHardwareZoomAndFocus(newZoom);
     };
 
     const startCamera = useCallback(async () => {
@@ -86,11 +86,18 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             const html5QrCode = new Html5Qrcode("remote-mobile-reader", false);
             scannerRef.current = html5QrCode;
 
+            // Advanced Scan Config requesting HD video resolution & crisp 30FPS for clear focus
             const scanConfig = {
-                fps: 25,
+                fps: 30,
                 qrbox: (w: number, h: number) => {
-                    const size = Math.floor(Math.min(w, h) * 0.75);
+                    const size = Math.floor(Math.min(w, h) * 0.70);
                     return { width: size, height: size };
+                },
+                videoConstraints: {
+                    facingMode: { ideal: "environment" },
+                    width: { min: 1280, ideal: 1920 },
+                    height: { min: 720, ideal: 1080 },
+                    focusMode: { ideal: "continuous" }
                 }
             };
 
@@ -147,13 +154,13 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             try {
                 await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
                 setIsScanning(true);
-                setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
+                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
             } catch (e1) {
                 const devices = await Html5Qrcode.getCameras();
                 if (devices && devices.length > 0) {
                     await html5QrCode.start(devices[devices.length - 1].id, scanConfig, handleSuccess, () => {});
                     setIsScanning(true);
-                    setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
+                    setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
                 }
             }
         } catch (err: any) {
@@ -161,7 +168,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             setIsScanning(false);
             setErrorMsg("Grant camera permissions in phone settings to scan items.");
         }
-    }, [onLookupItem, scanMode, pairedSessionId, applyZoomAndFocus, zoomFactor]);
+    }, [onLookupItem, scanMode, pairedSessionId, applyHardwareZoomAndFocus, zoomFactor]);
 
     useEffect(() => {
         startCamera();
@@ -231,6 +238,34 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
             {/* Live Camera Scanner Viewport */}
             <div className="relative rounded-2xl overflow-hidden border-2 border-brand-teal/30 bg-black min-h-[310px] shadow-2xl flex items-center justify-center">
+                <style>{`
+                    #remote-mobile-reader {
+                        width: 100% !important;
+                        border: none !important;
+                        overflow: hidden !important;
+                        border-radius: 0.75rem !important;
+                    }
+                    #remote-mobile-reader video {
+                        width: 100% !important;
+                        height: 100% !important;
+                        max-height: 380px !important;
+                        object-fit: cover !important;
+                        border-radius: 0.75rem !important;
+                        filter: contrast(1.05) brightness(1.02) saturate(1.05) !important;
+                    }
+                    #remote-mobile-reader canvas {
+                        display: none !important;
+                    }
+                    #remote-mobile-reader video:nth-of-type(n+2) {
+                        display: none !important;
+                    }
+                    #remote-mobile-reader__scan_region {
+                        background: transparent !important;
+                    }
+                    #remote-mobile-reader__dashboard {
+                        display: none !important;
+                    }
+                `}</style>
                 <div id="remote-mobile-reader" className="w-full rounded-2xl overflow-hidden" />
 
                 {/* Permanent Zoom Level Pills (1.0x, 1.5x, 2.0x, 2.5x) */}
