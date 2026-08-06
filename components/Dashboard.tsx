@@ -103,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div>
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Servisní režim dveří</p>
                         <p className={`text-sm font-bold mt-1 ${isServiceMode ? 'text-amber-400' : 'text-emerald-400'}`}>
-                            {isServiceMode ? 'ODEMČENO (TRVALE)' : 'ZAMČENO (AKTIVNÍ)'}
+                            {isServiceMode ? 'ODEMČENO (TRVALE)' : 'ZAMČENO'}
                         </p>
                     </div>
                     {(user.is_admin || user.permissions.service_mode) && (

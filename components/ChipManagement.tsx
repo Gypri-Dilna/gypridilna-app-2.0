@@ -66,7 +66,7 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({ user, chips, onA
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-extrabold text-white tracking-tight">Seznam RFID čipů</h2>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">Seznam RFID čipů</h2>
                 {canEditChips && (
                     <button
                         onClick={handleOpenAddModal}

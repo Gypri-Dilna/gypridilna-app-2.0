@@ -76,6 +76,11 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
         }
     }, [isMobileDevice]);
 
+    const onLookupItemRef = useRef(onLookupItem);
+    onLookupItemRef.current = onLookupItem;
+    const onSelectItemRef = useRef(onSelectItem);
+    onSelectItemRef.current = onSelectItem;
+
     const [zoomFactor, setZoomFactor] = useState<number>(2.0);
 
     const applyZoomAndFocus = useCallback((targetZoom: number) => {
@@ -121,6 +126,10 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
 
     const startCamera = useCallback(async () => {
         if (!isMobileDevice) return;
+        if (scannerRef.current && scannerRef.current.isScanning) {
+            return; // Already running smoothly!
+        }
+
         setErrorMsg(null);
         isProcessingRef.current = false;
 
@@ -167,11 +176,11 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
 
                 setErrorMsg(null);
                 try {
-                    const item = await onLookupItem(decodedText);
+                    const item = await onLookupItemRef.current(decodedText);
                     if (item) {
                         setScannedItem(item);
-                        if (onSelectItem) {
-                            onSelectItem(item);
+                        if (onSelectItemRef.current) {
+                            onSelectItemRef.current(item);
                         }
                     } else {
                         setErrorMsg(`No item found matching: "${decodedText}"`);
@@ -216,16 +225,12 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                 setErrorMsg("Camera permission denied or camera unavailable.");
             }
         }
-    }, [isMobileDevice, onLookupItem, onSelectItem, isInsecureOrigin, applyZoomAndFocus, zoomFactor]);
+    }, [isMobileDevice, isInsecureOrigin, applyZoomAndFocus, zoomFactor]);
 
     useEffect(() => {
         if (!isMobileDevice) return;
-        let isMounted = true;
-        if (isMounted) {
-            startCamera();
-        }
+        startCamera();
         return () => {
-            isMounted = false;
             if (scannerRef.current && scannerRef.current.isScanning) {
                 scannerRef.current.stop().then(() => {
                     const container = document.getElementById('reader');
@@ -294,7 +299,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                     <div className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-xl">
                         {isMobileDevice ? <CameraIcon className="h-5 w-5" /> : <SearchIcon className="h-5 w-5" />}
                     </div>
-                    <h2 className="text-base font-bold text-white">{isMobileDevice ? 'QR Scanner' : 'Item Lookup'}</h2>
+                    <h2 className="text-base font-bold text-white">{isMobileDevice ? 'QR Skener' : 'Vyhledat položku'}</h2>
                 </div>
                 {onClose && (
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
@@ -330,7 +335,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                                 type="text"
                                 value={manualCode}
                                 onChange={(e) => setManualCode(e.target.value)}
-                                placeholder="Search location ID (e.g. 12-0001)..."
+                                placeholder="Vyhledat podle ID (např. 12-0001)..."
                                 autoFocus
                                 className="w-full pl-12 pr-4 py-4 bg-brand-darker border-2 border-brand-border rounded-2xl text-base font-bold text-white placeholder-gray-400 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/15 font-mono shadow-inner transition"
                             />
@@ -340,7 +345,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                             className="px-8 py-4 bg-brand-teal hover:bg-brand-teal-hover text-black font-black text-sm rounded-2xl transition shadow-lg shadow-brand-teal/20 active:scale-95 flex items-center justify-center gap-2"
                         >
                             <SearchIcon className="h-5 w-5" />
-                            Search
+                            Hledat
                         </button>
                     </form>
 
@@ -348,13 +353,13 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                     <div className="pt-6 border-t border-brand-border text-center space-y-3">
                         <div className="flex items-center justify-center gap-2 text-xs font-bold text-brand-teal uppercase tracking-wider">
                             <CameraIcon className="h-4 w-4" />
-                            <span>Use Mobile Phone as Wireless PC Scanner</span>
+                            <span>Použít telefon jako externí label skener</span>
                         </div>
                         <div className="flex justify-center p-3 bg-white rounded-2xl w-fit mx-auto shadow-xl border-2 border-brand-teal/30">
                             <QRCodeSVG value={`PAIR:${pcSessionId}`} size={120} level="M" />
                         </div>
                         <p className="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">
-                            Scan this pairing QR code with your phone camera in <strong>"Scan to PC"</strong> mode to connect as a wireless scanner.
+                            Naskenuj tento QR v<strong>"Skenovat do PC"</strong> módu na této stránce v telefonu pro připojení jako externí skener.
                         </p>
                     </div>
                 </div>

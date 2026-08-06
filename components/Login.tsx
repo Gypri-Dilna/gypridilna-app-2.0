@@ -142,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="space-y-3">
                         <div>
                             <label htmlFor="username" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
-                                Uživatelské jméno
+                                E-mail / Uživatelské jméno
                             </label>
                             <input
                                 id="username"
@@ -153,7 +153,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
-                                placeholder="Zadejte jméno (např. admin)"
+                                placeholder="Zadejte e-mail (např. uzivatel@email.cz)"
                             />
                         </div>
                         <div>

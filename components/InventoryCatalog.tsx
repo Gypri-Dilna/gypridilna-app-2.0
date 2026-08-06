@@ -91,7 +91,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     </div>
                     <div>
                         <h1 className="text-2xl font-extrabold text-white tracking-tight">Inventář dílny</h1>
-                        <p className="text-xs text-gray-300">Seznam položek a index umístění (schéma XY-ZAAA)</p>
+                        <p className="text-xs text-gray-300">Seznam položek a jejich ID</p>
                     </div>
                 </div>
 
@@ -180,17 +180,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                         ))}
                     </select>
 
-                    {canEdit && onDeleteCategory && (
-                        <button
-                            type="button"
-                            onClick={() => setIsCategoryManagerOpen(true)}
-                            className="px-3 py-2 bg-brand-darker border border-brand-border text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 hover:bg-slate-800"
-                            title="Správa a mazání kategorií"
-                        >
-                            <TrashIcon className="h-3.5 w-3.5 text-rose-400" />
-                            <span className="hidden sm:inline">Správa</span>
-                        </button>
-                    )}
+                    
                 </div>
             </div>
 
@@ -424,7 +414,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                     {/* Item Title Input + Live Letter Counter */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-gray-300">Název položky / Title *</label>
+                            <label className="block text-xs font-semibold text-gray-300">Název položky *</label>
                             <span className={`text-xs font-mono font-bold transition-colors ${
                                 title.length >= 30 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                             }`}>
@@ -497,7 +487,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             )}
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Kód umístění / Location ID</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">Kód umístění</label>
                             <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
                                 {computedLocationCode}
                             </div>
@@ -508,7 +498,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                     <div className="p-4 bg-brand-darker border border-brand-border rounded-xl space-y-3">
                         <div className="flex justify-between items-center">
                             <label className="block text-xs font-bold text-brand-teal uppercase tracking-wider">
-                                Location Scheme: XY-ZAAA
+                                Schéma lokace: XY-ZAAA
                             </label>
                             <span className="text-xs font-mono font-bold text-amber-400 bg-black/40 px-2 py-0.5 rounded border border-amber-500/30">
                                 {computedLocationCode}
@@ -532,7 +522,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </div>
                             <div>
                                 <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Sector (Y)</label>
+                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Sektor (Y)</label>
                                 </div>
                                 <input
                                     type="number"
@@ -569,17 +559,17 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             </div>
                         </div>
                         <p className="text-[10px] text-gray-400 text-center font-mono">
-                            Auto-assigned sequence ID based on registration order (Box 0 = žiadny box).
+                            ID se automaticky přiřazuje podle volných ID, nebo pořadí registrací<strong> (Pokud není věc v boxu - nastavit box na 0)</strong>.
                         </p>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Notes / Description</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Poznámky</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={2}
-                            placeholder="Optional item details or notes..."
+                            placeholder="Případné poznámky, detaily..."
                             className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal"
                         />
                     </div>
@@ -660,7 +650,7 @@ const ManageCategoriesModal: React.FC<CategoryManagerProps> = ({ isOpen, onClose
                         </div>
                         <div>
                             <h2 className="text-base font-bold text-white">Správa a mazání kategorií</h2>
-                            <p className="text-xs text-gray-400">Přehled a správa všech kategorií v zásobách</p>
+                            <p className="text-xs text-gray-400">Přehled a správa všech kategorií v inventáři</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition">

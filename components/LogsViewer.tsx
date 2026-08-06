@@ -79,7 +79,7 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
     
     return (
         <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight mb-6">Kniha přístupů</h1>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight mb-6">Logy</h1>
             <div className="mb-4 flex flex-wrap items-center gap-4">
                 <input
                     type="text"

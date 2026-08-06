@@ -31,7 +31,12 @@ def get_password_hash(password: str) -> str:
 
 @router.post("/login")
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == login_data.username).first()
+    clean_identifier = login_data.username.strip() if login_data.username else ""
+
+    # Allow logging in with either E-mail address OR username (case-insensitive)
+    user = db.query(User).filter(
+        (User.email.ilike(clean_identifier)) | (User.username.ilike(clean_identifier))
+    ).first()
     
     if user and verify_password(login_data.password, user.password_hash):
         return {
@@ -39,6 +44,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
             "user": {
                 "id": user.id,
                 "username": user.username,
+                "email": user.email,
                 "is_admin": user.is_admin,
                 "permissions": json.loads(user.permissions) if isinstance(user.permissions, str) else user.permissions,
                 "chip_id": user.chip_id
@@ -47,7 +53,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     
     # Fallback to create initial admin if no users exist
     user_count = db.query(User).count()
-    if user_count == 0 and login_data.username == ADMIN_USERNAME and login_data.password == ADMIN_PASSWORD:
+    if user_count == 0 and (clean_identifier.lower() == ADMIN_USERNAME.lower() or clean_identifier.lower() == "admin@gypridilna.cz") and login_data.password == ADMIN_PASSWORD:
         admin_perms = {
             "service_mode": True,
             "add_chips": True,
@@ -58,6 +64,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
         }
         new_admin = User(
             username=ADMIN_USERNAME,
+            email="admin@gypridilna.cz",
             password_hash=get_password_hash(ADMIN_PASSWORD),
             is_admin=True,
             permissions=json.dumps(admin_perms)
@@ -70,6 +77,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
             "user": {
                 "id": new_admin.id,
                 "username": new_admin.username,
+                "email": new_admin.email,
                 "is_admin": new_admin.is_admin,
                 "permissions": admin_perms,
                 "chip_id": new_admin.chip_id
@@ -78,7 +86,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid username or password."
+        detail="Nesprávný e-mail nebo heslo."
     )
 
 @router.post("/change-password")

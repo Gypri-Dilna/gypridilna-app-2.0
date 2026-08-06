@@ -169,7 +169,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         } catch (err: any) {
             console.error("Camera start error:", err);
             setIsScanning(false);
-            setErrorMsg("Grant camera permissions in phone settings to scan items.");
+            setErrorMsg("Povol přístup ke kameře v nastavení pro skenování položek.");
         }
     }, [onLookupItem, applyHardwareZoomAndFocus, zoomFactor]);
 
@@ -213,7 +213,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     }`}
                 >
                     <DesktopIcon className="h-4 w-4" />
-                    <span>Scan to PC</span>
+                    <span>Skenovat do PC</span>
                 </button>
 
                 <button
@@ -226,7 +226,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     }`}
                 >
                     <CameraIcon className="h-4 w-4" />
-                    <span>Scan Locally</span>
+                    <span>Skenovat lokálně</span>
                 </button>
             </div>
 
@@ -236,7 +236,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
                         <span className="font-mono text-gray-200">
-                            {pairedSessionId ? `Paired to PC (${pairedSessionId})` : 'Unpaired: Scan PC Pairing QR Code'}
+                            {pairedSessionId ? `Spárováno s PC (${pairedSessionId})` : 'Nespárováno: Naskenuj kód na PC'}
                         </span>
                     </div>
                     {pairedSessionId && (
@@ -286,12 +286,12 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 {!isScanning && (
                     <div className="p-6 text-center space-y-3 absolute inset-0 bg-brand-darker flex flex-col items-center justify-center">
                         <QrCodeIcon className="h-12 w-12 text-brand-teal animate-bounce" />
-                        <p className="text-xs font-semibold text-gray-300">Initializing Camera Stream...</p>
+                        <p className="text-xs font-semibold text-gray-300">Inicializace kamery...</p>
                         <button
                             onClick={startCamera}
                             className="px-5 py-2.5 bg-brand-teal text-black font-extrabold text-xs rounded-xl hover:bg-brand-teal-hover transition shadow"
                         >
-                            Enable Camera
+                            Zapnout kameru
                         </button>
                     </div>
                 )}

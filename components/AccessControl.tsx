@@ -49,8 +49,8 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                             <ScanIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-extrabold text-white tracking-tight">Přístupový systém RFID</h1>
-                            <p className="text-xs text-gray-300 mt-0.5">Protokol RFID čtečky, ovládání dveří a kniha přístupů</p>
+                            <h1 className="text-2xl font-extrabold text-white tracking-tight">Přístupový systém</h1>
+                            <p className="text-xs text-gray-300 mt-0.5">Protokol RFID čtečky, ovládání dveří a logy</p>
                         </div>
                     </div>
 
@@ -95,7 +95,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            <ClipboardIcon className="h-4 w-4" /> Kniha přístupů ({logs.length})
+                            <ClipboardIcon className="h-4 w-4" /> Logy ({logs.length})
                         </button>
                     )}
                 </div>

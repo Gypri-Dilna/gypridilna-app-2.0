@@ -67,8 +67,7 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
                             )}
                         </div>
                         <div>
-                            <h2 className="text-base font-extrabold text-white">Tisková fronta (Batch Cut-Saver)</h2>
-                            <p className="text-xs text-gray-400">Hromadný tisk štítků s minimálním odpadem pásky</p>
+                            <h2 className="text-base font-extrabold text-white">Tisková fronta</h2>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
@@ -78,16 +77,6 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
 
                 {/* Queue Body */}
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                    {/* Batch Savings Alert Banner */}
-                    <div className="p-3.5 bg-brand-teal/10 border border-brand-teal/30 rounded-xl text-xs text-brand-teal flex items-center justify-between">
-                        <div>
-                            <span className="font-bold">Úspora materiálu:</span>
-                            <p className="text-[11px] text-gray-300 mt-0.5">
-                                Hromadný tisk spojí všechny štítky na jeden souvislý pás pásky a ušetří cca <strong className="text-white font-mono">{(queue.length * 2.5).toFixed(1)} cm</strong> nepotřebného náběhového odpadu.
-                            </p>
-                        </div>
-                    </div>
-
                     {/* Queued Items List */}
                     {queue.length === 0 ? (
                         <div className="text-center py-10 space-y-2">

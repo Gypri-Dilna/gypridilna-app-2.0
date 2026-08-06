@@ -103,10 +103,10 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                                 ? 'bg-brand-darker hover:bg-brand-teal/20 text-brand-teal border-brand-border'
                                 : 'bg-slate-900/80 text-gray-500 border-slate-800 cursor-not-allowed opacity-75'
                         }`}
-                        title={isPrinterAvailable ? "Vytisknout štítek" : "Driver nenainstalován"}
+                        title={isPrinterAvailable ? "Tisknout štítek" : "Driver nenainstalován"}
                     >
                         <PrinterIcon className={`h-4 w-4 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
-                        Print Label
+                        Tisknout štítek
                     </button>
 
                     {canEdit && (
@@ -116,11 +116,11 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                                 className="flex items-center gap-2 px-4 py-2 bg-brand-darker hover:bg-slate-700 text-gray-200 font-bold text-xs rounded-xl border border-brand-border transition"
                             >
                                 <EditIcon className="h-4 w-4" />
-                                Edit
+                                Upravit
                             </button>
                             <button
                                 onClick={async () => {
-                                    if (window.confirm(`Delete item '${item.title}'?`)) {
+                                    if (window.confirm(`Smazat položku '${item.title}'?`)) {
                                         await onDelete(item.id);
                                         onBack();
                                     }
@@ -156,19 +156,19 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 {parsedLoc && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-brand-border/60 font-sans">
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Rack (X)</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Rack</span>
                             <span className="text-white font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.rack}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Sector/Shelf (Y)</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Sektor/Police</span>
                             <span className="text-white font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.sector}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Box # (Z)</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Číslo boxu</span>
                             <span className="text-white font-bold font-mono text-sm mt-0.5 block">{parsedLoc.box === 0 ? '0 (None)' : `#${parsedLoc.box}`}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Item ID (AAA)</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">ID položky</span>
                             <span className="text-emerald-400 font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.itemId}</span>
                         </div>
                     </div>
@@ -198,7 +198,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </h3>
                     <div className="space-y-3 text-xs">
                         <div className="flex justify-between py-2 border-b border-brand-border/60">
-                            <span className="text-gray-400">Category:</span>
+                            <span className="text-gray-400">Kategorie:</span>
                             <span className="font-semibold text-white">{item.category}</span>
                         </div>
                         <div className="flex justify-between py-2 border-b border-brand-border/60">
@@ -207,7 +207,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         </div>
                         {item.notes && (
                             <div className="pt-2">
-                                <span className="text-gray-400 block mb-1">Notes:</span>
+                                <span className="text-gray-400 block mb-1">Poznámka:</span>
                                 <p className="text-gray-300 bg-brand-darker p-3 rounded-xl border border-brand-border leading-relaxed font-sans">{item.notes}</p>
                             </div>
                         )}
@@ -321,7 +321,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                     {/* Item Title Input + Live Letter Counter */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-gray-300 font-sans">Název položky / Title *</label>
+                            <label className="block text-xs font-semibold text-gray-300 font-sans">Název položky *</label>
                             <span className={`text-xs font-mono font-bold transition-colors ${
                                 title.length >= 30 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
                             }`}>
@@ -382,7 +382,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             )}
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1 font-sans">Kód umístění / Location ID</label>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1 font-sans">Kód umístění</label>
                             <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
                                 {computedLocationCode}
                             </div>
@@ -394,7 +394,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         <div className="grid grid-cols-4 gap-2 items-end">
                             <div>
                                 <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Rack (X)</label>
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Rack</label>
                                 </div>
                                 <input
                                     type="number"
@@ -407,7 +407,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             </div>
                             <div>
                                 <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Sector (Y)</label>
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Sektor</label>
                                 </div>
                                 <input
                                     type="number"
@@ -420,7 +420,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             </div>
                             <div>
                                 <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Box (Z)</label>
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Box</label>
                                 </div>
                                 <input
                                     type="number"
@@ -433,7 +433,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             </div>
                             <div>
                                 <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">ID (AAA)</label>
+                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">ID(automaticky přidělené)</label>
                                 </div>
                                 <div className="w-full px-1.5 py-1.5 bg-slate-950 border border-brand-teal/40 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
                                     {itemNum}
@@ -443,7 +443,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">Notes / Description</label>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">Poznámky / Popis</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}

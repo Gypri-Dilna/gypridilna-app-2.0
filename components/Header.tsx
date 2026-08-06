@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
     const navItems = [
         { id: 'dashboard', label: 'Přehled', icon: DashboardIcon, show: true },
         { id: 'access', label: 'Vstup a čipy', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
-        { id: 'inventory', label: 'Katalog zásob', icon: InventoryIcon, show: true },
+        { id: 'inventory', label: 'Inventář', icon: InventoryIcon, show: true },
         { id: 'scanner', label: isMobile ? 'QR Skener' : 'Vyhledat položku', icon: isMobile ? QrCodeIcon : SearchIcon, show: true },
         { id: 'users', label: 'Správa uživatelů', icon: UserManagementIcon, show: user.is_admin },
     ];
@@ -160,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                    <p className="text-[10px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
                                 </div>
                             </div>
 
@@ -264,7 +264,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     </div>
                                     <div className="truncate">
                                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                        <p className="text-[9px] text-gray-400 uppercase font-mono">{user.is_admin ? 'Admin' : 'Uživatel'}</p>
+                                        <p className="text-[9px] text-gray-400 uppercase font-bold">{user.is_admin ? 'Admin' : 'Uživatel'}</p>
                                     </div>
                                 </div>
 
