@@ -494,72 +494,69 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         </div>
                     </div>
 
-                    {/* Location Code Generator Section (XY-ZAAA) with 100% Perfectly Aligned Baseline Input Boxes */}
-                    <div className="p-4 bg-brand-darker border border-brand-border rounded-xl space-y-3">
-                        <div className="flex justify-between items-center">
+                    {/* Location Code Generator Section (XY-ZAAA) */}
+                    <div className="p-4 sm:p-5 bg-brand-darker border border-brand-border rounded-2xl space-y-3">
+                        <div className="flex justify-between items-center px-1">
                             <label className="block text-xs font-bold text-brand-teal uppercase tracking-wider">
                                 Schéma lokace: XY-ZAAA
                             </label>
-                            <span className="text-xs font-mono font-bold text-amber-400 bg-black/40 px-2 py-0.5 rounded border border-amber-500/30">
+                            <span className="text-xs font-mono font-bold text-amber-400 bg-black/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
                                 {computedLocationCode}
                             </span>
                         </div>
 
-                        {/* 4 Equal Columns with Fixed Height Labels for 100% Vertical Alignment */}
-                        <div className="grid grid-cols-4 gap-2 items-end">
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Rack (X)</label>
-                                </div>
+                        {/* 4 Equal Columns Grid with Symmetrical Gaps and Centered Titles */}
+                        <div className="grid grid-cols-4 gap-2.5 sm:gap-3 items-end">
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
+                                    Regál (X)
+                                </label>
                                 <input
                                     type="number"
                                     min="1"
                                     max="9"
                                     value={rack}
                                     onChange={(e) => setRack(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Sektor (Y)</label>
-                                </div>
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
+                                    Sektor (Y)
+                                </label>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={sector}
                                     onChange={(e) => setSector(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">Box (Z)</label>
-                                </div>
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
+                                    Box (Z)
+                                </label>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={box}
                                     onChange={(e) => setBox(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 text-center leading-none">ID (AAA)</label>
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
+                                    ID Položky
+                                </label>
+                                <div className="w-full h-10 px-2 flex items-center justify-center bg-slate-950 border border-brand-teal/40 rounded-xl text-sm text-brand-teal font-mono font-bold text-center select-none">
+                                    {itemNum}
                                 </div>
-                                <input
-                                    type="text"
-                                    readOnly
-                                    value={itemNum}
-                                    className="w-full px-1.5 py-1.5 bg-slate-950 border border-brand-teal/40 rounded text-xs text-brand-teal font-mono font-bold text-center cursor-not-allowed"
-                                />
                             </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 text-center font-mono">
-                            ID se automaticky přiřazuje podle volných ID, nebo pořadí registrací<strong> (Pokud není věc v boxu - nastavit box na 0)</strong>.
+                        <p className="text-[11px] text-gray-400 text-center font-mono leading-relaxed pt-1">
+                            ID se přiřazuje automaticky podle volných ID. <strong>(Není-li v boxu, nastavte Box na 0)</strong>.
                         </p>
                     </div>
 

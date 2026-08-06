@@ -389,53 +389,63 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         </div>
                     </div>
 
-                    {/* Location Scheme (XY-ZAAA) with 100% Perfectly Aligned Baseline Input Boxes */}
-                    <div className="p-4 bg-brand-darker border border-brand-border rounded-xl space-y-3">
-                        <div className="grid grid-cols-4 gap-2 items-end">
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Rack</label>
-                                </div>
+                    {/* Location Scheme (XY-ZAAA) */}
+                    <div className="p-4 sm:p-5 bg-brand-darker border border-brand-border rounded-2xl space-y-3">
+                        <div className="flex justify-between items-center px-1">
+                            <label className="block text-xs font-bold text-brand-teal uppercase tracking-wider font-sans">
+                                Schéma lokace: XY-ZAAA
+                            </label>
+                            <span className="text-xs font-mono font-bold text-amber-400 bg-black/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                                {computedLocationCode}
+                            </span>
+                        </div>
+
+                        {/* 4 Equal Columns Grid with Symmetrical Gaps and Centered Titles */}
+                        <div className="grid grid-cols-4 gap-2.5 sm:gap-3 items-end">
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
+                                    Regál (X)
+                                </label>
                                 <input
                                     type="number"
                                     min="1"
                                     max="9"
                                     value={rack}
                                     onChange={(e) => setRack(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Sektor</label>
-                                </div>
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
+                                    Sektor (Y)
+                                </label>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={sector}
                                     onChange={(e) => setSector(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">Box</label>
-                                </div>
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
+                                    Box (Z)
+                                </label>
                                 <input
                                     type="number"
                                     min="0"
                                     max="9"
                                     value={box}
                                     onChange={(e) => setBox(Number(e.target.value))}
-                                    className="w-full px-1.5 py-1.5 bg-slate-900 border border-brand-border rounded text-xs text-white font-mono text-center focus:outline-none focus:border-brand-teal"
+                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
                                 />
                             </div>
-                            <div>
-                                <div className="h-7 flex items-end justify-center pb-1">
-                                    <label className="block text-[10px] font-semibold text-gray-400 font-sans text-center leading-none">ID(automaticky přidělené)</label>
-                                </div>
-                                <div className="w-full px-1.5 py-1.5 bg-slate-950 border border-brand-teal/40 rounded text-xs text-brand-teal font-mono font-bold text-center select-none">
+                            <div className="flex flex-col items-center text-center">
+                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
+                                    ID Položky
+                                </label>
+                                <div className="w-full h-10 px-2 flex items-center justify-center bg-slate-950 border border-brand-teal/40 rounded-xl text-sm text-brand-teal font-mono font-bold text-center select-none">
                                     {itemNum}
                                 </div>
                             </div>
