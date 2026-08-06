@@ -434,64 +434,56 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Category Dropdown & Custom Input + Live Letter Counter */}
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <div className="flex items-center gap-1">
-                                    <label className="block text-xs font-semibold text-gray-300 truncate">Kategorie *</label>
-                                    {onOpenCategoryManager && (
-                                        <button
-                                            type="button"
-                                            onClick={onOpenCategoryManager}
-                                            className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono shrink-0 ml-1"
-                                        >
-                                            (Správa)
-                                        </button>
-                                    )}
-                                </div>
-                                <span className={`text-xs font-mono font-bold transition-colors shrink-0 ${
-                                    activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
-                                }`}>
-                                    {activeCategory.length}/22
-                                </span>
+                    {/* Category Dropdown & Custom Input + Live Letter Counter */}
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="flex items-center gap-1">
+                                <label className="block text-xs font-semibold text-gray-300 truncate">Kategorie *</label>
+                                {onOpenCategoryManager && (
+                                    <button
+                                        type="button"
+                                        onClick={onOpenCategoryManager}
+                                        className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono shrink-0 ml-1"
+                                    >
+                                        (Správa)
+                                    </button>
+                                )}
                             </div>
+                            <span className={`text-xs font-mono font-bold transition-colors shrink-0 ${
+                                activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
+                            }`}>
+                                {activeCategory.length}/22
+                            </span>
+                        </div>
 
-                            <select
-                                value={selectedCatOption}
-                                onChange={(e) => setSelectedCatOption(e.target.value)}
-                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans mb-2"
-                            >
-                                {existingCategories.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                        {cat}
-                                    </option>
-                                ))}
-                                <option value="__NEW__" className="text-brand-teal font-bold bg-slate-900">
-                                    + Přidat novou kategorii...
+                        <select
+                            value={selectedCatOption}
+                            onChange={(e) => setSelectedCatOption(e.target.value)}
+                            className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans mb-2"
+                        >
+                            {existingCategories.map((cat) => (
+                                <option key={cat} value={cat}>
+                                    {cat}
                                 </option>
-                            </select>
+                            ))}
+                            <option value="__NEW__" className="text-brand-teal font-bold bg-slate-900">
+                                + Přidat novou kategorii...
+                            </option>
+                        </select>
 
-                            {selectedCatOption === '__NEW__' && (
-                                <input
-                                    type="text"
-                                    required
-                                    maxLength={22}
-                                    value={customCategory}
-                                    onChange={(e) => setCustomCategory(e.target.value)}
-                                    placeholder="Zadejte název kategorie..."
-                                    className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                        customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
-                                    }`}
-                                />
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-300 mb-1">Kód umístění</label>
-                            <div className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs font-mono font-bold text-brand-teal">
-                                {computedLocationCode}
-                            </div>
-                        </div>
+                        {selectedCatOption === '__NEW__' && (
+                            <input
+                                type="text"
+                                required
+                                maxLength={22}
+                                value={customCategory}
+                                onChange={(e) => setCustomCategory(e.target.value)}
+                                placeholder="Zadejte název kategorie..."
+                                className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
+                                    customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
+                                }`}
+                            />
+                        )}
                     </div>
 
                     {/* Location Code Generator Section (XY-ZAAA) */}
