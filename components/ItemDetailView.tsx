@@ -147,7 +147,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                     {/* Location Badge */}
                     <div className="bg-brand-darker border border-amber-500/40 px-4 py-2.5 rounded-xl text-right">
-                        <p className="text-[10px] text-gray-400 font-sans font-semibold uppercase">Location Code</p>
+                        <p className="text-[10px] text-gray-400 font-sans font-semibold uppercase">ID Lokace</p>
                         <p className="text-base font-mono font-extrabold text-amber-400 mt-0.5">{item.location_code}</p>
                     </div>
                 </div>
@@ -194,7 +194,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl space-y-4">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         <ClipboardIcon className="h-4 w-4 text-brand-teal" />
-                        Item Details
+                        Detaily Položky
                     </h3>
                     <div className="space-y-3 text-xs">
                         <div className="flex justify-between py-2 border-b border-brand-border/60">
@@ -404,7 +404,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     max="9"
                                     value={rack}
                                     onChange={(e) => setRack(Number(e.target.value))}
-                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
+                                    className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
@@ -417,7 +417,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     max="9"
                                     value={sector}
                                     onChange={(e) => setSector(Number(e.target.value))}
-                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
+                                    className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
@@ -430,7 +430,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     max="9"
                                     value={box}
                                     onChange={(e) => setBox(Number(e.target.value))}
-                                    className="w-full h-10 px-2 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition"
+                                    className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">

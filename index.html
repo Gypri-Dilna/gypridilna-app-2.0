@@ -64,6 +64,17 @@
       code, pre, .font-mono {
         font-family: 'Roboto Mono', monospace !important;
       }
+      /* Remove Chrome, Safari, Edge, Opera number input spinners */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none !important;
+        margin: 0 !important;
+      }
+      /* Remove Firefox number input spinners */
+      input[type=number] {
+        -moz-appearance: textfield !important;
+        appearance: textfield !important;
+      }
       @keyframes modalPopIn {
         from {
           opacity: 0;
