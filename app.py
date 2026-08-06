@@ -434,6 +434,38 @@ def change_password():
     db.session.commit()
     return jsonify({'message': 'Password changed successfully'}), 200
 
+# --- Session-based Remote Scanning (PC <-> Mobile) ---
+PAIRED_REMOTE_SESSIONS = {}
+
+@app.route('/api/inventory/remote-scan', methods=['POST'])
+def broadcast_remote_scan():
+    data = request.json or {}
+    session_id = data.get('session_id', 'default')
+    qr_code = data.get('qr_code', '').strip()
+    if qr_code:
+        PAIRED_REMOTE_SESSIONS[session_id] = {
+            'qr_code': qr_code,
+            'timestamp': datetime.now(timezone.utc).timestamp()
+        }
+        return jsonify({'status': 'broadcasted', 'session_id': session_id, 'qr_code': qr_code}), 200
+    return jsonify({'error': 'Missing qr_code'}), 400
+
+@app.route('/api/inventory/remote-scan/latest', methods=['GET'])
+def get_latest_remote_scan():
+    session_id = request.args.get('session_id', 'default')
+    try:
+        since = float(request.args.get('since', 0.0))
+    except (ValueError, TypeError):
+        since = 0.0
+    session_data = PAIRED_REMOTE_SESSIONS.get(session_id)
+    if session_data and session_data['timestamp'] > since:
+        return jsonify({
+            'session_id': session_id,
+            'qr_code': session_data['qr_code'],
+            'timestamp': session_data['timestamp']
+        }), 200
+    return jsonify({'session_id': session_id, 'qr_code': None, 'timestamp': 0.0}), 200
+
 # --- Serve Frontend App ---
 @app.route('/')
 def serve_index():

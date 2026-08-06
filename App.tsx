@@ -469,7 +469,7 @@ const App: React.FC = () => {
                         const item = await handleLookupQrItem(data.qr_code);
                         if (item) {
                             setSelectedItem(item);
-                            setActiveTab('scanner');
+                            setActiveTab('inventory');
                         }
                     }
                 }

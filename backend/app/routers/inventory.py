@@ -318,6 +318,17 @@ def broadcast_remote_scan(payload: dict):
         return {"status": "broadcasted", "session_id": session_id, "qr_code": qr_code}
     raise HTTPException(status_code=400, detail="Missing qr_code payload")
 
+@router.get("/remote-scan/latest")
+def get_latest_remote_scan(session_id: str = Query("default"), since: float = Query(0.0)):
+    session_data = paired_sessions.get(session_id)
+    if session_data and session_data["timestamp"] > since:
+        return {
+            "session_id": session_id,
+            "qr_code": session_data["qr_code"],
+            "timestamp": session_data["timestamp"]
+        }
+    return {"session_id": session_id, "qr_code": None, "timestamp": 0.0}
+
 @router.get("/printer-status")
 def get_printer_status():
     """
