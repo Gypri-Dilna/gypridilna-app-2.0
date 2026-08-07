@@ -87,16 +87,35 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
         }));
     };
 
+    const [isClosing, setIsClosing] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setIsClosing(false);
+        }
+    }, [isOpen]);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 180);
+    };
+
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-backdrop-fade font-sans overflow-hidden">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-modal-pop my-auto max-h-[85vh] flex flex-col">
+        <div className={`fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md font-sans overflow-hidden ${
+            isClosing ? 'animate-backdrop-fade-out' : 'animate-backdrop-fade'
+        }`}>
+            <div className={`bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden my-auto max-h-[85vh] flex flex-col ${
+                isClosing ? 'animate-modal-pop-out' : 'animate-modal-pop'
+            }`}>
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-base font-extrabold text-white">
                         {user ? 'Upravit uživatele' : 'Přidat nového uživatele'}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-slate-800">
+                    <button onClick={handleClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-slate-800">
                         <CloseIcon className="h-5 w-5" />
                     </button>
                 </div>
@@ -204,7 +223,7 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, u
                     <div className="flex gap-3 pt-4 border-t border-brand-border">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="flex-1 px-5 py-2.5 bg-brand-darker border border-brand-border text-gray-300 hover:text-white font-bold text-xs rounded-xl transition"
                         >
                             Zrušit

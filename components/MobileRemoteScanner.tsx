@@ -10,7 +10,7 @@ interface MobileRemoteScannerProps {
 }
 
 export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLookupItem, onSelectItem, onClose }) => {
-    const [scanMode, setScanMode] = useState<'pc' | 'local'>('pc');
+    const [scanMode, setScanMode] = useState<'local' | 'pc'>('local');
     const [pairedSessionId, setPairedSessionId] = useState<string | null>(() => {
         return localStorage.getItem('gypri_paired_pc_session') || null;
     });
@@ -19,20 +19,22 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const [scannedItem, setScannedItem] = useState<InventoryItem | null>(null);
     const [scannedFeedback, setScannedFeedback] = useState<{ title: string; location_code: string; mode: 'pc' | 'local' } | null>(null);
 
+    const [cameraDevices, setCameraDevices] = useState<Array<{ id: string; label: string }>>([]);
+    const [activeCamIndex, setActiveCamIndex] = useState<number>(0);
+
     const scanModeRef = useRef(scanMode);
     useEffect(() => { scanModeRef.current = scanMode; }, [scanMode]);
 
     const pairedSessionIdRef = useRef(pairedSessionId);
     useEffect(() => { pairedSessionIdRef.current = pairedSessionId; }, [pairedSessionId]);
 
-    // Permanent 2.0x Default Hardware Zoom
-    const zoomFactor = 2.0;
-
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const isProcessingRef = useRef<boolean>(false);
+    const lastScannedQrRef = useRef<string>('');
+    const lastScannedTimeRef = useRef<number>(0);
 
-    // Smooth WebRTC Native Hardware Zoom & Focus Adjuster
-    const applyHardwareZoomAndFocus = useCallback((targetZoom: number) => {
+    // Hardware Zoom and Autofocus Controller
+    const applyHardwareZoomAndFocus = useCallback(() => {
         try {
             const videoElem = document.querySelector('#remote-mobile-reader video') as HTMLVideoElement;
             if (videoElem && videoElem.srcObject) {
@@ -43,19 +45,16 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
                     const constraints: any = { advanced: [] };
 
-                    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                        constraints.advanced.push({ focusMode: 'continuous' });
+                    if (capabilities.focusMode) {
+                        if (capabilities.focusMode.includes('continuous')) {
+                            constraints.advanced.push({ focusMode: 'continuous' });
+                        } else if (capabilities.focusMode.includes('single-shot')) {
+                            constraints.advanced.push({ focusMode: 'single-shot' });
+                        }
                     }
 
                     if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
                         constraints.advanced.push({ exposureMode: 'continuous' });
-                    }
-
-                    if (capabilities.zoom) {
-                        const min = capabilities.zoom.min || 1;
-                        const max = capabilities.zoom.max || 5;
-                        const clamped = Math.min(max, Math.max(min, targetZoom));
-                        constraints.advanced.push({ zoom: clamped });
                     }
 
                     if (constraints.advanced.length > 0) {
@@ -68,12 +67,21 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         }
     }, []);
 
-    const startCamera = useCallback(async () => {
+    const startCamera = useCallback(async (targetDeviceId?: string) => {
         setErrorMsg(null);
         isProcessingRef.current = false;
 
         const container = document.getElementById('remote-mobile-reader');
         if (!container) return;
+
+        // Gracefully stop previous scanner instance if running
+        if (scannerRef.current) {
+            try {
+                if (scannerRef.current.isScanning) {
+                    await scannerRef.current.stop();
+                }
+            } catch (e) {}
+        }
         container.innerHTML = '';
 
         try {
@@ -84,115 +92,171 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             const html5QrCode = new Html5Qrcode("remote-mobile-reader", false);
             scannerRef.current = html5QrCode;
 
+            // Retrieve all available camera devices
+            let devices: Array<{ id: string; label: string }> = [];
+            try {
+                devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length > 0) {
+                    setCameraDevices(devices.map((d, i) => ({ id: d.id, label: d.label || `Kamera ${i + 1}` })));
+                }
+            } catch (e) {}
+
+            let selectedConstraint: any = { facingMode: "environment" };
+
+            if (targetDeviceId) {
+                selectedConstraint = { deviceId: { exact: targetDeviceId } };
+            } else if (devices && devices.length > 0) {
+                // Default to working Lens 4/4 (last rear camera in device list)
+                const mainLens = devices[devices.length - 1];
+                if (mainLens && mainLens.id) {
+                    selectedConstraint = { deviceId: { exact: mainLens.id } };
+                    setActiveCamIndex(devices.length - 1);
+                }
+            }
+
             const scanConfig = {
-                fps: 25,
+                fps: 30,
                 qrbox: (w: number, h: number) => {
-                    const size = Math.floor(Math.min(w, h) * 0.70);
+                    const size = Math.floor(Math.min(w, h) * 0.72);
                     return { width: size, height: size };
                 }
             };
 
             const handleSuccess = async (decodedText: string) => {
-                if (isProcessingRef.current) return;
-                isProcessingRef.current = true;
+                const lastScannedKey = `${decodedText}_${scanModeRef.current}`;
+                if (lastScannedQrRef.current === lastScannedKey && (Date.now() - lastScannedTimeRef.current < 6000)) {
+                    return;
+                }
+                lastScannedQrRef.current = lastScannedKey;
+                lastScannedTimeRef.current = Date.now();
 
                 if (typeof window !== 'undefined' && 'vibrate' in navigator) {
                     try { navigator.vibrate([80, 40, 80]); } catch (e) {}
                 }
 
                 if (decodedText.startsWith('PAIR:')) {
-                    const newSession = decodedText.replace('PAIR:', '').trim();
-                    setPairedSessionId(newSession);
-                    localStorage.setItem('gypri_paired_pc_session', newSession);
-                    setScannedFeedback({ title: 'PAIRED WITH PC WORKSTATION', location_code: newSession, mode: 'pc' });
-                    setTimeout(() => {
-                        setScannedFeedback(null);
-                        isProcessingRef.current = false;
-                    }, 1400);
+                    const sessionId = decodedText.replace('PAIR:', '').trim();
+                    setPairedSessionId(sessionId);
+                    localStorage.setItem('gypri_paired_pc_session', sessionId);
+                    setScanMode('pc');
+                    setScannedFeedback({
+                        title: `Spárováno s PC (${sessionId})`,
+                        location_code: 'PAIRING SUCCESS',
+                        mode: 'pc'
+                    });
+                    setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 2200);
+                    return;
+                }
+
+                if (scanModeRef.current === 'pc') {
+                    const targetSession = pairedSessionIdRef.current;
+                    if (!targetSession) {
+                        setErrorMsg("Není spárováno PC. Naskenuj nejprve QR kód na obrazovce počítače.");
+                        setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 3000);
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/inventory/remote-scan', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                session_id: targetSession,
+                                qr_code: decodedText
+                            })
+                        });
+
+                        if (res.ok) {
+                            setScannedFeedback({
+                                title: `Odesláno na PC: ${decodedText}`,
+                                location_code: 'REMOTE SCAN',
+                                mode: 'pc'
+                            });
+                            setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 2500);
+                        } else {
+                            setErrorMsg("Chyba při odesílání skenu na PC.");
+                            setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
+                        }
+                    } catch (e) {
+                        setErrorMsg("Chyba sítě při odesílání na PC.");
+                        setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
+                    }
                     return;
                 }
 
                 try {
                     const item = await onLookupItem(decodedText);
-                    const title = item ? item.title : 'Inventory Item Tag';
-                    const location_code = item ? item.location_code : decodedText;
-
-                    if (scanModeRef.current === 'pc') {
-                        const targetSession = pairedSessionIdRef.current || 'default';
-                        fetch('/api/inventory/remote-scan', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ session_id: targetSession, qr_code: decodedText })
-                        }).catch(() => {});
-
-                        setScannedFeedback({ title, location_code, mode: 'pc' });
-                    } else {
+                    if (item) {
                         setScannedItem(item);
-                        setScannedFeedback({ title, location_code, mode: 'local' });
+                        setScannedFeedback({
+                            title: item.title,
+                            location_code: item.location_code || 'Bez lokace',
+                            mode: 'local',
+                            item: item
+                        } as any);
+                        setTimeout(() => {
+                            setScannedFeedback(null);
+                            isProcessingRef.current = false;
+                        }, 4500);
+                    } else {
+                        setScannedFeedback({
+                            title: 'Položka nenalezena v databázi',
+                            location_code: decodedText,
+                            mode: 'error' as any
+                        });
+                        setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 3000);
                     }
                 } catch (e) {
-                    console.warn("Lookup item error:", e);
+                    setErrorMsg("Chyba při hledání položky.");
+                    setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
                 }
-
-                setTimeout(() => {
-                    setScannedFeedback(null);
-                    isProcessingRef.current = false;
-                }, 1400);
             };
 
-            // Enumerate cameras & strictly lock onto the last camera (Camera 4/4, Main Primary Rear Lens)
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length > 0) {
-                    const mainRearCamera = devices[devices.length - 1];
-                    await html5QrCode.start(mainRearCamera.id, scanConfig, handleSuccess, () => {});
-                    setIsScanning(true);
-                    setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
-                    return;
-                }
-            } catch (eEnum) {
-                console.warn("Camera list enumeration fallback:", eEnum);
-            }
+            await html5QrCode.start(
+                selectedConstraint,
+                scanConfig,
+                handleSuccess,
+                () => {}
+            );
 
-            // Fallback: Exact environment facing mode
-            try {
-                await html5QrCode.start({ facingMode: { exact: "environment" } }, scanConfig, handleSuccess, () => {});
-                setIsScanning(true);
-                setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
-                return;
-            } catch (e1) {}
-
-            await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
             setIsScanning(true);
-            setTimeout(() => applyHardwareZoomAndFocus(zoomFactor), 150);
+
+            setTimeout(() => {
+                applyHardwareZoomAndFocus();
+            }, 500);
 
         } catch (err: any) {
-            console.error("Camera start error:", err);
+            console.error("Camera startup error:", err);
             setIsScanning(false);
-            setErrorMsg("Povol přístup ke kameře v nastavení pro skenování položek.");
+            setErrorMsg(err.message || "Chyba při spouštění fotoaparátu.");
         }
-    }, [onLookupItem, applyHardwareZoomAndFocus, zoomFactor]);
+    }, [onLookupItem, applyHardwareZoomAndFocus]);
+
+    const isCameraStartedRef = useRef(false);
 
     useEffect(() => {
-        let isMounted = true;
-        const timer = setTimeout(() => {
-            if (isMounted) {
-                startCamera();
-            }
-        }, 100);
+        if (isCameraStartedRef.current) return;
+        isCameraStartedRef.current = true;
+
+        startCamera();
 
         return () => {
-            isMounted = false;
-            clearTimeout(timer);
-            if (scannerRef.current) {
-                try {
-                    if (scannerRef.current.isScanning) {
-                        scannerRef.current.stop().catch(() => {});
-                    }
-                } catch (e) {}
+            isCameraStartedRef.current = false;
+            if (scannerRef.current && scannerRef.current.isScanning) {
+                scannerRef.current.stop().catch(() => {});
             }
         };
-    }, [startCamera]);
+    }, []);
+
+    const handleSwitchLens = () => {
+        if (cameraDevices.length <= 1) return;
+        const nextIndex = (activeCamIndex + 1) % cameraDevices.length;
+        setActiveCamIndex(nextIndex);
+        const nextDevice = cameraDevices[nextIndex];
+        if (nextDevice && nextDevice.id) {
+            startCamera(nextDevice.id);
+        }
+    };
 
     const handleUnpairPC = () => {
         setPairedSessionId(null);
@@ -201,21 +265,8 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
     return (
         <div className="space-y-4 font-sans max-w-md mx-auto animate-fadeIn">
-            {/* Mode Switcher Banner: Scan to PC vs Scan Locally */}
+            {/* Mode Switcher Banner: Local Scan (Default - Left) vs Scan to PC (Right) */}
             <div className="bg-brand-dark border border-brand-border p-2 rounded-2xl grid grid-cols-2 gap-2 shadow-xl">
-                <button
-                    type="button"
-                    onClick={() => setScanMode('pc')}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                        scanMode === 'pc'
-                            ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
-                            : 'text-gray-300 hover:bg-brand-darker hover:text-white'
-                    }`}
-                >
-                    <DesktopIcon className="h-4 w-4" />
-                    <span>Skenovat do PC</span>
-                </button>
-
                 <button
                     type="button"
                     onClick={() => setScanMode('local')}
@@ -228,103 +279,138 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     <CameraIcon className="h-4 w-4" />
                     <span>Skenovat lokálně</span>
                 </button>
+
+                <button
+                    type="button"
+                    onClick={() => setScanMode('pc')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        scanMode === 'pc'
+                            ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
+                            : 'text-gray-300 hover:bg-brand-darker hover:text-white'
+                    }`}
+                >
+                    <DesktopIcon className="h-4 w-4" />
+                    <span>Skenovat do PC</span>
+                </button>
             </div>
 
-            {/* PC Pairing Status Subheader */}
-            {scanMode === 'pc' && (
-                <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
-                        <span className="font-mono text-gray-200">
-                            {pairedSessionId ? `Spárováno s PC (${pairedSessionId})` : 'Nespárováno: Naskenuj kód na PC'}
-                        </span>
-                    </div>
-                    {pairedSessionId && (
-                        <button
-                            type="button"
-                            onClick={handleUnpairPC}
-                            className="text-[10px] text-gray-400 hover:text-rose-400 underline font-mono"
-                        >
-                            Unpair
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* Live Camera Scanner Viewport */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-brand-teal/30 bg-black min-h-[310px] shadow-2xl flex items-center justify-center">
-                <style>{`
-                    #remote-mobile-reader {
-                        width: 100% !important;
-                        border: none !important;
-                        overflow: hidden !important;
-                        border-radius: 0.75rem !important;
-                    }
-                    #remote-mobile-reader video {
-                        width: 100% !important;
-                        height: 100% !important;
-                        max-height: 380px !important;
-                        object-fit: cover !important;
-                        border-radius: 0.75rem !important;
-                        filter: none !important;
-                    }
-                    #remote-mobile-reader canvas {
-                        display: none !important;
-                    }
-                    #remote-mobile-reader video:nth-of-type(n+2) {
-                        display: none !important;
-                    }
-                    #remote-mobile-reader__scan_region {
-                        background: transparent !important;
-                    }
-                    #remote-mobile-reader__dashboard {
-                        display: none !important;
-                    }
-                `}</style>
-                <div id="remote-mobile-reader" className="w-full rounded-2xl overflow-hidden" />
-
-                {!isScanning && (
-                    <div className="p-6 text-center space-y-3 absolute inset-0 bg-brand-darker flex flex-col items-center justify-center">
-                        <QrCodeIcon className="h-12 w-12 text-brand-teal animate-bounce" />
-                        <p className="text-xs font-semibold text-gray-300">Inicializace kamery...</p>
-                        <button
-                            onClick={startCamera}
-                            className="px-5 py-2.5 bg-brand-teal text-black font-extrabold text-xs rounded-xl hover:bg-brand-teal-hover transition shadow"
-                        >
-                            Zapnout kameru
-                        </button>
+            {/* Viewport & Subheader Animated Container */}
+            <div className="animate-tab-switch space-y-4">
+                {/* PC Pairing Status Subheader */}
+                {scanMode === 'pc' && (
+                    <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+                            <span className="font-mono text-gray-200">
+                                {pairedSessionId ? `Spárováno s PC (${pairedSessionId})` : 'Nespárováno: Naskenuj kód na PC'}
+                            </span>
+                        </div>
+                        {pairedSessionId && (
+                            <button
+                                type="button"
+                                onClick={handleUnpairPC}
+                                className="text-[10px] text-gray-400 hover:text-rose-400 underline font-mono"
+                            >
+                                Odpárovat
+                            </button>
+                        )}
                     </div>
                 )}
-            </div>
 
-            {/* Local Mode Scanned Item Quick Action Bottom Card */}
-            {scanMode === 'local' && scannedItem && (
-                <div className="bg-brand-dark border border-brand-teal/40 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xl animate-modal-pop">
-                    <div className="overflow-hidden">
-                        <span className="text-[10px] font-mono text-brand-teal font-bold bg-black px-2 py-0.5 rounded border border-brand-teal/30">
-                            {scannedItem.location_code}
-                        </span>
-                        <h3 className="text-sm font-bold text-white truncate mt-1">{scannedItem.title}</h3>
-                    </div>
-                    {onSelectItem && (
+                {/* Live Camera Scanner Viewport */}
+                <div className={`relative rounded-2xl overflow-hidden border-4 transition-all duration-300 bg-black min-h-[310px] shadow-2xl flex items-center justify-center ${
+                    scannedFeedback?.mode === 'error'
+                        ? 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.8)] animate-pulse'
+                        : scannedFeedback?.mode === 'pc'
+                        ? 'border-emerald-400 shadow-[0_0_35px_rgba(52,211,153,0.8)]'
+                        : 'border-brand-teal/30'
+                }`}>
+                    <style>{`
+                        #remote-mobile-reader {
+                            width: 100% !important;
+                            border: none !important;
+                            overflow: hidden !important;
+                            border-radius: 0.75rem !important;
+                        }
+                        #remote-mobile-reader video {
+                            width: 100% !important;
+                            height: 100% !important;
+                            max-height: 380px !important;
+                            object-fit: cover !important;
+                        }
+                        #remote-mobile-reader video:nth-of-type(n+2),
+                        #remote-mobile-reader canvas,
+                        #remote-mobile-reader img,
+                        #remote-mobile-reader__scan_region svg,
+                        #remote-mobile-reader__shaded_region,
+                        #remote-mobile-reader div[style*="position: absolute"] {
+                            display: none !important;
+                        }
+                        #remote-mobile-reader__scan_region {
+                            border: none !important;
+                            box-shadow: none !important;
+                            background: transparent !important;
+                        }
+                    `}</style>
+
+                    <div id="remote-mobile-reader" className="w-full h-full min-h-[310px]" />
+
+                    {/* Camera Switcher Floating Button (if phone has multiple cameras) */}
+                    {cameraDevices.length > 1 && (
                         <button
                             type="button"
-                            onClick={() => onSelectItem(scannedItem)}
-                            className="flex items-center gap-1.5 px-3.5 py-2 bg-brand-teal text-black text-xs font-extrabold rounded-xl hover:bg-brand-teal-hover transition flex-shrink-0"
+                            onClick={handleSwitchLens}
+                            className="absolute top-3 right-3 z-30 px-3 py-1.5 bg-black/75 hover:bg-black/90 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20 transition flex items-center gap-1.5 shadow-lg active:scale-95"
                         >
-                            Open Details <ExternalLinkIcon className="h-3.5 w-3.5" />
+                            <CameraIcon className="h-3.5 w-3.5 text-brand-teal" />
+                            <span>Objektiv {activeCamIndex + 1}/{cameraDevices.length}</span>
                         </button>
                     )}
-                </div>
-            )}
 
-            {/* Error Message */}
-            {errorMsg && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2 font-semibold">
-                    <WarningIcon className="h-4 w-4 flex-shrink-0" />
-                    <span>{errorMsg}</span>
+                    {/* Non-blocking Bottom Floating Scanned Feedback Toast Card */}
+                    {scannedFeedback && (
+                        <div 
+                            onClick={() => {
+                                const matchedItem = (scannedFeedback as any).item;
+                                if (matchedItem && onSelectItem) {
+                                    onSelectItem(matchedItem);
+                                }
+                            }}
+                            className={`absolute bottom-3 inset-x-3 backdrop-blur-md p-3.5 rounded-2xl border shadow-2xl flex items-center justify-between z-30 transition-all cursor-pointer active:scale-95 animate-slideUp ${
+                                scannedFeedback.mode === 'error'
+                                    ? 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+                                    : scannedFeedback.mode === 'pc'
+                                    ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+                                    : 'bg-slate-900/95 border-brand-teal/50 text-white'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl flex-shrink-0 ${
+                                    scannedFeedback.mode === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-brand-teal/20 text-brand-teal'
+                                }`}>
+                                    {scannedFeedback.mode === 'error' ? <WarningIcon className="h-5 w-5" /> : <SuccessIcon className="h-5 w-5" />}
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-extrabold text-white line-clamp-1">{scannedFeedback.title}</p>
+                                    <p className="text-[11px] font-mono text-gray-300">Lokace: <span className="text-brand-teal font-bold">{scannedFeedback.location_code}</span></p>
+                                </div>
+                            </div>
+
+                            {(scannedFeedback as any).item && (
+                                <span className="text-[11px] font-bold text-brand-teal bg-brand-teal/15 px-3 py-1.5 rounded-xl border border-brand-teal/30 flex items-center gap-1 flex-shrink-0">
+                                    Detail →
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {errorMsg && (
+                        <div className="absolute inset-x-3 bottom-3 bg-rose-950/90 border border-rose-500/50 p-3 rounded-xl text-center text-xs font-semibold text-rose-200 z-30 shadow-xl backdrop-blur-md">
+                            {errorMsg}
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };

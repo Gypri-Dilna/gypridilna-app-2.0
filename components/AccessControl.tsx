@@ -101,23 +101,25 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                 </div>
             </div>
 
-            {/* Subtab Content */}
-            {subTab === 'chips' ? (
-                <ChipManagement
-                    user={user}
-                    chips={chips}
-                    onAddChip={onAddChip}
-                    onUpdateChip={onUpdateChip}
-                    onDeleteChip={onDeleteChip}
-                    showToast={showToast}
-                />
-            ) : (
-                <LogsViewer
-                    user={user}
-                    logs={logs}
-                    onRefresh={onRefresh}
-                />
-            )}
+            {/* Subtab Content with Smooth Switch Animation */}
+            <div key={subTab} className="animate-tab-switch">
+                {subTab === 'chips' ? (
+                    <ChipManagement
+                        user={user}
+                        chips={chips}
+                        onAddChip={onAddChip}
+                        onUpdateChip={onUpdateChip}
+                        onDeleteChip={onDeleteChip}
+                        showToast={showToast}
+                    />
+                ) : (
+                    <LogsViewer
+                        user={user}
+                        logs={logs}
+                        onRefresh={onRefresh}
+                    />
+                )}
+            </div>
         </div>
     );
 };

@@ -313,7 +313,8 @@ def broadcast_remote_scan(payload: dict):
     if qr_code:
         paired_sessions[session_id] = {
             "qr_code": qr_code,
-            "timestamp": datetime.now(timezone.utc).timestamp()
+            "timestamp": datetime.now(timezone.utc).timestamp(),
+            "consumed": False
         }
         return {"status": "broadcasted", "session_id": session_id, "qr_code": qr_code}
     raise HTTPException(status_code=400, detail="Missing qr_code payload")
@@ -321,11 +322,15 @@ def broadcast_remote_scan(payload: dict):
 @router.get("/remote-scan/latest")
 def get_latest_remote_scan(session_id: str = Query("default"), since: float = Query(0.0)):
     session_data = paired_sessions.get(session_id)
-    if session_data and session_data["timestamp"] > since:
+    if session_data and not session_data.get("consumed") and session_data.get("qr_code") and session_data["timestamp"] > since:
+        qr_code = session_data["qr_code"]
+        ts = session_data["timestamp"]
+        session_data["consumed"] = True  # Instantly mark as consumed
+        session_data["qr_code"] = None  # Clear payload so it CAN NEVER be replayed!
         return {
             "session_id": session_id,
-            "qr_code": session_data["qr_code"],
-            "timestamp": session_data["timestamp"]
+            "qr_code": qr_code,
+            "timestamp": ts
         }
     return {"session_id": session_id, "qr_code": None, "timestamp": 0.0}
 

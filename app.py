@@ -305,8 +305,16 @@ def manage_single_chip(chip_id):
     
     if request.method == 'PUT':
         data = request.json
+        old_name = chip.name
+        new_name = data.get('name', '').strip()
+        
+        # If chip owner name changed, update all chips and logs owned by old_name
+        if old_name and new_name and old_name != new_name:
+            Chip.query.filter_by(name=old_name).update({'name': new_name})
+            AccessLog.query.filter_by(name=old_name).update({'name': new_name})
+        
         chip.chip_id = data['chip_id']
-        chip.name = data['name']
+        chip.name = new_name
         chip.is_allowed = data['is_allowed']
         chip.is_one_time = data['is_one_time']
         chip.valid_until = datetime.fromisoformat(data['valid_until'].replace('Z', '+00:00')) if data.get('valid_until') else None
@@ -445,7 +453,8 @@ def broadcast_remote_scan():
     if qr_code:
         PAIRED_REMOTE_SESSIONS[session_id] = {
             'qr_code': qr_code,
-            'timestamp': datetime.now(timezone.utc).timestamp()
+            'timestamp': datetime.now(timezone.utc).timestamp(),
+            'consumed': False
         }
         return jsonify({'status': 'broadcasted', 'session_id': session_id, 'qr_code': qr_code}), 200
     return jsonify({'error': 'Missing qr_code'}), 400
@@ -458,13 +467,25 @@ def get_latest_remote_scan():
     except (ValueError, TypeError):
         since = 0.0
     session_data = PAIRED_REMOTE_SESSIONS.get(session_id)
-    if session_data and session_data['timestamp'] > since:
+    if session_data and not session_data.get('consumed') and session_data.get('qr_code') and session_data['timestamp'] > since:
+        qr_code = session_data['qr_code']
+        ts = session_data['timestamp']
+        session_data['consumed'] = True  # Instantly mark as consumed
+        session_data['qr_code'] = None  # Clear payload so it CAN NEVER be replayed!
         return jsonify({
             'session_id': session_id,
-            'qr_code': session_data['qr_code'],
-            'timestamp': session_data['timestamp']
+            'qr_code': qr_code,
+            'timestamp': ts
         }), 200
     return jsonify({'session_id': session_id, 'qr_code': None, 'timestamp': 0.0}), 200
+
+# --- Serve Location Pictures & Storage Layout SVG ---
+@app.route('/location-pictures/<path:filename>')
+def serve_location_picture(filename):
+    pics_dir = os.path.join(os.path.dirname(__file__), 'location pictures')
+    if os.path.exists(os.path.join(pics_dir, filename)):
+        return send_from_directory(pics_dir, filename)
+    return jsonify({'error': 'Location picture not found'}), 404
 
 # --- Serve Frontend App ---
 @app.route('/')

@@ -375,17 +375,31 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
     const computedLocationCode = formatLocationCode(rack, sector, box, itemNum);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setCodeError('');
+    const [isClosing, setIsClosing] = useState(false);
 
-        const finalCategory = activeCategory.trim() || 'General';
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 180);
+    };
 
+    const parseLocationInput = () => {
         const validated = parseLocationCode(computedLocationCode);
         if (!validated) {
             setCodeError('Kód umístění musí striktně odpovídat schématu XY-ZAAA (např. 12-0001)');
-            return;
+            return null;
         }
+        return validated;
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setCodeError('');
+        const validated = parseLocationInput();
+        if (!validated) return;
+
+        const finalCategory = activeCategory.trim() || 'General';
 
         onSave({
             title: title.slice(0, 30),
@@ -400,14 +414,19 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
             location_x: 50,
             location_y: 50
         });
+        handleClose();
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-backdrop-fade font-sans overflow-hidden">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm font-sans overflow-hidden ${
+            isClosing ? 'animate-backdrop-fade-out' : 'animate-backdrop-fade'
+        }`}>
+            <div className={`bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] ${
+                isClosing ? 'animate-modal-pop-out' : 'animate-modal-pop'
+            }`}>
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-lg font-bold text-white">{item ? 'Upravit položku' : 'Přidat novou položku'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
+                    <button onClick={handleClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -500,8 +519,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                         {/* 4 Equal Columns Grid with Symmetrical Gaps and Centered Titles */}
                         <div className="grid grid-cols-4 gap-2.5 sm:gap-3 items-end">
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
-                                    Regál (X)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 text-center mb-1.5 leading-tight">
+                                    Rack / Skříň / Lokace (X)
                                 </label>
                                 <input
                                     type="number"
@@ -513,8 +532,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
-                                    Sektor (Y)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 text-center mb-1.5 leading-tight">
+                                    Police / Sektor (Y)
                                 </label>
                                 <input
                                     type="number"
@@ -526,8 +545,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
-                                    Box (Z)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 text-center mb-1.5 leading-tight">
+                                    Box / Krabice (Z)
                                 </label>
                                 <input
                                     type="number"
@@ -539,8 +558,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 text-center mb-1.5 whitespace-nowrap">
-                                    ID Položky
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 text-center mb-1.5 leading-tight">
+                                    ID Položky (AAA)
                                 </label>
                                 <div className="w-full h-10 px-2 flex items-center justify-center bg-slate-950 border border-brand-teal/40 rounded-xl text-sm text-brand-teal font-mono font-bold text-center select-none">
                                     {itemNum}
@@ -572,7 +591,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                     <div className="flex gap-3 pt-4">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold rounded-xl text-xs transition"
                         >
                             Zrušit

@@ -452,6 +452,7 @@ const App: React.FC = () => {
         return id;
     });
     const lastRemoteScanTimeRef = useRef<number>(Date.now() / 1000);
+    const lastProcessedQrRef = useRef<string>('');
 
     // Global Remote Scan Poller for PC Screen
     // Keeps polling continuously even when ItemDetailView is open so scanning item #2 refreshes PC screen instantly!
@@ -464,8 +465,9 @@ const App: React.FC = () => {
                 const res = await fetch(`${API_BASE_URL}/api/inventory/remote-scan/latest?session_id=${pcSessionId}&since=${lastRemoteScanTimeRef.current}`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.qr_code && data.timestamp > lastRemoteScanTimeRef.current) {
-                        lastRemoteScanTimeRef.current = data.timestamp;
+                    if (data.qr_code && data.qr_code !== lastProcessedQrRef.current && data.timestamp > lastRemoteScanTimeRef.current) {
+                        lastRemoteScanTimeRef.current = Math.max(lastRemoteScanTimeRef.current, data.timestamp, Date.now() / 1000 + 0.5);
+                        lastProcessedQrRef.current = data.qr_code;
                         const item = await handleLookupQrItem(data.qr_code);
                         if (item) {
                             setSelectedItem(item);
@@ -490,6 +492,9 @@ const App: React.FC = () => {
 
     const handleCloseItemDetail = () => {
         setSelectedItem(null);
+        // Advance time ref by 10s so past remote scans NEVER re-trigger when closing on PC
+        lastRemoteScanTimeRef.current = Date.now() / 1000 + 10;
+        lastProcessedQrRef.current = '';
     };
 
     const handleDeleteCategory = async (categoryName: string) => {
@@ -654,13 +659,15 @@ const App: React.FC = () => {
                         queueCount={printQueue.length}
                         onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
                     />
-                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
-                        <ErrorBoundary onReset={() => { setSelectedItem(null); setActiveTab('dashboard'); }}>
-                            <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
-                                {renderActiveTabContent()}
-                            </div>
-                        </ErrorBoundary>
-                    </main>
+                    <div className="flex-1 md:pl-64 w-full flex flex-col items-center">
+                        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+                            <ErrorBoundary onReset={() => { setSelectedItem(null); setActiveTab('dashboard'); }}>
+                                <div key={`${activeTab}-${selectedItem ? selectedItem.id : 'list'}`} className="animate-page-transition">
+                                    {renderActiveTabContent()}
+                                </div>
+                            </ErrorBoundary>
+                        </main>
+                    </div>
 
                     {/* Print Queue Batch Modal */}
                     {isPrintQueueOpen && (

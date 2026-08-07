@@ -5,6 +5,7 @@ import {
     InventoryIcon, QrCodeIcon, SearchIcon
 } from './icons';
 import { Logo } from './Logo';
+import { BoltGlyphChain } from './BoltGlyph';
 import { User } from '../types';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
@@ -37,11 +38,14 @@ export const Header: React.FC<HeaderProps> = ({
     useEffect(() => {
         if (isMobileMenuOpen || isClosing) {
             document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         }
         return () => {
             document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         };
     }, [isMobileMenuOpen, isClosing]);
 
@@ -115,12 +119,12 @@ export const Header: React.FC<HeaderProps> = ({
                 }
             `}</style>
 
-            {/* Desktop Sidebar (Permanent 240px) */}
-            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-screen sticky top-0 font-sans relative overflow-hidden">
+            {/* Desktop Sidebar (Permanent 240px Fixed Snapped Viewport) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-screen fixed top-0 left-0 bottom-0 z-30 font-sans overflow-hidden">
                 <div className="p-5 flex flex-col h-full justify-between overflow-y-auto relative z-10">
                     <div>
-                        {/* Official Brand Logo & Name (lowercase: gypri in white, dílna in brand teal) */}
-                        <div className="flex items-center gap-3 pb-5 border-b border-brand-border">
+                        {/* Official Brand Logo & Name */}
+                        <div className="flex items-center gap-3">
                             <Logo variant="light" className="h-9 w-auto flex-shrink-0" />
                             <div>
                                 <h1 className="font-black text-base tracking-tight leading-tight lowercase">
@@ -129,8 +133,11 @@ export const Header: React.FC<HeaderProps> = ({
                             </div>
                         </div>
 
+                        {/* Hex Bolt Glyph Chain Divider */}
+                        <BoltGlyphChain className="my-4" />
+
                         {/* Navigation Links */}
-                        <nav className="mt-5 space-y-1">
+                        <nav className="space-y-1">
                             {navItems.filter(item => item.show).map((item) => {
                                 const Icon = item.icon;
                                 const isActive = activeTab === item.id;
@@ -138,12 +145,13 @@ export const Header: React.FC<HeaderProps> = ({
                                     <button
                                         key={item.id}
                                         onClick={() => setActiveTab(item.id as TabType)}
-                                        className={`flex items-center w-full px-3.5 py-2.5 text-xs font-bold rounded-xl transition ${isActive
-                                                ? 'bg-brand-teal text-black'
+                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                                            isActive
+                                                ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20 font-extrabold'
                                                 : 'text-gray-300 hover:bg-brand-darker hover:text-white'
-                                            }`}
+                                        }`}
                                     >
-                                        <Icon className={`h-4 w-4 mr-3 ${isActive ? 'text-black' : 'text-brand-teal'}`} />
+                                        <Icon className={`h-4 w-4 ${isActive ? 'text-black' : 'text-gray-400'}`} />
                                         <span>{item.label}</span>
                                     </button>
                                 );
@@ -151,33 +159,33 @@ export const Header: React.FC<HeaderProps> = ({
                         </nav>
                     </div>
 
-                    {/* User Card & Logout */}
-                    <div className="pt-4 border-t border-brand-border space-y-3">
-                        <div className="p-3 bg-brand-darker rounded-xl border border-brand-border">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-lg">
+                    {/* User Info & Change Password & Logout */}
+                    <div className="pt-4 border-t border-brand-border space-y-2">
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
                                     <UserIcon className="h-4 w-4" />
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                    <p className="text-[10px] text-gray-400 uppercase font-bold">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
+                                    <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Admin' : 'Operator'}</p>
                                 </div>
                             </div>
-
                             <button
                                 onClick={() => setIsChangePasswordOpen(true)}
-                                className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[11px] font-semibold rounded-lg transition border border-brand-border"
+                                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
+                                title="Změnit heslo"
                             >
-                                <KeyIcon className="h-3.5 w-3.5" /> Změnit heslo
+                                <KeyIcon className="h-4 w-4" />
                             </button>
                         </div>
 
                         <button
                             onClick={onLogout}
-                            className="flex items-center justify-center w-full px-4 py-2.5 text-xs font-bold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 rounded-xl border border-rose-500/30 transition"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-brand-border hover:border-rose-500/30 rounded-xl text-xs font-bold transition"
                         >
-                            <LogoutIcon className="h-4 w-4 mr-2" />
-                            Odhlásit se
+                            <LogoutIcon className="h-4 w-4" />
+                            <span>Odhlásit se</span>
                         </button>
                     </div>
                 </div>
@@ -203,10 +211,11 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bi-Directional Animated Mobile Slide Drawer Overlay (Slide-In & Slide-Out) */}
             {(isMobileMenuOpen || isClosing) && (
                 <div className="md:hidden fixed inset-0 z-[90]">
-                    {/* Dimmed Blurred Backdrop with Fade-In / Fade-Out */}
+                    {/* Dimmed Blurred Backdrop with Fade-In / Fade-Out & Touchmove Prevention */}
                     <div
                         onClick={closeMobileMenu}
-                        className={`fixed inset-0 bg-black/65 backdrop-blur-sm ${isClosing ? 'backdrop-fade-out' : 'backdrop-fade-in'
+                        onTouchMove={(e) => e.preventDefault()}
+                        className={`fixed inset-0 bg-black/65 backdrop-blur-sm touch-none ${isClosing ? 'backdrop-fade-out' : 'backdrop-fade-in'
                             }`}
                     />
 
@@ -216,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
                             }`}
                     >
                         {/* Drawer Header */}
-                        <div className="flex justify-between items-center pb-4 border-b border-brand-border">
+                        <div className="flex justify-between items-center pb-2">
                             <div className="flex items-center gap-2.5">
                                 <Logo variant="light" className="h-7 w-auto flex-shrink-0" />
                                 <span className="font-black text-base tracking-tight lowercase">
@@ -231,8 +240,10 @@ export const Header: React.FC<HeaderProps> = ({
                             </button>
                         </div>
 
+                        <BoltGlyphChain className="my-2" />
+
                         {/* Navigation Items */}
-                        <nav className="mt-6 space-y-2 flex-1">
+                        <nav className="mt-4 space-y-2 flex-1">
                             {navItems.filter(item => item.show).map((item) => {
                                 const Icon = item.icon;
                                 const isActive = activeTab === item.id;

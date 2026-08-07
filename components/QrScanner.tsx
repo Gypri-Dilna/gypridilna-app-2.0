@@ -22,6 +22,8 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
     const lastScanTimeRef = useRef<number>(Date.now());
     const isProcessingRef = useRef<boolean>(false);
     const lastRemoteTimestampRef = useRef<number>(0);
+    const lastScannedQrRef = useRef<string>('');
+    const lastScannedTimeRef = useRef<number>(0);
 
     const [pcSessionId] = useState<string>(() => {
         if (propSessionId) return propSessionId;
@@ -157,6 +159,12 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
             };
 
             const handleSuccess = async (decodedText: string) => {
+                if (lastScannedQrRef.current === decodedText && (Date.now() - lastScannedTimeRef.current < 6000)) {
+                    return;
+                }
+                lastScannedQrRef.current = decodedText;
+                lastScannedTimeRef.current = Date.now();
+
                 if (isProcessingRef.current) return;
                 isProcessingRef.current = true;
 
@@ -193,12 +201,27 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
             };
 
             try {
-                await html5QrCode.start({ facingMode: "environment" }, scanConfig, handleSuccess, () => {});
+                let cameraConstraint: any = { facingMode: "environment" };
+                try {
+                    const devices = await Html5Qrcode.getCameras();
+                    if (devices && devices.length > 0) {
+                        const backCamera = devices.find(d => {
+                            const label = (d.label || '').toLowerCase();
+                            return (label.includes('back') || label.includes('rear') || label.includes('0')) && !label.includes('wide') && !label.includes('ultra') && !label.includes('macro');
+                        }) || devices.find(d => (d.label || '').toLowerCase().includes('back') || (d.label || '').toLowerCase().includes('rear')) || devices[devices.length - 1];
+
+                        if (backCamera && backCamera.id) {
+                            cameraConstraint = { deviceId: { exact: backCamera.id } };
+                        }
+                    }
+                } catch (e) {}
+
+                await html5QrCode.start(cameraConstraint, scanConfig, handleSuccess, () => {});
                 setIsScanning(true);
                 setTimeout(() => applyZoomAndFocus(zoomFactor), 250);
                 return;
             } catch (e1) {
-                console.warn("Attempt 1 (environment facingMode) failed:", e1);
+                console.warn("Attempt 1 failed:", e1);
             }
 
             try {
@@ -227,10 +250,17 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
         }
     }, [isMobileDevice, isInsecureOrigin, applyZoomAndFocus, zoomFactor]);
 
+    const isCameraStartedRef = useRef(false);
+
     useEffect(() => {
         if (!isMobileDevice) return;
+        if (isCameraStartedRef.current) return;
+        isCameraStartedRef.current = true;
+
         startCamera();
+
         return () => {
+            isCameraStartedRef.current = false;
             if (scannerRef.current && scannerRef.current.isScanning) {
                 scannerRef.current.stop().then(() => {
                     const container = document.getElementById('reader');
@@ -238,7 +268,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                 }).catch(() => {});
             }
         };
-    }, [isMobileDevice, startCamera]);
+    }, [isMobileDevice]);
 
     const handleManualSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -366,7 +396,11 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
             ) : (
                 /* Mobile Camera Scanner */
                 <div className="space-y-4">
-                    <div className="relative rounded-xl overflow-hidden border border-brand-border bg-brand-darker flex items-center justify-center min-h-[260px]">
+                    <div className={`relative rounded-xl overflow-hidden border-4 transition-all duration-300 bg-brand-darker flex items-center justify-center min-h-[260px] ${
+                        errorMsg
+                            ? 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.8)] animate-pulse'
+                            : 'border-brand-border'
+                    }`}>
                         <div id="reader" className="w-full rounded-xl overflow-hidden" />
 
                         {!isScanning && (

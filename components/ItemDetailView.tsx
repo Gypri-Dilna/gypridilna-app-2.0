@@ -5,7 +5,7 @@ import {
     PrinterIcon, EditIcon, TrashIcon, ArrowLeftIcon, CloseIcon,
     MapPinIcon, ClipboardIcon
 } from './icons';
-import { DilnaFloorplanOutline } from './DilnaFloorplanOutline';
+import { DilnaFloorplanOutline, LocationPhotoCard } from './DilnaFloorplanOutline';
 import { LabelPrinterModal } from './LabelPrinterModal';
 import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
 
@@ -81,54 +81,55 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 }
             `}</style>
 
-            {/* Top Navigation Bar */}
-            <div className="flex items-center justify-between bg-brand-dark border border-brand-border p-4 rounded-2xl">
+            {/* Top Navigation & Action Toolbar Bar */}
+            <div className="flex items-center justify-between bg-brand-dark border border-brand-border p-2.5 sm:p-4 rounded-2xl shadow-lg gap-2 overflow-hidden w-full">
                 <button
                     onClick={onBack}
-                    className="p-2.5 bg-brand-darker hover:bg-slate-800 text-gray-200 font-bold rounded-xl border border-brand-border transition flex items-center justify-center active:scale-95"
-                    title="Return / Close Item View"
+                    className="h-9 sm:h-10 px-3 bg-brand-darker hover:bg-slate-800 text-gray-200 font-bold rounded-xl border border-brand-border transition flex items-center justify-center active:scale-95 flex-shrink-0"
+                    title="Zpět"
                 >
-                    <ArrowLeftIcon className="h-5 w-5" />
+                    <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
                     <button
                         onClick={() => {
                             if (isPrinterAvailable) {
                                 setIsPrintingLabel(true);
                             }
                         }}
-                        className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border transition ${
+                        className={`h-9 sm:h-10 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold rounded-xl border transition whitespace-nowrap ${
                             isPrinterAvailable
                                 ? 'bg-brand-darker hover:bg-brand-teal/20 text-brand-teal border-brand-border'
                                 : 'bg-slate-900/80 text-gray-500 border-slate-800 cursor-not-allowed opacity-75'
                         }`}
                         title={isPrinterAvailable ? "Tisknout štítek" : "Driver nenainstalován"}
                     >
-                        <PrinterIcon className={`h-4 w-4 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
-                        Tisknout štítek
+                        <PrinterIcon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 ${isPrinterAvailable ? 'text-brand-teal' : 'text-gray-500'}`} />
+                        <span>Tisknout štítek</span>
                     </button>
 
                     {canEdit && (
                         <>
                             <button
                                 onClick={() => setIsEditingModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-brand-darker hover:bg-slate-700 text-gray-200 font-bold text-xs rounded-xl border border-brand-border transition"
+                                className="h-9 sm:h-10 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 bg-brand-darker hover:bg-slate-700 text-gray-200 font-bold text-[11px] sm:text-xs rounded-xl border border-brand-border transition whitespace-nowrap"
                             >
-                                <EditIcon className="h-4 w-4" />
-                                Upravit
+                                <EditIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                                <span>Upravit</span>
                             </button>
+
                             <button
                                 onClick={async () => {
-                                    if (window.confirm(`Smazat položku '${item.title}'?`)) {
+                                    if (window.confirm(`Opravdu chcete smazat položku '${item.title}'?`)) {
                                         await onDelete(item.id);
                                         onBack();
                                     }
                                 }}
-                                className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-xl border border-rose-500/30 transition"
-                                title="Delete Item"
+                                className="h-9 sm:h-10 px-2.5 sm:px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] sm:text-xs rounded-xl border border-rose-500/30 transition flex items-center justify-center active:scale-95 flex-shrink-0"
+                                title="Smazat položku"
                             >
-                                <TrashIcon className="h-4 w-4" />
+                                <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
                         </>
                     )}
@@ -156,61 +157,61 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 {parsedLoc && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-brand-border/60 font-sans">
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Rack</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Rack / Skříň / Lokace (X)</span>
                             <span className="text-white font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.rack}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Sektor/Police</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Police / Sektor (Y)</span>
                             <span className="text-white font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.sector}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Číslo boxu</span>
-                            <span className="text-white font-bold font-mono text-sm mt-0.5 block">{parsedLoc.box === 0 ? '0 (None)' : `#${parsedLoc.box}`}</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">Box / Krabice (Z)</span>
+                            <span className="text-white font-bold font-mono text-sm mt-0.5 block">{parsedLoc.box === 0 ? '0 (Bez boxu)' : `#${parsedLoc.box}`}</span>
                         </div>
                         <div className="bg-brand-darker p-3 rounded-xl border border-brand-border">
-                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">ID položky</span>
+                            <span className="text-gray-400 block text-[11px] font-sans font-semibold">ID Položky (AAA)</span>
                             <span className="text-emerald-400 font-bold font-mono text-sm mt-0.5 block">#{parsedLoc.itemId}</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Grid Layout: Floorplan Minimap & Item Specifications */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Dílna Floorplan Outline Minimap */}
-                <div className="lg:col-span-2 bg-brand-dark border border-brand-border p-5 rounded-2xl space-y-3">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <MapPinIcon className="h-4 w-4 text-brand-teal" />
-                        Floorplan Location Pin
-                    </h3>
-                    <DilnaFloorplanOutline 
-                        locationCode={item.location_code}
-                        itemTitle={item.title}
-                        className="h-[340px] w-full"
-                    />
-                </div>
+            {/* 1. TOP FULL-WIDTH SECTION: Plán Dílny (SVG Layout na ležato 100% width) */}
+            <div className="w-full">
+                <DilnaFloorplanOutline 
+                    locationCode={item.location_code}
+                    itemTitle={item.title}
+                />
+            </div>
 
-                {/* Information Card */}
-                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl space-y-4">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <ClipboardIcon className="h-4 w-4 text-brand-teal" />
-                        Detaily Položky
-                    </h3>
-                    <div className="space-y-3 text-xs">
-                        <div className="flex justify-between py-2 border-b border-brand-border/60">
-                            <span className="text-gray-400">Kategorie:</span>
-                            <span className="font-semibold text-white">{item.category}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-brand-border/60">
-                            <span className="text-gray-400">Umístění (ID):</span>
-                            <span className="font-mono font-bold text-amber-400">{item.location_code}</span>
-                        </div>
-                        {item.notes && (
-                            <div className="pt-2">
-                                <span className="text-gray-400 block mb-1">Poznámka:</span>
-                                <p className="text-gray-300 bg-brand-darker p-3 rounded-xl border border-brand-border leading-relaxed font-sans">{item.notes}</p>
+            {/* 2. BOTTOM 2-COLUMN GRID: Fotka Reálné Lokace (Left) + Detaily Položky (Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Fotka Reálné Lokace */}
+                <LocationPhotoCard locationCode={item.location_code} />
+
+                {/* Right Column: Information Card */}
+                <div className="bg-brand-dark border border-brand-border p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3 border-b border-brand-border/60 pb-3">
+                            <ClipboardIcon className="h-4 w-4 text-brand-teal" />
+                            Detaily Položky
+                        </h3>
+                        <div className="space-y-3 text-xs font-sans">
+                            <div className="flex justify-between py-2 border-b border-brand-border/60">
+                                <span className="text-gray-400">Kategorie:</span>
+                                <span className="font-semibold text-white">{item.category}</span>
                             </div>
-                        )}
+                            <div className="flex justify-between py-2 border-b border-brand-border/60">
+                                <span className="text-gray-400">Umístění (ID):</span>
+                                <span className="font-mono font-bold text-amber-400">{item.location_code}</span>
+                            </div>
+                            {item.notes && (
+                                <div className="pt-2">
+                                    <span className="text-gray-400 block mb-1 font-semibold">Poznámka:</span>
+                                    <p className="text-gray-300 bg-brand-darker p-3.5 rounded-xl border border-brand-border leading-relaxed font-sans">{item.notes}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -295,6 +296,15 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
 
     const computedLocationCode = formatLocationCode(rack, sector, box, itemNum);
 
+    const [isClosing, setIsClosing] = useState(false);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 180);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const finalCategory = activeCategory.trim() || 'General';
@@ -307,14 +317,19 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
             qr_code: computedLocationCode,
             notes
         });
+        handleClose();
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-sans overflow-hidden">
-            <div className="bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-modal-pop flex flex-col max-h-[90vh]">
+        <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-sans overflow-hidden ${
+            isClosing ? 'animate-backdrop-fade-out' : 'animate-backdrop-fade'
+        }`}>
+            <div className={`bg-brand-dark border border-brand-border rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] ${
+                isClosing ? 'animate-modal-pop-out' : 'animate-modal-pop'
+            }`}>
                 <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker shrink-0">
                     <h2 className="text-lg font-bold text-white">Upravit položku</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
+                    <button onClick={handleClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -395,8 +410,8 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                         {/* 4 Equal Columns Grid with Symmetrical Gaps and Centered Titles */}
                         <div className="grid grid-cols-4 gap-2.5 sm:gap-3 items-end">
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
-                                    Regál (X)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 leading-tight">
+                                    Rack / Skříň / Lokace (X)
                                 </label>
                                 <input
                                     type="number"
@@ -408,8 +423,8 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
-                                    Sektor (Y)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 leading-tight">
+                                    Police / Sektor (Y)
                                 </label>
                                 <input
                                     type="number"
@@ -421,8 +436,8 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
-                                    Box (Z)
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 leading-tight">
+                                    Box / Krabice (Z)
                                 </label>
                                 <input
                                     type="number"
@@ -434,14 +449,17 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                 />
                             </div>
                             <div className="flex flex-col items-center text-center">
-                                <label className="block text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 whitespace-nowrap">
-                                    ID Položky
+                                <label className="block text-[10px] sm:text-[11px] font-bold text-gray-300 font-sans text-center mb-1.5 leading-tight">
+                                    ID Položky (AAA)
                                 </label>
-                                <div className="w-full h-10 px-2 flex items-center justify-center bg-slate-950 border border-brand-teal/40 rounded-xl text-sm text-brand-teal font-mono font-bold text-center select-none">
+                                <div className="w-full h-10 px-2 flex items-center justify-center bg-slate-950 border border-brand-teal/40 rounded-xl text-sm text-brand-teal font-mono font-bold text-center select-none font-sans">
                                     {itemNum}
                                 </div>
                             </div>
                         </div>
+                        <p className="text-[11px] text-gray-400 text-center font-mono leading-relaxed pt-1">
+                            ID se přiřazuje automaticky podle volných ID. <strong>(Není-li v boxu, nastavte Box na 0)</strong>.
+                        </p>
                     </div>
 
                     <div>
@@ -457,7 +475,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                     <div className="flex gap-3 pt-4">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold rounded-xl text-xs transition"
                         >
                             Cancel

@@ -48,10 +48,18 @@ def update_chip(chip_id: int, chip_in: ChipUpdate, db: Session = Depends(get_db)
     if not chip:
         raise HTTPException(status_code=404, detail="Chip not found")
         
+    old_name = chip.name
+    new_name = chip_in.name.strip() if chip_in.name else None
+
+    if old_name and new_name and old_name != new_name:
+        from app.models.access_log import AccessLog
+        db.query(Chip).filter(Chip.name == old_name).update({Chip.name: new_name})
+        db.query(AccessLog).filter(AccessLog.name == old_name).update({AccessLog.name: new_name})
+
     if chip_in.chip_id is not None:
         chip.chip_id = chip_in.chip_id
     if chip_in.name is not None:
-        chip.name = chip_in.name
+        chip.name = new_name
     if chip_in.is_allowed is not None:
         chip.is_allowed = chip_in.is_allowed
     if chip_in.is_one_time is not None:
