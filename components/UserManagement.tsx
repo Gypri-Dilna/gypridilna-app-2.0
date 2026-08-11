@@ -30,11 +30,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         showToast('Google OAuth Client ID saved successfully!', 'success');
     };
 
+    const getAuthHeaders = (extraHeaders: Record<string, string> = {}) => {
+        const token = localStorage.getItem('gypri_auth_token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...extraHeaders
+        };
+    };
+
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/users');
-            if (!response.ok) throw new Error('Failed to fetch users');
+            const response = await fetch('/api/users', {
+                headers: getAuthHeaders()
+            });
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || errData.detail || 'Chyba při načítání uživatelů');
+            }
             const data = await response.json();
             setUsers(data);
 
@@ -46,9 +60,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     localStorage.setItem('savedUser', JSON.stringify(me));
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToast('Error fetching users.', 'error');
+            showToast(error.message || 'Chyba při načítání uživatelů.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -74,10 +88,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         try {
             const response = await fetch(`/api/users/${userId}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders()
             });
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || data.detail || 'Failed to delete user');
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || data.detail || 'Chyba při mazání uživatele');
             }
             showToast('Uživatel byl úspěšně smazán.', 'success');
             await fetchUsers();
@@ -95,7 +110,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
             const response = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(userData),
             });
 

@@ -53,9 +53,17 @@ export const LogsViewer: React.FC<LogsViewerProps> = ({ user, logs, onRefresh })
 
     const handleDeleteAllLogs = async () => {
         try {
-            const response = await fetch('/api/logs', { method: 'DELETE' });
+            const token = localStorage.getItem('gypri_auth_token');
+            const response = await fetch('/api/logs', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
             if (!response.ok) {
-                throw new Error('Failed to delete logs');
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || errData.error || errData.detail || 'Chyba při mazání logů');
             }
             onRefresh(); // Refresh the logs list
         } catch (error) {

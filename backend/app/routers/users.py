@@ -7,8 +7,17 @@ from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.routers.auth import get_current_user_from_token
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
+
+def require_admin_user(user: User = Depends(get_current_user_from_token)):
+    if not user or not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Přístup odepřen: Vyžadována administrátorská práva."
+        )
+    return user
 
 def get_password_hash(password: str) -> str:
     p_bytes = password.encode('utf-8')[:72]
@@ -27,12 +36,12 @@ def serialize_user(user: User):
     }
 
 @router.get("", response_model=List[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(current_user: User = Depends(require_admin_user), db: Session = Depends(get_db)):
     users = db.query(User).all()
     return [serialize_user(u) for u in users]
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+def create_user(user_in: UserCreate, current_user: User = Depends(require_admin_user), db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.username == user_in.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -59,7 +68,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     return serialize_user(new_user)
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user_in: UserUpdate, current_user: User = Depends(require_admin_user), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -89,7 +98,7 @@ def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)
     return serialize_user(user)
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, current_user: User = Depends(require_admin_user), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

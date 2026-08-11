@@ -26,9 +26,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
         setIsLoading(true);
         try {
+            const token = localStorage.getItem('gypri_auth_token');
             const response = await fetch('/api/change-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     user_id: userId,
                     old_password: oldPassword,
