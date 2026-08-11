@@ -42,6 +42,38 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({
         setIsPrinting(true);
         setStatusMsg(null);
 
+        const printPayload = {
+            title: item.title,
+            location_code: item.location_code,
+            qr_code: item.qr_code || item.location_code,
+            category: item.category || 'General',
+            tape_size: tapeSize
+        };
+
+        // 1. Try direct browser connection to local print_agent.py on port 5001 (fast PC execution)
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const directRes = await fetch('http://127.0.0.1:5001/print-label', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(printPayload),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (directRes.ok) {
+                const directData = await directRes.json();
+                if (directData.success) {
+                    setStatusMsg({ type: 'success', text: directData.message || `Štítek byl úspěšně vytisknut na tiskárně PT-D460BTVP (${tapeSize})` });
+                    setIsPrinting(false);
+                    return;
+                }
+            }
+        } catch (directErr) {
+            // Direct localhost call failed, fall back to main server route below
+        }
+
+        // 2. Fallback via server API route
         try {
             const res = await fetch(`/api/inventory/${item.id}/print-label?tape_size=${tapeSize}`, {
                 method: 'POST',
@@ -51,7 +83,7 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({
             });
 
             const data = await res.json();
-            if (res.ok && data.status === 'success') {
+            if (res.ok && (data.status === 'success' || data.success)) {
                 setStatusMsg({ type: 'success', text: data.message || `Štítek byl úspěšně vytisknut na tiskárně PT-D460BTVP (${tapeSize})` });
             } else {
                 setStatusMsg({ type: 'error', text: data.detail || data.message || 'Chyba tisku b-PAC. Zkontrolujte připojení tiskárny.' });

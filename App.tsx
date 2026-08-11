@@ -144,6 +144,31 @@ const App: React.FC = () => {
             tape_size: q.tape_size
         }));
 
+        // 1. Try direct browser call to local print_agent.py on port 5001 (fast PC execution)
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const directRes = await fetch('http://127.0.0.1:5001/print-queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: payloadItems }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (directRes.ok) {
+                const directData = await directRes.json();
+                if (directData.success) {
+                    showToast(directData.message || `Úspěšně vytisknuto ${printQueue.length} štítků z fronty!`, 'success');
+                    setPrintQueue([]);
+                    setIsPrintQueueOpen(false);
+                    return;
+                }
+            }
+        } catch (directErr) {
+            // Direct call failed, fall back to server API route below
+        }
+
+        // 2. Fallback via server API route
         const res = await fetch(`${API_BASE_URL}/api/inventory/print-queue`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -187,11 +212,28 @@ const App: React.FC = () => {
         try {
             const canViewLogs = user.is_admin || user.permissions?.view_logs;
 
+            // Probe print agent directly from browser first (fast 1.2s check on PC)
+            let directPrinterStatus = false;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1200);
+                const directRes = await fetch('http://127.0.0.1:5001/status', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (directRes.ok) {
+                    const directData = await directRes.json();
+                    if (directData.bpac_available || directData.status === 'online') {
+                        directPrinterStatus = true;
+                    }
+                }
+            } catch (directErr) {
+                // Browser is on another host or print_agent not running on local loopback
+            }
+
             const [chipsRes, logsRes, invRes, printerRes, usersRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/chips`),
                 canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
                 fetch(`${API_BASE_URL}/api/inventory`),
-                fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null),
+                directPrinterStatus ? Promise.resolve(null) : fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null),
                 fetch(`${API_BASE_URL}/api/users`).catch(() => null)
             ]);
 
@@ -210,7 +252,9 @@ const App: React.FC = () => {
                 setInventoryItems(invData);
             }
 
-            if (printerRes && printerRes.ok) {
+            if (directPrinterStatus) {
+                setIsPrinterAvailable(true);
+            } else if (printerRes && printerRes.ok) {
                 const pData = await printerRes.json();
                 setIsPrinterAvailable(!!pData.available);
             } else {
