@@ -445,17 +445,59 @@ def change_password():
 # --- Session-based Remote Scanning (PC <-> Mobile) ---
 PAIRED_REMOTE_SESSIONS = {}
 
+@app.route('/api/inventory/remote-scan/ping', methods=['POST'])
+def ping_remote_session():
+    data = request.json or {}
+    session_id = data.get('session_id')
+    device_name = data.get('device_name', 'Mobile Browser')
+    if session_id:
+        if session_id not in PAIRED_REMOTE_SESSIONS:
+            PAIRED_REMOTE_SESSIONS[session_id] = {'qr_code': None, 'timestamp': 0.0, 'consumed': True}
+        
+        PAIRED_REMOTE_SESSIONS[session_id]['connected'] = True
+        PAIRED_REMOTE_SESSIONS[session_id]['device_name'] = device_name
+        PAIRED_REMOTE_SESSIONS[session_id]['last_ping'] = datetime.now(timezone.utc).timestamp()
+        return jsonify({'status': 'ok', 'connected': True}), 200
+    return jsonify({'error': 'Missing session_id'}), 400
+
+@app.route('/api/inventory/remote-scan/disconnect', methods=['POST'])
+def disconnect_remote_session():
+    data = request.json or {}
+    session_id = data.get('session_id')
+    if session_id and session_id in PAIRED_REMOTE_SESSIONS:
+        PAIRED_REMOTE_SESSIONS[session_id]['connected'] = False
+        PAIRED_REMOTE_SESSIONS[session_id]['device_name'] = None
+        return jsonify({'status': 'disconnected'}), 200
+    return jsonify({'status': 'ignored'}), 200
+
+@app.route('/api/inventory/remote-scan/status', methods=['GET'])
+def get_remote_session_status():
+    session_id = request.args.get('session_id')
+    if session_id and session_id in PAIRED_REMOTE_SESSIONS:
+        s_data = PAIRED_REMOTE_SESSIONS[session_id]
+        now = datetime.now(timezone.utc).timestamp()
+        last_ping = s_data.get('last_ping', 0.0)
+        is_alive = s_data.get('connected', False) and (now - last_ping < 4.5)
+        return jsonify({
+            'session_id': session_id,
+            'connected': is_alive,
+            'device_name': s_data.get('device_name') if is_alive else None
+        }), 200
+    return jsonify({'session_id': session_id, 'connected': False, 'device_name': None}), 200
+
 @app.route('/api/inventory/remote-scan', methods=['POST'])
 def broadcast_remote_scan():
     data = request.json or {}
     session_id = data.get('session_id', 'default')
     qr_code = data.get('qr_code', '').strip()
     if qr_code:
-        PAIRED_REMOTE_SESSIONS[session_id] = {
+        if session_id not in PAIRED_REMOTE_SESSIONS:
+            PAIRED_REMOTE_SESSIONS[session_id] = {}
+        PAIRED_REMOTE_SESSIONS[session_id].update({
             'qr_code': qr_code,
             'timestamp': datetime.now(timezone.utc).timestamp(),
             'consumed': False
-        }
+        })
         return jsonify({'status': 'broadcasted', 'session_id': session_id, 'qr_code': qr_code}), 200
     return jsonify({'error': 'Missing qr_code'}), 400
 

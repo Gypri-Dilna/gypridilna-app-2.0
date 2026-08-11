@@ -33,6 +33,59 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     const lastScannedQrRef = useRef<string>('');
     const lastScannedTimeRef = useRef<number>(0);
 
+    // Heartbeat Ping & Auto-Disconnect Lifecycle
+    useEffect(() => {
+        if (scanMode !== 'pc' || !pairedSessionId) return;
+
+        const deviceName = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+            ? 'iPhone'
+            : /Android/i.test(navigator.userAgent)
+            ? 'Android'
+            : 'Mobilní skener';
+
+        const sendPing = async () => {
+            try {
+                await fetch('/api/inventory/remote-scan/ping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: pairedSessionId,
+                        device_name: deviceName
+                    })
+                });
+            } catch (e) {}
+        };
+
+        sendPing();
+        const pingInterval = setInterval(sendPing, 2000);
+
+        const handleUnload = () => {
+            if (pairedSessionIdRef.current) {
+                const blob = new Blob([JSON.stringify({ session_id: pairedSessionIdRef.current })], { type: 'application/json' });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/inventory/remote-scan/disconnect', blob);
+                } else {
+                    fetch('/api/inventory/remote-scan/disconnect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: pairedSessionIdRef.current }),
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleUnload);
+        window.addEventListener('pagehide', handleUnload);
+
+        return () => {
+            clearInterval(pingInterval);
+            window.removeEventListener('beforeunload', handleUnload);
+            window.removeEventListener('pagehide', handleUnload);
+            handleUnload();
+        };
+    }, [scanMode, pairedSessionId]);
+
     // Hardware Zoom and Autofocus Controller
     const applyHardwareZoomAndFocus = useCallback(() => {
         try {
@@ -298,21 +351,58 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             <div className="animate-tab-switch space-y-4">
                 {/* PC Pairing Status Subheader */}
                 {scanMode === 'pc' && (
-                    <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
-                            <span className="font-mono text-gray-200">
-                                {pairedSessionId ? `Spárováno s PC (${pairedSessionId})` : 'Nespárováno: Naskenuj kód na PC'}
-                            </span>
+                    <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2.5 h-2.5 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+                                <span className="font-mono text-gray-200 font-bold">
+                                    {pairedSessionId ? `Spárováno s PC (${pairedSessionId})` : 'Nespárováno: Naskenuj QR na PC nebo zadej kód'}
+                                </span>
+                            </div>
+                            {pairedSessionId && (
+                                <button
+                                    type="button"
+                                    onClick={handleUnpairPC}
+                                    className="px-2.5 py-1 text-[10px] text-rose-300 hover:text-white bg-rose-500/20 hover:bg-rose-500 border border-rose-500/40 rounded-lg font-bold transition"
+                                >
+                                    Odpojit
+                                </button>
+                            )}
                         </div>
-                        {pairedSessionId && (
-                            <button
-                                type="button"
-                                onClick={handleUnpairPC}
-                                className="text-[10px] text-gray-400 hover:text-rose-400 underline font-mono"
+
+                        {!pairedSessionId && (
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const form = e.target as HTMLFormElement;
+                                    const input = form.elements.namedItem('manualSession') as HTMLInputElement;
+                                    const val = input.value.trim();
+                                    if (val) {
+                                        setPairedSessionId(val);
+                                        localStorage.setItem('gypri_paired_pc_session', val);
+                                        setScannedFeedback({
+                                            title: `Spárováno s PC (${val})`,
+                                            location_code: 'PAIRING SUCCESS',
+                                            mode: 'pc'
+                                        });
+                                        setTimeout(() => setScannedFeedback(null), 2000);
+                                    }
+                                }}
+                                className="flex gap-2 pt-1"
                             >
-                                Odpárovat
-                            </button>
+                                <input
+                                    type="text"
+                                    name="manualSession"
+                                    placeholder="Zadej kód relace z PC (např. pc_a1b2c3)..."
+                                    className="flex-1 px-3 py-1.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono focus:outline-none focus:border-brand-teal"
+                                />
+                                <button
+                                    type="submit"
+                                    className="px-3 py-1.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold text-xs rounded-xl shadow transition"
+                                >
+                                    Spárovat
+                                </button>
+                            </form>
                         )}
                     </div>
                 )}

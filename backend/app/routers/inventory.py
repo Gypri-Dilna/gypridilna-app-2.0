@@ -306,16 +306,54 @@ def print_inventory_queue(
 # Session-based remote scan state for PC <-> Mobile pairing
 paired_sessions = {}
 
+@router.post("/remote-scan/ping")
+def ping_remote_session(payload: dict):
+    session_id = payload.get("session_id")
+    device_name = payload.get("device_name", "Mobile Browser")
+    if session_id:
+        if session_id not in paired_sessions:
+            paired_sessions[session_id] = {"qr_code": None, "timestamp": 0.0, "consumed": True}
+        paired_sessions[session_id]["connected"] = True
+        paired_sessions[session_id]["device_name"] = device_name
+        paired_sessions[session_id]["last_ping"] = datetime.now(timezone.utc).timestamp()
+        return {"status": "ok", "connected": True}
+    raise HTTPException(status_code=400, detail="Missing session_id")
+
+@router.post("/remote-scan/disconnect")
+def disconnect_remote_session(payload: dict):
+    session_id = payload.get("session_id")
+    if session_id and session_id in paired_sessions:
+        paired_sessions[session_id]["connected"] = False
+        paired_sessions[session_id]["device_name"] = None
+        return {"status": "disconnected"}
+    return {"status": "ignored"}
+
+@router.get("/remote-scan/status")
+def get_remote_session_status(session_id: str = Query(...)):
+    if session_id and session_id in paired_sessions:
+        s_data = paired_sessions[session_id]
+        now = datetime.now(timezone.utc).timestamp()
+        last_ping = s_data.get("last_ping", 0.0)
+        is_alive = s_data.get("connected", False) and (now - last_ping < 4.5)
+        return {
+            "session_id": session_id,
+            "connected": is_alive,
+            "device_name": s_data.get("device_name") if is_alive else None
+        }
+    return {"session_id": session_id, "connected": False, "device_name": None}
+
 @router.post("/remote-scan")
 def broadcast_remote_scan(payload: dict):
     session_id = payload.get("session_id", "default")
     qr_code = payload.get("qr_code", "").strip()
     if qr_code:
-        paired_sessions[session_id] = {
+        if session_id not in paired_sessions:
+            paired_sessions[session_id] = {}
+        paired_sessions[session_id].update({
             "qr_code": qr_code,
             "timestamp": datetime.now(timezone.utc).timestamp(),
             "consumed": False
-        }
+        })
         return {"status": "broadcasted", "session_id": session_id, "qr_code": qr_code}
     raise HTTPException(status_code=400, detail="Missing qr_code payload")
 

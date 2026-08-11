@@ -42,17 +42,31 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
         return userAgentMobile || screenMobile;
     }, []);
 
-    // PC Screen: Poll for remote mobile phone scan events on pcSessionId
+    const [remoteConnected, setRemoteConnected] = useState<boolean>(false);
+    const [remoteDeviceName, setRemoteDeviceName] = useState<string | null>(null);
+
+    // PC Screen: Poll for remote connection status and incoming remote scan events
     useEffect(() => {
         if (isMobileDevice) return;
-        const interval = setInterval(async () => {
+
+        const checkStatusAndScans = async () => {
             try {
-                const res = await fetch(`/api/inventory/remote-scan/latest?session_id=${pcSessionId}&since=${lastRemoteTimestampRef.current}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.qr_code && data.timestamp > lastRemoteTimestampRef.current) {
-                        lastRemoteTimestampRef.current = data.timestamp;
-                        const item = await onLookupItem(data.qr_code);
+                const [statusRes, scanRes] = await Promise.all([
+                    fetch(`/api/inventory/remote-scan/status?session_id=${pcSessionId}`),
+                    fetch(`/api/inventory/remote-scan/latest?session_id=${pcSessionId}&since=${lastRemoteTimestampRef.current}`)
+                ]);
+
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    setRemoteConnected(!!statusData.connected);
+                    setRemoteDeviceName(statusData.device_name || null);
+                }
+
+                if (scanRes.ok) {
+                    const scanData = await scanRes.json();
+                    if (scanData.qr_code && scanData.timestamp > lastRemoteTimestampRef.current) {
+                        lastRemoteTimestampRef.current = scanData.timestamp;
+                        const item = await onLookupItem(scanData.qr_code);
                         if (item && onSelectItem) {
                             onSelectItem(item);
                         }
@@ -61,8 +75,10 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
             } catch (e) {
                 // Silent poll fail
             }
-        }, 1200);
+        };
 
+        checkStatusAndScans();
+        const interval = setInterval(checkStatusAndScans, 1200);
         return () => clearInterval(interval);
     }, [isMobileDevice, pcSessionId, onLookupItem, onSelectItem]);
 
@@ -380,17 +396,42 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                     </form>
 
                     {/* Scan with Phone as Remote Wireless Scanner */}
-                    <div className="pt-6 border-t border-brand-border text-center space-y-3">
+                    <div className="pt-6 border-t border-brand-border text-center space-y-4 font-sans">
                         <div className="flex items-center justify-center gap-2 text-xs font-bold text-brand-teal uppercase tracking-wider">
                             <CameraIcon className="h-4 w-4" />
-                            <span>Použít telefon jako externí label skener</span>
+                            <span>Použít telefon jako bezdrátový skener</span>
                         </div>
-                        <div className="flex justify-center p-3 bg-white rounded-2xl w-fit mx-auto shadow-xl border-2 border-brand-teal/30">
-                            <QRCodeSVG value={`PAIR:${pcSessionId}`} size={120} level="M" />
-                        </div>
-                        <p className="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">
-                            Naskenuj tento QR v<strong>"Skenovat do PC"</strong> módu na této stránce v telefonu pro připojení jako externí skener.
-                        </p>
+
+                        {remoteConnected ? (
+                            <div className="bg-emerald-500/10 border border-emerald-500/30 p-5 rounded-2xl space-y-2 animate-fadeIn shadow-xl">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full text-emerald-400 text-xs font-extrabold border border-emerald-500/40">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                                    <span>Mobilní skener připojen</span>
+                                </div>
+                                <p className="text-sm font-bold text-white">
+                                    Zařízení: <span className="text-brand-teal">{remoteDeviceName || 'Mobilní telefon'}</span>
+                                </p>
+                                <p className="text-xs text-gray-300 max-w-sm mx-auto leading-relaxed">
+                                    🟢 Bezdrátové propojení aktivní přes jakoukoliv síť. Jakýkoliv kód naskenovaný fotoaparátem v telefonu se okamžitě vyhledá na tomto PC.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-bold">
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />
+                                    <span>Čekám na připojení mobilního skeneru...</span>
+                                </div>
+                                <div className="flex justify-center p-3 bg-white rounded-2xl w-fit mx-auto shadow-xl border-2 border-brand-teal/30">
+                                    <QRCodeSVG value={`PAIR:${pcSessionId}`} size={130} level="M" />
+                                </div>
+                                <div className="bg-brand-darker border border-brand-border px-3.5 py-1.5 rounded-xl w-fit mx-auto font-mono text-xs text-brand-teal font-extrabold tracking-wider">
+                                    Relace: {pcSessionId}
+                                </div>
+                                <p className="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">
+                                    Naskenuj tento QR kód fotoaparátem v telefonu v režimu <strong>"Skenovat do PC"</strong> pro okamžité bezdrátové spárování.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (
