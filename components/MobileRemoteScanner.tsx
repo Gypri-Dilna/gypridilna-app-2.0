@@ -205,25 +205,23 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     const item = await onLookupItem(decodedText);
 
                     if (!item) {
-                        // QR code NOT found in database -> Glow RED + Error vibration + Warning message!
+                        // QR code NOT found in database -> Glow RED edge + Error vibration + Single Toast Card!
                         if (typeof window !== 'undefined' && 'vibrate' in navigator) {
                             try { navigator.vibrate([200, 100, 200]); } catch (e) {}
                         }
                         setScannedFeedback({
-                            title: '❌ NENALEZENO V DATABÁZI',
-                            location_code: decodedText,
+                            title: `Kód '${decodedText}' nebyl nalezen v databázi!`,
+                            location_code: 'NEEXISTUJE',
                             mode: 'error'
                         });
-                        setErrorMsg(`Kód '${decodedText}' nebyl nalezen v databázi zásob!`);
                         setTimeout(() => {
                             setScannedFeedback(null);
-                            setErrorMsg(null);
                             isProcessingRef.current = false;
-                        }, 3500);
+                        }, 3200);
                         return;
                     }
 
-                    // 2. QR code IS valid & found in database -> Glow GREEN + Send to PC / Local!
+                    // 2. QR code IS valid & found in database -> Glow GREEN edge + Send to PC / Local!
                     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
                         try { navigator.vibrate([80, 40, 80]); } catch (e) {}
                     }
@@ -419,25 +417,53 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     </div>
                 )}
 
-                {/* Live Camera Scanner Viewport */}
-                <div className={`relative rounded-2xl overflow-hidden border-4 transition-all duration-300 bg-black min-h-[310px] shadow-2xl flex items-center justify-center ${
+                {/* Live Camera Scanner Viewport (Fixed Height 340px to prevent layout jump/stretch) */}
+                <div className={`relative rounded-2xl overflow-hidden border-4 transition-all duration-300 bg-black h-[340px] max-h-[340px] w-full shadow-2xl flex items-center justify-center ${
                     scannedFeedback?.mode === 'error'
-                        ? 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.8)] animate-pulse'
+                        ? 'animate-edge-red'
                         : scannedFeedback?.mode === 'pc'
-                        ? 'border-emerald-400 shadow-[0_0_35px_rgba(52,211,153,0.8)]'
+                        ? 'animate-edge-green'
                         : 'border-brand-teal/30'
                 }`}>
                     <style>{`
+                        @keyframes edgePulseRed {
+                            0%, 100% {
+                                border-color: rgba(244, 63, 94, 0.9);
+                                box-shadow: 0 0 15px rgba(244, 63, 94, 0.6), inset 0 0 12px rgba(244, 63, 94, 0.4);
+                            }
+                            50% {
+                                border-color: rgba(255, 255, 255, 1);
+                                box-shadow: 0 0 40px rgba(244, 63, 94, 1), inset 0 0 25px rgba(244, 63, 94, 0.8);
+                            }
+                        }
+                        @keyframes edgePulseGreen {
+                            0%, 100% {
+                                border-color: rgba(52, 211, 153, 0.9);
+                                box-shadow: 0 0 15px rgba(52, 211, 153, 0.6), inset 0 0 12px rgba(52, 211, 153, 0.4);
+                            }
+                            50% {
+                                border-color: rgba(255, 255, 255, 1);
+                                box-shadow: 0 0 40px rgba(52, 211, 153, 1), inset 0 0 25px rgba(52, 211, 153, 0.8);
+                            }
+                        }
+                        .animate-edge-red {
+                            animation: edgePulseRed 1.1s infinite ease-in-out !important;
+                        }
+                        .animate-edge-green {
+                            animation: edgePulseGreen 1.1s infinite ease-in-out !important;
+                        }
                         #remote-mobile-reader {
                             width: 100% !important;
+                            height: 340px !important;
+                            max-height: 340px !important;
                             border: none !important;
                             overflow: hidden !important;
                             border-radius: 0.75rem !important;
                         }
                         #remote-mobile-reader video {
                             width: 100% !important;
-                            height: 100% !important;
-                            max-height: 380px !important;
+                            height: 340px !important;
+                            max-height: 340px !important;
                             object-fit: cover !important;
                         }
                         #remote-mobile-reader video:nth-of-type(n+2),
@@ -455,7 +481,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         }
                     `}</style>
 
-                    <div id="remote-mobile-reader" className="w-full h-full min-h-[310px]" />
+                    <div id="remote-mobile-reader" className="w-full h-[340px] max-h-[340px]" />
 
                     {/* Camera Switcher Floating Button (if phone has multiple cameras) */}
                     {cameraDevices.length > 1 && (
@@ -469,7 +495,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         </button>
                     )}
 
-                    {/* Non-blocking Bottom Floating Scanned Feedback Toast Card */}
+                    {/* Single Non-blocking Bottom Floating Scanned Feedback Toast Card */}
                     {scannedFeedback && (
                         <div 
                             onClick={() => {
@@ -480,9 +506,9 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                             }}
                             className={`absolute bottom-3 inset-x-3 backdrop-blur-md p-3.5 rounded-2xl border shadow-2xl flex items-center justify-between z-30 transition-all cursor-pointer active:scale-95 animate-slideUp ${
                                 scannedFeedback.mode === 'error'
-                                    ? 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+                                    ? 'bg-rose-950/95 border-rose-500/60 text-rose-200 shadow-rose-900/40'
                                     : scannedFeedback.mode === 'pc'
-                                    ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+                                    ? 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200 shadow-emerald-900/40'
                                     : 'bg-slate-900/95 border-brand-teal/50 text-white'
                             }`}
                         >
@@ -503,12 +529,6 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                                     Detail →
                                 </span>
                             )}
-                        </div>
-                    )}
-
-                    {errorMsg && (
-                        <div className="absolute inset-x-3 bottom-3 bg-rose-950/90 border border-rose-500/50 p-3 rounded-xl text-center text-xs font-semibold text-rose-200 z-30 shadow-xl backdrop-blur-md">
-                            {errorMsg}
                         </div>
                     )}
                 </div>
