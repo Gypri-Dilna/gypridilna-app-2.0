@@ -119,74 +119,76 @@ export const Header: React.FC<HeaderProps> = ({
                 }
             `}</style>
 
-            {/* Desktop & Tablet Sidebar (Permanent 240px Fixed Snapped Viewport with 100dvh Dynamic Viewport Support) */}
-            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-[100dvh] max-h-[100dvh] fixed top-0 left-0 bottom-0 z-30 font-sans overflow-hidden">
-                {/* Scrollable Top Section (Logo + Nav Links) with min-h-0 to prevent flex expansion pushing footer off-screen */}
-                <div className="p-4 flex-1 min-h-0 overflow-y-auto relative z-10 space-y-3">
-                    {/* Official Brand Logo & Name */}
-                    <div className="flex items-center gap-3">
-                        <Logo variant="light" className="h-8 w-auto flex-shrink-0" />
-                        <div>
-                            <h1 className="font-black text-base tracking-tight leading-tight lowercase">
-                                <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
-                            </h1>
+            {/* Desktop & Tablet Sidebar (Permanently Anchored 240px Fixed Viewport: top:0, bottom:0, left:0) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border fixed top-0 bottom-0 left-0 z-30 font-sans overflow-hidden">
+                <div className="flex flex-col h-full overflow-hidden">
+                    {/* Scrollable Top Section (Logo + Nav Links) with min-h-0 so flex container never overflows */}
+                    <div className="p-4 flex-1 min-h-0 overflow-y-auto relative z-10 space-y-3">
+                        {/* Official Brand Logo & Name */}
+                        <div className="flex items-center gap-3">
+                            <Logo variant="light" className="h-8 w-auto flex-shrink-0" />
+                            <div>
+                                <h1 className="font-black text-base tracking-tight leading-tight lowercase">
+                                    <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
+                                </h1>
+                            </div>
                         </div>
+
+                        {/* Hex Bolt Glyph Chain Divider */}
+                        <BoltGlyphChain className="my-3" />
+
+                        {/* Navigation Links */}
+                        <nav className="space-y-1">
+                            {navItems.filter(item => item.show).map((item) => {
+                                const Icon = item.icon;
+                                const isActive = activeTab === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setActiveTab(item.id as TabType)}
+                                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                            isActive
+                                                ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20 font-extrabold'
+                                                : 'text-gray-300 hover:bg-brand-darker hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon className={`h-4 w-4 ${isActive ? 'text-black' : 'text-gray-400'}`} />
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
                     </div>
 
-                    {/* Hex Bolt Glyph Chain Divider */}
-                    <BoltGlyphChain className="my-3" />
-
-                    {/* Navigation Links */}
-                    <nav className="space-y-1">
-                        {navItems.filter(item => item.show).map((item) => {
-                            const Icon = item.icon;
-                            const isActive = activeTab === item.id;
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setActiveTab(item.id as TabType)}
-                                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                        isActive
-                                            ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20 font-extrabold'
-                                            : 'text-gray-300 hover:bg-brand-darker hover:text-white'
-                                    }`}
-                                >
-                                    <Icon className={`h-4 w-4 ${isActive ? 'text-black' : 'text-gray-400'}`} />
-                                    <span>{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
-
-                {/* Permanent Pinned Bottom Section: User Profile & Logout (Never clipped, fits inside 100dvh) */}
-                <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
-                    <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
-                                <UserIcon className="h-4 w-4" />
+                    {/* Permanent Pinned Bottom Section: User Profile & Logout (Solidly anchored to bottom edge) */}
+                    <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
+                                    <UserIcon className="h-4 w-4" />
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-xs font-bold text-white truncate">{user.username}</p>
+                                    <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Admin' : 'Operator'}</p>
+                                </div>
                             </div>
-                            <div className="overflow-hidden">
-                                <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Admin' : 'Operator'}</p>
-                            </div>
+                            <button
+                                onClick={() => setIsChangePasswordOpen(true)}
+                                className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
+                                title="Změnit heslo"
+                            >
+                                <KeyIcon className="h-4 w-4" />
+                            </button>
                         </div>
+
                         <button
-                            onClick={() => setIsChangePasswordOpen(true)}
-                            className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
-                            title="Změnit heslo"
+                            onClick={onLogout}
+                            className="w-full flex items-center justify-center gap-2 px-3.5 py-2 bg-brand-darker hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-brand-border hover:border-rose-500/30 rounded-xl text-xs font-bold transition"
                         >
-                            <KeyIcon className="h-4 w-4" />
+                            <LogoutIcon className="h-4 w-4" />
+                            <span>Odhlásit se</span>
                         </button>
                     </div>
-
-                    <button
-                        onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-2 px-3.5 py-2 bg-brand-darker hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-brand-border hover:border-rose-500/30 rounded-xl text-xs font-bold transition"
-                    >
-                        <LogoutIcon className="h-4 w-4" />
-                        <span>Odhlásit se</span>
-                    </button>
                 </div>
             </aside>
 
