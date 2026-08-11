@@ -1,8 +1,11 @@
+import os
+import jwt
+from datetime import datetime, timezone, timedelta
 import json
 import bcrypt
 import urllib.request
 import urllib.parse
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -13,6 +16,34 @@ router = APIRouter(prefix="/api", tags=["Auth"])
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "rfid_admin_pass"
+JWT_SECRET = os.environ.get('JWT_SECRET', 'gypri_dilna_super_secret_jwt_key_2026')
+
+def create_user_token(user: User) -> str:
+    payload = {
+        'user_id': user.id,
+        'username': user.username,
+        'is_admin': user.is_admin,
+        'exp': datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+
+def get_current_user_from_token(authorization: str = Header(None), db: Session = Depends(get_db)) -> User:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid token")
+    
+    token = authorization.replace("Bearer ", "").strip()
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        return user
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired or invalid")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     if not plain_password or not hashed_password:
@@ -29,6 +60,21 @@ def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(p_bytes, salt).decode('utf-8')
 
+@router.get("/me")
+def get_current_user_me(user: User = Depends(get_current_user_from_token)):
+    perms = json.loads(user.permissions) if isinstance(user.permissions, str) and user.permissions else {}
+    return {
+        "status": "success",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "permissions": perms,
+            "chip_id": user.chip_id
+        }
+    }
+
 @router.post("/login")
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
     clean_identifier = login_data.username.strip() if login_data.username else ""
@@ -41,6 +87,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     if user and verify_password(login_data.password, user.password_hash):
         return {
             "status": "success",
+            "token": create_user_token(user),
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -74,6 +121,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
         db.refresh(new_admin)
         return {
             "status": "success",
+            "token": create_user_token(new_admin),
             "user": {
                 "id": new_admin.id,
                 "username": new_admin.username,
@@ -145,6 +193,7 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
     perms = json.loads(user.permissions) if isinstance(user.permissions, str) and user.permissions else {}
     return {
         "status": "success",
+        "token": create_user_token(user),
         "user": {
             "id": user.id,
             "username": user.username,
