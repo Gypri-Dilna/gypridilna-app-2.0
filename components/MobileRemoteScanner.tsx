@@ -177,21 +177,20 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
             const handleSuccess = async (decodedText: string) => {
                 const lastScannedKey = `${decodedText}_${scanModeRef.current}`;
-                if (lastScannedQrRef.current === lastScannedKey && (Date.now() - lastScannedTimeRef.current < 6000)) {
+                if (lastScannedQrRef.current === lastScannedKey && (Date.now() - lastScannedTimeRef.current < 5000)) {
                     return;
                 }
                 lastScannedQrRef.current = lastScannedKey;
                 lastScannedTimeRef.current = Date.now();
-
-                if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-                    try { navigator.vibrate([80, 40, 80]); } catch (e) {}
-                }
 
                 if (decodedText.startsWith('PAIR:')) {
                     const sessionId = decodedText.replace('PAIR:', '').trim();
                     setPairedSessionId(sessionId);
                     localStorage.setItem('gypri_paired_pc_session', sessionId);
                     setScanMode('pc');
+                    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                        try { navigator.vibrate([80, 40, 80]); } catch (e) {}
+                    }
                     setScannedFeedback({
                         title: `Spárováno s PC (${sessionId})`,
                         location_code: 'PAIRING SUCCESS',
@@ -201,15 +200,42 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     return;
                 }
 
-                if (scanModeRef.current === 'pc') {
-                    const targetSession = pairedSessionIdRef.current;
-                    if (!targetSession) {
-                        setErrorMsg("Není spárováno PC. Naskenuj nejprve QR kód na obrazovce počítače.");
-                        setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 3000);
+                // 1. ALWAYS check database to verify if QR code / location code exists!
+                try {
+                    const item = await onLookupItem(decodedText);
+
+                    if (!item) {
+                        // QR code NOT found in database -> Glow RED + Error vibration + Warning message!
+                        if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                            try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+                        }
+                        setScannedFeedback({
+                            title: '❌ NENALEZENO V DATABÁZI',
+                            location_code: decodedText,
+                            mode: 'error'
+                        });
+                        setErrorMsg(`Kód '${decodedText}' nebyl nalezen v databázi zásob!`);
+                        setTimeout(() => {
+                            setScannedFeedback(null);
+                            setErrorMsg(null);
+                            isProcessingRef.current = false;
+                        }, 3500);
                         return;
                     }
 
-                    try {
+                    // 2. QR code IS valid & found in database -> Glow GREEN + Send to PC / Local!
+                    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                        try { navigator.vibrate([80, 40, 80]); } catch (e) {}
+                    }
+
+                    if (scanModeRef.current === 'pc') {
+                        const targetSession = pairedSessionIdRef.current;
+                        if (!targetSession) {
+                            setErrorMsg("Není spárováno PC. Naskenuj nejprve QR kód na obrazovce počítače.");
+                            setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 3000);
+                            return;
+                        }
+
                         const res = await fetch('/api/inventory/remote-scan', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -221,28 +247,21 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
                         if (res.ok) {
                             setScannedFeedback({
-                                title: `Odesláno na PC: ${decodedText}`,
-                                location_code: 'REMOTE SCAN',
-                                mode: 'pc'
-                            });
-                            setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 2500);
+                                title: `✅ ${item.title}`,
+                                location_code: `${item.location_code || 'Bez lokace'} → Odesláno do PC`,
+                                mode: 'pc',
+                                item: item
+                            } as any);
+                            setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 2800);
                         } else {
                             setErrorMsg("Chyba při odesílání skenu na PC.");
                             setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
                         }
-                    } catch (e) {
-                        setErrorMsg("Chyba sítě při odesílání na PC.");
-                        setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
-                    }
-                    return;
-                }
-
-                try {
-                    const item = await onLookupItem(decodedText);
-                    if (item) {
+                    } else {
+                        // Local Mode
                         setScannedItem(item);
                         setScannedFeedback({
-                            title: item.title,
+                            title: `✅ ${item.title}`,
                             location_code: item.location_code || 'Bez lokace',
                             mode: 'local',
                             item: item
@@ -251,16 +270,9 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                             setScannedFeedback(null);
                             isProcessingRef.current = false;
                         }, 4500);
-                    } else {
-                        setScannedFeedback({
-                            title: 'Položka nenalezena v databázi',
-                            location_code: decodedText,
-                            mode: 'error' as any
-                        });
-                        setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 3000);
                     }
-                } catch (e) {
-                    setErrorMsg("Chyba při hledání položky.");
+                } catch (dbErr) {
+                    setErrorMsg("Chyba ověřování v databázi.");
                     setTimeout(() => { setErrorMsg(null); isProcessingRef.current = false; }, 2500);
                 }
             };
