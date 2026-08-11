@@ -1,4 +1,10 @@
-Flask>=2.0
-Flask-SQLAlchemy>=2.5
-Flask-Cors>=3.0
-pyserial>=3.5
+Flask>=2.0.0
+Flask-SQLAlchemy>=2.5.0
+Flask-Cors>=3.0.0
+PyJWT>=2.8.0
+Werkzeug>=2.0.0
+pyserial>=3.5.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+SQLAlchemy>=2.0.0
+bcrypt>=4.0.0
