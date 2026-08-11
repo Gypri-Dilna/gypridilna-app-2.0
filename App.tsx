@@ -394,7 +394,7 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Door unlock failed');
                 throw new Error(err);
             }
-            showToast('Dveře byly dálkově otevřeny!', 'success');
+            showToast('Dveře byly na dálku odemknuty!', 'success');
             await fetchAllData();
         } catch (e: any) {
             showToast(e.message || 'Chyba při otvírání dveří.', 'error');

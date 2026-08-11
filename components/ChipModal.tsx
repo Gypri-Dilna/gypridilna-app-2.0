@@ -54,17 +54,17 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                 if (data.chip_id) {
                     const existingChip = chips.find(c => c.chip_id === data.chip_id);
                     if (existingChip) {
-                        showToast(`Chip is already registered to ${existingChip.name}.`, 'error');
+                        showToast(`Čip je již zaregistrován pro držitele ${existingChip.name}.`, 'error');
                     } else {
                         setFormData(prev => ({ ...prev, chip_id: data.chip_id }));
-                        showToast('New chip scanned successfully!', 'success');
+                        showToast('Nový RFID čip byl úspěšně naskenován!', 'success');
                     }
                     setIsScanning(false);
                     clearInterval(interval);
                 }
             } catch (error) {
                 console.error('Polling error:', error);
-                setScanError('Could not connect to the server.');
+                setScanError('Nelze se připojit k serveru.');
                 setIsScanning(false);
                 clearInterval(interval);
             }
@@ -75,7 +75,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
             if (isScanning) {
                 setIsScanning(false);
                 clearInterval(interval);
-                setScanError('Scan timed out. Please try again.');
+                setScanError('Vypršel čas skenování. Zkuste to prosím znovu.');
             }
         }, 30000);
 
@@ -100,7 +100,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                 <form onSubmit={handleSubmit} className="flex flex-col max-h-[85vh]">
                     <div className="flex justify-between items-center px-6 py-4 border-b border-brand-border bg-brand-darker flex-shrink-0">
                         <h2 id="modal-title" className="text-base font-extrabold text-white">
-                            {chip ? 'Edit RFID Chip Profile' : 'Register New RFID Chip'}
+                            {chip ? 'Upravit profil RFID čipu' : 'Registrovat nový RFID čip'}
                         </h2>
                         <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition">
                             <CloseIcon className="h-5 w-5" />
@@ -109,7 +109,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
 
                     <div className="p-6 space-y-4 overflow-y-auto text-xs flex-1">
                         <div>
-                            <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Holder's Name *</label>
+                            <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Jméno držitele *</label>
                             <input 
                                 type="text" 
                                 name="name" 
@@ -121,7 +121,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                             />
                         </div>
                         <div>
-                            <label htmlFor="chip_id" className="block text-xs font-semibold text-gray-300 mb-1">Chip ID *</label>
+                            <label htmlFor="chip_id" className="block text-xs font-semibold text-gray-300 mb-1">ID čipu *</label>
                             <div className="flex gap-2">
                                 <input 
                                     type="text" 
@@ -143,14 +143,14 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                     }`}
                                 >
                                     <ScanIcon className={`h-4 w-4 ${isScanning ? 'animate-pulse' : ''}`} />
-                                    {isScanning ? 'Scanning...' : 'Scan Door Reader'}
+                                    {isScanning ? 'Skenuji...' : 'Naskenovat z čtečky'}
                                 </button>
                             </div>
                             {scanError && <p className="mt-1 text-xs text-rose-400 font-bold">{scanError}</p>}
-                            {isScanning && <p className="mt-1 text-xs text-brand-teal font-mono font-bold animate-pulse">Scan a physical chip at the door reader now...</p>}
+                            {isScanning && <p className="mt-1 text-xs text-brand-teal font-mono font-bold animate-pulse">Přiložte fyzický čip ke čtečce u dveří...</p>}
                         </div>
                         <div>
-                            <label htmlFor="valid_until" className="block text-xs font-semibold text-gray-300 mb-1">Valid Until (optional)</label>
+                            <label htmlFor="valid_until" className="block text-xs font-semibold text-gray-300 mb-1">Platnost do (volitelné)</label>
                             <input 
                                 type="date" 
                                 name="valid_until" 
@@ -170,7 +170,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                     onChange={handleChange} 
                                     className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0" 
                                 />
-                                <label htmlFor="is_allowed" className="text-xs font-bold text-white cursor-pointer">Allow Door Access</label>
+                                <label htmlFor="is_allowed" className="text-xs font-bold text-white cursor-pointer">Povolit přístup k dveřím</label>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input 
@@ -181,7 +181,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                     onChange={handleChange} 
                                     className="h-4 w-4 rounded bg-brand-darker border-brand-border text-brand-teal focus:ring-0" 
                                 />
-                                <label htmlFor="is_one_time" className="text-xs font-bold text-white cursor-pointer">One-Time Guest Pass</label>
+                                <label htmlFor="is_one_time" className="text-xs font-bold text-white cursor-pointer">Jednorázový přístup (host)</label>
                             </div>
                         </div>
                     </div>
@@ -191,13 +191,13 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                             onClick={onClose} 
                             className="px-5 py-2.5 bg-brand-dark border border-brand-border text-gray-300 hover:text-white font-bold text-xs rounded-xl transition"
                         >
-                            Cancel
+                            Zrušit
                         </button>
                         <button 
                             type="submit" 
                             className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl transition shadow"
                         >
-                            Save Chip Profile
+                            Uložit profil čipu
                         </button>
                     </div>
                 </form>
