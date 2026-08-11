@@ -119,13 +119,13 @@ export const Header: React.FC<HeaderProps> = ({
                 }
             `}</style>
 
-            {/* Desktop & Tablet Sidebar (Permanent 240px Fixed Snapped Viewport) */}
-            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-screen fixed top-0 left-0 bottom-0 z-30 font-sans overflow-hidden">
-                {/* Scrollable Top Section (Logo + Nav Links) */}
-                <div className="p-5 flex-1 overflow-y-auto relative z-10 space-y-4">
+            {/* Desktop & Tablet Sidebar (Permanent 240px Fixed Snapped Viewport with 100dvh Dynamic Viewport Support) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border h-[100dvh] max-h-[100dvh] fixed top-0 left-0 bottom-0 z-30 font-sans overflow-hidden">
+                {/* Scrollable Top Section (Logo + Nav Links) with min-h-0 to prevent flex expansion pushing footer off-screen */}
+                <div className="p-4 flex-1 min-h-0 overflow-y-auto relative z-10 space-y-3">
                     {/* Official Brand Logo & Name */}
                     <div className="flex items-center gap-3">
-                        <Logo variant="light" className="h-9 w-auto flex-shrink-0" />
+                        <Logo variant="light" className="h-8 w-auto flex-shrink-0" />
                         <div>
                             <h1 className="font-black text-base tracking-tight leading-tight lowercase">
                                 <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     {/* Hex Bolt Glyph Chain Divider */}
-                    <BoltGlyphChain className="my-4" />
+                    <BoltGlyphChain className="my-3" />
 
                     {/* Navigation Links */}
                     <nav className="space-y-1">
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 <button
                                     key={item.id}
                                     onClick={() => setActiveTab(item.id as TabType)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                                         isActive
                                             ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20 font-extrabold'
                                             : 'text-gray-300 hover:bg-brand-darker hover:text-white'
@@ -159,9 +159,9 @@ export const Header: React.FC<HeaderProps> = ({
                     </nav>
                 </div>
 
-                {/* Permanent Pinned Bottom Section: User Profile & Logout */}
-                <div className="p-4 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-brand-darker border border-brand-border">
+                {/* Permanent Pinned Bottom Section: User Profile & Logout (Never clipped, fits inside 100dvh) */}
+                <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
                         <div className="flex items-center gap-2 overflow-hidden">
                             <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
                                 <UserIcon className="h-4 w-4" />
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                     <button
                         onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-darker hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-brand-border hover:border-rose-500/30 rounded-xl text-xs font-bold transition"
+                        className="w-full flex items-center justify-center gap-2 px-3.5 py-2 bg-brand-darker hover:bg-rose-500/10 text-gray-300 hover:text-rose-400 border border-brand-border hover:border-rose-500/30 rounded-xl text-xs font-bold transition"
                     >
                         <LogoutIcon className="h-4 w-4" />
                         <span>Odhlásit se</span>
