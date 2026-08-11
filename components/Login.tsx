@@ -3,7 +3,7 @@ import { User } from '../types';
 import { Logo } from './Logo';
 
 interface LoginProps {
-    onLoginSuccess: (user: User, rememberMe: boolean) => void;
+    onLoginSuccess: (user: User, token?: string, rememberMe?: boolean) => void;
 }
 
 declare global {
@@ -37,7 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             const data = await response.json();
 
             if (response.ok && data.status === 'success') {
-                onLoginSuccess(data.user, rememberMe);
+                onLoginSuccess(data.user, data.token, rememberMe);
             } else {
                 setError(data.detail || 'E-mail účtu Google není autorizován pro žádného uživatele systému.');
             }
@@ -90,7 +90,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             const data = await response.json();
 
             if (response.ok && data.status === 'success') {
-                onLoginSuccess(data.user, rememberMe);
+                onLoginSuccess(data.user, data.token, rememberMe);
             } else {
                 setError(data.detail || data.message || 'Nesprávné uživatelské jméno nebo heslo.');
             }

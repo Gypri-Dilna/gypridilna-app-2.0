@@ -185,27 +185,53 @@ const App: React.FC = () => {
         }
     };
 
+    const getAuthHeaders = useCallback((extraHeaders: Record<string, string> = {}) => {
+        const token = localStorage.getItem('gypri_auth_token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...extraHeaders
+        };
+    }, []);
+
     const showToast = useCallback((message: string, type: 'success' | 'error') => {
         setToast({ message, type });
     }, []);
 
-    // Check localStorage session on mount
+    // Verify authentication token with backend server on app startup
     useEffect(() => {
-        const savedUser = localStorage.getItem('savedUser');
-        if (savedUser) {
-            try {
-                const parsedUser = JSON.parse(savedUser);
-                setUser(parsedUser);
-                setIsAuthenticated(true);
-            } catch (e) {
-                localStorage.removeItem('savedUser');
+        const initAuthToken = async () => {
+            const token = localStorage.getItem('gypri_auth_token');
+            if (token) {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success' && data.user) {
+                            setUser(data.user);
+                            setIsAuthenticated(true);
+                            localStorage.setItem('savedUser', JSON.stringify(data.user));
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Auth token verification error:', e);
+                }
             }
-        }
+            // If token invalid, demoted, or expired -> clear storage
+            localStorage.removeItem('gypri_auth_token');
+            localStorage.removeItem('savedUser');
+            setUser(null);
+            setIsAuthenticated(false);
+        };
+        initAuthToken();
     }, []);
 
     const [isPrinterAvailable, setIsPrinterAvailable] = useState<boolean>(false);
 
-    // Fetch all platform data safely without trigger loops
+    // Fetch all platform data safely with authorization headers
     const fetchAllData = useCallback(async (isSilent = false) => {
         if (!isAuthenticated || !user) return;
         if (!isSilent) setIsLoading(true);
@@ -229,12 +255,12 @@ const App: React.FC = () => {
                 // Browser is on another host or print_agent not running on local loopback
             }
 
-            const [chipsRes, logsRes, invRes, printerRes, usersRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/chips`),
-                canViewLogs ? fetch(`${API_BASE_URL}/api/logs`) : Promise.resolve(null),
-                fetch(`${API_BASE_URL}/api/inventory`),
-                directPrinterStatus ? Promise.resolve(null) : fetch(`${API_BASE_URL}/api/inventory/printer-status`).catch(() => null),
-                fetch(`${API_BASE_URL}/api/users`).catch(() => null)
+            const [chipsRes, logsRes, invRes, printerRes, meRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/chips`, { headers: getAuthHeaders() }),
+                canViewLogs ? fetch(`${API_BASE_URL}/api/logs`, { headers: getAuthHeaders() }) : Promise.resolve(null),
+                fetch(`${API_BASE_URL}/api/inventory`, { headers: getAuthHeaders() }),
+                directPrinterStatus ? Promise.resolve(null) : fetch(`${API_BASE_URL}/api/inventory/printer-status`, { headers: getAuthHeaders() }).catch(() => null),
+                fetch(`${API_BASE_URL}/api/me`, { headers: getAuthHeaders() }).catch(() => null)
             ]);
 
             if (chipsRes.ok) {
@@ -261,26 +287,25 @@ const App: React.FC = () => {
                 setIsPrinterAvailable(false);
             }
 
-            // Sync currently logged in user profile & permissions in real-time
-            if (usersRes && usersRes.ok) {
-                const usersData: User[] = await usersRes.json();
-                const updatedMe = usersData.find((u) => u.id === user.id);
-                if (updatedMe) {
-                    if (JSON.stringify(updatedMe) !== JSON.stringify(user)) {
-                        setUser(updatedMe);
-                        localStorage.setItem('savedUser', JSON.stringify(updatedMe));
+            // Sync currently logged in user profile & permissions in real-time from server DB
+            if (meRes && meRes.ok) {
+                const meData = await meRes.json();
+                if (meData.status === 'success' && meData.user) {
+                    if (JSON.stringify(meData.user) !== JSON.stringify(user)) {
+                        setUser(meData.user);
+                        localStorage.setItem('savedUser', JSON.stringify(meData.user));
                     }
                 }
             }
         } catch (error) {
             if (!isSilent) {
                 console.error('Data sync error:', error);
-                showToast('Error syncing with backend server.', 'error');
+                showToast('Chyba při synchronizaci se serverem.', 'error');
             }
         } finally {
             if (!isSilent) setIsLoading(false);
         }
-    }, [isAuthenticated, user, showToast]);
+    }, [isAuthenticated, user, showToast, getAuthHeaders]);
 
     // Initial fetch & setup 4-second real-time auto-polling interval
     useEffect(() => {
@@ -302,13 +327,14 @@ const App: React.FC = () => {
     };
 
     // Handle Login
-    const handleLoginSuccess = (loggedInUser: User, rememberMe: boolean) => {
+    const handleLoginSuccess = (loggedInUser: User, token?: string, rememberMe?: boolean) => {
         setUser(loggedInUser);
         setIsAuthenticated(true);
-        if (rememberMe) {
-            localStorage.setItem('savedUser', JSON.stringify(loggedInUser));
+        if (token) {
+            localStorage.setItem('gypri_auth_token', token);
         }
-        showToast(`Welcome back, ${loggedInUser.username}!`, 'success');
+        localStorage.setItem('savedUser', JSON.stringify(loggedInUser));
+        showToast(`Vítejte zpět, ${loggedInUser.username}!`, 'success');
     };
 
     // Handle Logout
@@ -316,8 +342,9 @@ const App: React.FC = () => {
         setUser(null);
         setIsAuthenticated(false);
         setSelectedItem(null);
+        localStorage.removeItem('gypri_auth_token');
         localStorage.removeItem('savedUser');
-        showToast('Logged out successfully.', 'success');
+        showToast('Byli jste úspěšně odhlášeni.', 'success');
     };
 
     // RFID API Handlers
@@ -325,7 +352,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/chips`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(newChip)
             });
             if (!res.ok) {
@@ -343,7 +370,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/chips/${updatedChip.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(updatedChip)
             });
             if (!res.ok) {
@@ -359,7 +386,10 @@ const App: React.FC = () => {
 
     const handleDeleteChip = async (chipId: number) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/chips/${chipId}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE_URL}/api/chips/${chipId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) {
                 const err = await parseResponseError(res, 'Failed to delete chip');
                 throw new Error(err);
@@ -374,7 +404,10 @@ const App: React.FC = () => {
     const handleBatchDeleteChips = async (chipIds: number[]) => {
         if (!chipIds.length) return;
         try {
-            await Promise.all(chipIds.map(id => fetch(`${API_BASE_URL}/api/chips/${id}`, { method: 'DELETE' })));
+            await Promise.all(chipIds.map(id => fetch(`${API_BASE_URL}/api/chips/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            })));
             showToast(`${chipIds.length} RFID čipů bylo úspěšně smazáno.`, 'success');
             await fetchAllData();
         } catch (e: any) {
@@ -387,7 +420,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/remote-opening`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ username: user.username })
             });
             if (!res.ok) {
@@ -404,7 +437,9 @@ const App: React.FC = () => {
     const handleToggleServiceMode = async (enabled: boolean) => {
         if (!user) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/service-mode?enabled=${enabled}&username=${user.username}`);
+            const res = await fetch(`${API_BASE_URL}/api/service-mode?enabled=${enabled}&username=${user.username}`, {
+                headers: getAuthHeaders()
+            });
             if (!res.ok) {
                 const err = await parseResponseError(res, 'Service mode command failed');
                 throw new Error(err);
@@ -421,7 +456,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/inventory`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(itemData)
             });
             if (!res.ok) {
@@ -441,7 +476,7 @@ const App: React.FC = () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/inventory/${updatedItem.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(updatedItem)
             });
             if (!res.ok) {
@@ -463,7 +498,10 @@ const App: React.FC = () => {
 
     const handleDeleteInventoryItem = async (id: number) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/inventory/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE_URL}/api/inventory/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) {
                 const err = await parseResponseError(res, 'Failed to delete item');
                 throw new Error(err);
@@ -479,7 +517,10 @@ const App: React.FC = () => {
     const handleBatchDeleteInventoryItems = async (itemIds: number[]) => {
         if (!itemIds.length) return;
         try {
-            await Promise.all(itemIds.map(id => fetch(`${API_BASE_URL}/api/inventory/${id}`, { method: 'DELETE' })));
+            await Promise.all(itemIds.map(id => fetch(`${API_BASE_URL}/api/inventory/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            })));
             showToast(`${itemIds.length} položek bylo smazáno ze zásob.`, 'success');
             if (selectedItem && itemIds.includes(selectedItem.id)) {
                 setSelectedItem(null);

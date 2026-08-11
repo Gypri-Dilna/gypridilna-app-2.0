@@ -95,20 +95,110 @@ def serialize_log(log):
         'result': log.result,
     }
 
+import jwt
+from datetime import datetime, timezone, timedelta, time as time_obj
+from functools import wraps
+
+JWT_SECRET = os.environ.get('JWT_SECRET', 'gypri_dilna_super_secret_jwt_key_2026')
+
+def create_user_token(user):
+    payload = {
+        'user_id': user.id,
+        'username': user.username,
+        'is_admin': user.is_admin,
+        'exp': datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+
+def decode_user_token(token_str):
+    try:
+        if not token_str:
+            return None
+        return jwt.decode(token_str, JWT_SECRET, algorithms=['HS256'])
+    except Exception:
+        return None
+
+def get_auth_user_from_request():
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip() if auth_header.startswith('Bearer ') else None
+    if not token:
+        token = request.args.get('token')
+    if not token:
+        return None
+
+    payload = decode_user_token(token)
+    if not payload or 'user_id' not in payload:
+        return None
+
+    # Fetch live user from database to verify user still exists and hasn't been disabled/demoted!
+    user = User.query.get(payload['user_id'])
+    return user
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_auth_user_from_request()
+        if not user:
+            return jsonify({'error': 'Unauthorized', 'message': 'Chybějící nebo neplatný bezpečnostní token.'}), 401
+        request.current_user = user
+        return f(*args, **kwargs)
+    return decorated
+
+def require_admin(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_auth_user_from_request()
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Forbidden', 'message': 'Přístup odepřen: Akce vyžaduje administrátorská práva.'}), 403
+        request.current_user = user
+        return f(*args, **kwargs)
+    return decorated
+
+def require_perm(perm_key):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            user = get_auth_user_from_request()
+            if not user:
+                return jsonify({'error': 'Unauthorized', 'message': 'Chybějící nebo neplatný bezpečnostní token.'}), 401
+            if user.is_admin:
+                request.current_user = user
+                return f(*args, **kwargs)
+            
+            perms = json.loads(user.permissions) if user.permissions else {}
+            if not perms.get(perm_key):
+                return jsonify({'error': 'Forbidden', 'message': f'Přístup odepřen: Chybí oprávnění ({perm_key}).'}), 403
+            
+            request.current_user = user
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
 # --- API Endpoints ---
+
+@app.route('/api/me', methods=['GET'])
+@require_auth
+def get_current_user_profile():
+    """Verify current token and return authoritative user profile from DB."""
+    return jsonify({
+        'status': 'success',
+        'user': serialize_user(request.current_user)
+    }), 200
 
 @app.route('/api/login', methods=['POST'])
 def login():
     """Handles user login."""
-    data = request.json
+    data = request.json or {}
     username = data.get('username')
     password = data.get('password')
     
     user = User.query.filter_by(username=username).first()
     
     if user and check_password_hash(user.password_hash, password):
+        token = create_user_token(user)
         return jsonify({
             'status': 'success',
+            'token': token,
             'user': serialize_user(user)
         }), 200
     
@@ -120,7 +210,8 @@ def login():
             "add_chips": True,
             "view_logs": True,
             "remote_opening": True,
-            "erase_logs": True
+            "erase_logs": True,
+            "inventory_edit": True
         }
         new_admin = User(
             username=ADMIN_USERNAME,
@@ -130,24 +221,26 @@ def login():
         )
         db.session.add(new_admin)
         db.session.commit()
+        token = create_user_token(new_admin)
         return jsonify({
             'status': 'success',
+            'token': token,
             'user': serialize_user(new_admin)
         }), 200
     
-    return jsonify({'status': 'error', 'message': 'Invalid username or password.'}), 401
+    return jsonify({'status': 'error', 'message': 'Neplatné uživatelské jméno nebo heslo.'}), 401
 
 
 
 # --- Remote Opening Endpoints ---
 @app.route('/api/remote-opening', methods=['POST'])
+@require_perm('remote_opening')
 def remote_opening():
     """Endpoint triggered by the dashboard to request a door unlock."""
     global REMOTE_OPENING_REQUESTED
-    data = request.json
-    username = data.get('username', 'Unknown User')
+    data = request.json or {}
+    username = request.current_user.username if hasattr(request, 'current_user') else data.get('username', 'Unknown User')
     
-    # Determine the name to log: use the name from the linked chip if available
     log_name = username
     user = User.query.filter_by(username=username).first()
     if user and user.chip_id:
@@ -157,7 +250,6 @@ def remote_opening():
     
     REMOTE_OPENING_REQUESTED = True
     
-    # Log this action with the determined name
     log = AccessLog(chip_id='REMOTE_OPENING', name=log_name, result='GRANTED (REMOTE)')
     db.session.add(log)
     db.session.commit()
@@ -170,7 +262,6 @@ def get_override_status():
     global REMOTE_OPENING_REQUESTED
     
     if REMOTE_OPENING_REQUESTED:
-        # Reset the flag immediately after confirming to the hardware
         REMOTE_OPENING_REQUESTED = False
         return jsonify({'override': True})
     else:
@@ -178,17 +269,16 @@ def get_override_status():
 
 # --- Service Mode Endpoints ---
 @app.route('/api/service-mode', methods=['GET'])
+@require_perm('service_mode')
 def set_service_mode():
     """Enable or disable service mode via a GET request."""
     global SERVICE_MODE_ENABLED
-    # Get the 'enabled' query parameter, default to 'false' if not provided
     enabled_str = request.args.get('enabled', 'false').lower()
     enabled = enabled_str in ['true', '1', 't', 'yes']
     SERVICE_MODE_ENABLED = enabled
     
-    # Log the service mode change
     status = 'ENABLED' if SERVICE_MODE_ENABLED else 'DISABLED'
-    username = request.args.get('username', 'Admin')
+    username = request.current_user.username if hasattr(request, 'current_user') else 'Admin'
     log = AccessLog(chip_id='SERVICE_MODE', name=username, result=f'SERVICE_MODE_{status}')
     db.session.add(log)
     db.session.commit()
@@ -207,7 +297,7 @@ def get_last_unknown_chip():
     global LAST_UNKNOWN_CHIP_ID
     if LAST_UNKNOWN_CHIP_ID:
         chip_id_to_send = LAST_UNKNOWN_CHIP_ID
-        LAST_UNKNOWN_CHIP_ID = None  # Clear after sending
+        LAST_UNKNOWN_CHIP_ID = None
         return jsonify({'chip_id': chip_id_to_send})
     else:
         return jsonify({'chip_id': None})
@@ -215,7 +305,7 @@ def get_last_unknown_chip():
 # Endpoint for checking access
 @app.route('/api/check-access', methods=['POST'])
 def check_access():
-    data = request.json
+    data = request.json or {}
     chip_id = data.get('chip_id')
 
     if not chip_id:
@@ -227,9 +317,6 @@ def check_access():
         db.session.add(log)
         db.session.commit()
         return jsonify({'status': 'GRANTED', 'reason': 'SERVICE_MODE_ACTIVE'})
-
-    # The 'MANUAL_OVERRIDE' case from the dashboard is now handled by its own endpoints
-    # and is no longer part of the standard access check.
 
     chip = Chip.query.filter_by(chip_id=chip_id).first()
 
@@ -276,7 +363,6 @@ def check_access():
         'daily_entry_count': daily_entry_count
     })
 
-
 # CRUD for chips
 @app.route('/api/chips', methods=['GET', 'POST'])
 def manage_chips():
@@ -285,7 +371,11 @@ def manage_chips():
         return jsonify([serialize_chip(c) for c in chips])
     
     if request.method == 'POST':
-        data = request.json
+        user = get_auth_user_from_request()
+        if not user or (not user.is_admin and not json.loads(user.permissions or '{}').get('add_chips')):
+            return jsonify({'error': 'Forbidden', 'message': 'Chybí oprávnění pro správu čipů.'}), 403
+
+        data = request.json or {}
         valid_until = datetime.fromisoformat(data['valid_until'].replace('Z', '+00:00')) if data.get('valid_until') else None
         
         new_chip = Chip(
@@ -301,14 +391,17 @@ def manage_chips():
 
 @app.route('/api/chips/<int:chip_id>', methods=['PUT', 'DELETE'])
 def manage_single_chip(chip_id):
+    user = get_auth_user_from_request()
+    if not user or (not user.is_admin and not json.loads(user.permissions or '{}').get('add_chips')):
+        return jsonify({'error': 'Forbidden', 'message': 'Chybí oprávnění pro správu čipů.'}), 403
+
     chip = Chip.query.get_or_404(chip_id)
     
     if request.method == 'PUT':
-        data = request.json
+        data = request.json or {}
         old_name = chip.name
         new_name = data.get('name', '').strip()
         
-        # If chip owner name changed, update all chips and logs owned by old_name
         if old_name and new_name and old_name != new_name:
             Chip.query.filter_by(name=old_name).update({'name': new_name})
             AccessLog.query.filter_by(name=old_name).update({'name': new_name})
@@ -338,6 +431,10 @@ def manage_logs():
         return jsonify([serialize_log(l) for l in logs])
     
     if request.method == 'DELETE':
+        user = get_auth_user_from_request()
+        if not user or (not user.is_admin and not json.loads(user.permissions or '{}').get('erase_logs')):
+            return jsonify({'error': 'Forbidden', 'message': 'Chybí oprávnění pro mazání logů.'}), 403
+
         try:
             num_rows_deleted = db.session.query(AccessLog).delete()
             db.session.commit()
@@ -357,11 +454,8 @@ def export_logs():
     
     output = io.StringIO()
     writer = csv.writer(output)
-    
-    # Write header
     writer.writerow(['ID', 'Timestamp (UTC)', 'Chip ID', 'Name', 'Result'])
     
-    # Write rows
     for log in logs:
         ts = log.timestamp.isoformat()
         if not ts.endswith('Z') and not '+' in ts:
@@ -369,23 +463,22 @@ def export_logs():
         writer.writerow([log.id, ts, log.chip_id, log.name, log.result])
     
     output.seek(0)
-    
     return Response(
         output,
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=access_logs.csv"}
     )
 
-# --- User Management Endpoints ---
+# --- User Management Endpoints (Strict Admin Protection) ---
 @app.route('/api/users', methods=['GET', 'POST'])
+@require_admin
 def manage_users():
     if request.method == 'GET':
         users = User.query.all()
         return jsonify([serialize_user(u) for u in users])
     
     if request.method == 'POST':
-        data = request.json
-        # Check if username exists
+        data = request.json or {}
         if User.query.filter_by(username=data['username']).first():
             return jsonify({'error': 'Username already exists'}), 400
             
@@ -401,11 +494,12 @@ def manage_users():
         return jsonify(serialize_user(new_user)), 201
 
 @app.route('/api/users/<int:user_id>', methods=['PUT', 'DELETE'])
+@require_admin
 def manage_single_user(user_id):
     user = User.query.get_or_404(user_id)
     
     if request.method == 'PUT':
-        data = request.json
+        data = request.json or {}
         user.username = data['username']
         if data.get('password'):
             user.password_hash = generate_password_hash(data['password'])
@@ -416,7 +510,6 @@ def manage_single_user(user_id):
         return jsonify(serialize_user(user))
 
     if request.method == 'DELETE':
-        # Prevent deleting the last admin
         if user.is_admin and User.query.filter_by(is_admin=True).count() <= 1:
             return jsonify({'error': 'Cannot delete the last administrator'}), 400
             
@@ -425,12 +518,17 @@ def manage_single_user(user_id):
         return jsonify({'message': 'User deleted successfully'})
 
 @app.route('/api/change-password', methods=['POST'])
+@require_auth
 def change_password():
-    data = request.json
+    data = request.json or {}
     user_id = data.get('user_id')
     old_password = data.get('old_password')
     new_password = data.get('new_password')
     
+    # Ensure users can only change their own password unless they are an admin!
+    if request.current_user.id != user_id and not request.current_user.is_admin:
+        return jsonify({'error': 'Forbidden', 'message': 'Můžete měnit pouze své vlastní heslo.'}), 403
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
