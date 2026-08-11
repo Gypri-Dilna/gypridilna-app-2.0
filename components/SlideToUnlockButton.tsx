@@ -31,12 +31,50 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     const currentMax = getMaxSlide();
     const progress = currentMax > 0 ? Math.min(1, Math.max(0, dragX / currentMax)) : 0;
 
+    // Web Audio API tactile haptic tick fallback (works on iOS Safari & devices without physical vibrate API)
+    const playHapticTick = () => {
+        try {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(160, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.09);
+            gain.gain.setValueAtTime(0.35, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.09);
+        } catch (e) {}
+    };
+
+    const triggerHapticFeedback = () => {
+        // 1. Hardware Vibrate API for Android / Chrome / Edge
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+                navigator.vibrate([100, 50, 100]);
+            } catch (e) {}
+        }
+        // 2. Synthesized Audio Haptic Tick for iOS Safari & browsers blocking navigator.vibrate
+        playHapticTick();
+    };
+
     // Start Drag (Touch or Mouse)
     const startDrag = (clientX: number) => {
         if (isUnlocked || isUnlockingLoading) return;
         setIsDragging(true);
         hasVibratedRef.current = false;
         startXRef.current = clientX - dragX;
+
+        // CRITICAL: Call navigator.vibrate DIRECTLY inside user touch gesture to unlock browser vibration permission!
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+                navigator.vibrate(15);
+            } catch (e) {}
+        }
     };
 
     const moveDrag = (clientX: number) => {
@@ -47,14 +85,9 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
         setDragX(clampedX);
 
         if (clampedX >= max * 0.88) {
-            // Immediate haptic vibration in gesture handler context
             if (!hasVibratedRef.current) {
                 hasVibratedRef.current = true;
-                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                    try {
-                        navigator.vibrate([70, 40, 70]);
-                    } catch (e) {}
-                }
+                triggerHapticFeedback();
             }
             triggerUnlock(max);
         }
