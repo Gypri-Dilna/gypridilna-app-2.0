@@ -155,14 +155,6 @@ export const LabelPrinterModal: React.FC<LabelPrinterModalProps> = ({
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-3.5 py-2.5 text-xs font-bold text-gray-400 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-xl transition text-center"
-                        >
-                            {showPrintLater ? 'Vytisknout později' : 'Zavřít'}
-                        </button>
-
                         {onAddToQueue && (
                             <button
                                 type="button"

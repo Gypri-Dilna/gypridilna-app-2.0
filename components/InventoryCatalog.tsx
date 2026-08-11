@@ -4,10 +4,11 @@ import { InventoryItem, User } from '../types';
 import {
     InventoryIcon, SearchIcon, PlusIcon,
     PrinterIcon, FilterIcon, TrashIcon, EditIcon,
-    ArrowUpRight, ChevronRightIcon, CloseIcon
+    ArrowUpRight, ChevronRightIcon, CloseIcon, CheckSquareIcon
 } from './icons';
 import { parseLocationCode, formatLocationCode, getNextSequenceForItem } from '../locationParser';
 import { LabelPrinterModal } from './LabelPrinterModal';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface InventoryCatalogProps {
     items: InventoryItem[];
@@ -15,6 +16,7 @@ interface InventoryCatalogProps {
     onAddItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
     onUpdateItem: (item: InventoryItem) => Promise<void>;
     onDeleteItem: (id: number) => Promise<void>;
+    onBatchDeleteItems?: (ids: number[]) => Promise<void>;
     onDeleteCategory?: (categoryName: string) => Promise<void>;
     onSelectItem: (item: InventoryItem) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
@@ -30,6 +32,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    onBatchDeleteItems,
     onDeleteCategory,
     onSelectItem,
     showToast,
@@ -44,6 +47,11 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
     const [printingItem, setPrintingItem] = useState<InventoryItem | null>(null);
+
+    // Batch Selection Mode State
+    const [isSelectMode, setIsSelectMode] = useState(false);
+    const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
+    const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
 
     // Responsive mobile device detection
     const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -80,6 +88,45 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
         });
         return ['ALL', ...Array.from(set).sort()];
     }, [items]);
+
+    const toggleSelectItem = (id: number) => {
+        setSelectedItemIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const handleBatchAddToQueue = () => {
+        if (!onAddToQueue) return;
+        const selectedObjects = items.filter(i => selectedItemIds.has(i.id));
+        selectedObjects.forEach(item => {
+            onAddToQueue(item, '18mm');
+        });
+        showToast(`${selectedObjects.length} položek bylo přidáno do tiskové fronty (18mm).`, 'success');
+        setSelectedItemIds(new Set());
+        setIsSelectMode(false);
+    };
+
+    const handleBatchDelete = async () => {
+        const ids = Array.from(selectedItemIds);
+        if (ids.length === 0) return;
+
+        if (onBatchDeleteItems) {
+            await onBatchDeleteItems(ids);
+        } else {
+            for (const id of ids) {
+                await onDeleteItem(id);
+            }
+        }
+        setSelectedItemIds(new Set());
+        setIsSelectMode(false);
+        setIsBatchConfirmOpen(false);
+    };
 
     return (
         <div className="space-y-6 font-sans">
@@ -165,7 +212,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     />
                 </div>
 
-                {/* Category Select & Manage Categories Button */}
+                {/* Category Select */}
                 <div className="flex items-center gap-2">
                     <FilterIcon className="h-4 w-4 text-gray-400" />
                     <select
@@ -179,8 +226,78 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             </option>
                         ))}
                     </select>
+                </div>
+            </div>
 
-                    
+            {/* Smooth Collapsible Animated Selection Bar directly ABOVE table */}
+            <div className={`grid transition-all duration-300 ease-in-out ${
+                isSelectMode ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'
+            }`}>
+                <div className="overflow-hidden">
+                    <div className="bg-brand-dark border border-brand-teal/40 p-3 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-3 font-sans">
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (filteredItems.every(i => selectedItemIds.has(i.id))) {
+                                        setSelectedItemIds(new Set());
+                                    } else {
+                                        setSelectedItemIds(new Set(filteredItems.map(i => i.id)));
+                                    }
+                                }}
+                                className="flex items-center gap-2 text-xs font-bold text-gray-200 hover:text-white bg-brand-darker hover:bg-[#343b47] px-3 py-1.5 rounded-xl border border-brand-border transition active:scale-95"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={filteredItems.length > 0 && filteredItems.every(i => selectedItemIds.has(i.id))}
+                                    onChange={() => {}}
+                                    className="w-4 h-4 rounded border-brand-border text-brand-teal focus:ring-brand-teal bg-brand-darker accent-brand-teal cursor-pointer pointer-events-none"
+                                />
+                                <span>Vybrat vše</span>
+                            </button>
+
+                            <span className="text-xs font-extrabold text-white font-mono bg-brand-darker px-3 py-1.5 rounded-xl border border-brand-border">
+                                Vybráno: <span className="text-brand-teal font-extrabold">{selectedItemIds.size}</span> z {filteredItems.length}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                            {onAddToQueue && selectedItemIds.size > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleBatchAddToQueue}
+                                    className="px-3.5 py-1.5 bg-brand-teal/15 hover:bg-brand-teal text-brand-teal hover:text-black border border-brand-teal/40 font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 active:scale-95 animate-fadeIn"
+                                >
+                                    <PrinterIcon className="h-4 w-4" />
+                                    <span>Přidat do tiskové fronty ({selectedItemIds.size})</span>
+                                </button>
+                            )}
+
+                            {canEdit && selectedItemIds.size > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBatchConfirmOpen(true)}
+                                    className="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 active:scale-95 animate-fadeIn"
+                                >
+                                    <TrashIcon className="h-4 w-4" />
+                                    <span>Smazat vybrané ({selectedItemIds.size})</span>
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsSelectMode(false);
+                                    setSelectedItemIds(new Set());
+                                }}
+                                className="px-3 py-1.5 text-xs font-bold text-gray-300 hover:text-white bg-brand-darker hover:bg-[#343b47] rounded-xl border border-brand-border transition flex items-center gap-1 active:scale-95"
+                                title="Ukončit režim výběru"
+                            >
+                                <CloseIcon className="h-4 w-4" />
+                                <span>Ukončit</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -190,6 +307,23 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-brand-darker text-gray-400 font-mono text-[11px] uppercase tracking-wider border-b border-brand-border/60">
+                                <th scope="col" className="px-3 py-3 w-12 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsSelectMode(!isSelectMode);
+                                            if (isSelectMode) setSelectedItemIds(new Set());
+                                        }}
+                                        className={`p-1.5 rounded-lg border transition inline-flex items-center justify-center ${
+                                            isSelectMode
+                                                ? 'bg-brand-teal text-black border-brand-teal font-bold shadow-md'
+                                                : 'bg-brand-darker text-gray-400 border-brand-border hover:text-white hover:bg-slate-800'
+                                        }`}
+                                        title={isSelectMode ? "Ukončit režim výběru" : "Aktivovat režim výběru"}
+                                    >
+                                        <CheckSquareIcon className="h-4 w-4" />
+                                    </button>
+                                </th>
                                 <th scope="col" className="px-4 py-4 w-16 text-center">AKCE</th>
                                 <th scope="col" className="px-6 py-4">NÁZEV POLOŽKY</th>
                                 <th scope="col" className="px-6 py-4">KATEGORIE</th>
@@ -200,7 +334,22 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item) => {
                                     return (
-                                        <tr key={item.id} className="bg-brand-dark border-b border-brand-border/60 hover:bg-[#343b47]/40 transition">
+                                        <tr key={item.id} className={`border-b border-brand-border/60 transition ${
+                                            selectedItemIds.has(item.id) ? 'bg-brand-teal/10' : 'bg-brand-dark hover:bg-[#343b47]/40'
+                                        }`}>
+                                            {/* Centered Checkbox Column */}
+                                            <td className="px-3 py-4 text-center align-middle">
+                                                {isSelectMode && (
+                                                    <div className="flex items-center justify-center w-full">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedItemIds.has(item.id)}
+                                                            onChange={() => toggleSelectItem(item.id)}
+                                                            className="w-4 h-4 rounded border-brand-border text-brand-teal focus:ring-brand-teal bg-brand-darker accent-brand-teal cursor-pointer"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </td>
                                             {/* Action Button FIRST */}
                                             <td className="px-4 py-4 text-center whitespace-nowrap">
                                                 <button
@@ -243,7 +392,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400 font-mono">
+                                    <td colSpan={isSelectMode ? 5 : 4} className="px-6 py-8 text-center text-gray-400 font-mono">
                                         Žádné položky neodpovídají zadaným filtrům.
                                     </td>
                                 </tr>
@@ -252,6 +401,8 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     </table>
                 </div>
             </div>
+
+
 
             {/* Add / Edit Inventory Modal */}
             {isAddModalOpen && (
@@ -299,6 +450,16 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                     onClose={() => setIsCategoryManagerOpen(false)}
                     items={items}
                     onDeleteCategory={onDeleteCategory}
+                />
+            )}
+
+            {isBatchConfirmOpen && (
+                <ConfirmationModal
+                    isOpen={isBatchConfirmOpen}
+                    onClose={() => setIsBatchConfirmOpen(false)}
+                    onConfirm={handleBatchDelete}
+                    title="Hromadné mazání položek"
+                    message={`Opravdu chcete smazat ${selectedItemIds.size} vybraných položek ze zásob? Tato akce je nevratná.`}
                 />
             )}
         </div>

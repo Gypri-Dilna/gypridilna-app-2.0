@@ -8,13 +8,15 @@ interface UserManagementProps {
     showToast: (message: string, type: 'success' | 'error') => void;
     currentUser?: User | null;
     onUpdateCurrentUser?: (user: User) => void;
+    onRefresh?: () => Promise<void>;
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({ 
     chips, 
     showToast,
     currentUser,
-    onUpdateCurrentUser
+    onUpdateCurrentUser,
+    onRefresh
 }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +69,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     };
 
     const handleDeleteUser = async (userId: number) => {
-        if (!window.confirm('Are you sure you want to delete this user?')) return;
+        if (!window.confirm('Opravdu chcete smazat tohoto uživatele?')) return;
 
         try {
             const response = await fetch(`/api/users/${userId}`, {
@@ -78,7 +80,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 throw new Error(data.error || data.detail || 'Failed to delete user');
             }
             showToast('Uživatel byl úspěšně smazán.', 'success');
-            fetchUsers();
+            await fetchUsers();
+            if (onRefresh) await onRefresh();
         } catch (error: any) {
             console.error(error);
             showToast(error.message || 'Chyba při mazání uživatele.', 'error');
@@ -111,7 +114,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
             showToast(`Uživatel ${userData.username} byl úspěšně uložen.`, 'success');
             setIsModalOpen(false);
-            fetchUsers();
+            await fetchUsers();
+            if (onRefresh) await onRefresh();
         } catch (error: any) {
             console.error(error);
             showToast(error.message || 'Chyba při ukládání uživatele.', 'error');

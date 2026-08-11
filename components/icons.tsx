@@ -43,5 +43,6 @@ export {
     ArrowLeft as ArrowLeftIcon,
     Tag as TagIcon,
     ChevronRight as ChevronRightIcon,
-    ZoomIn as ZoomInIcon
+    ZoomIn as ZoomInIcon,
+    CheckSquare as CheckSquareIcon
 } from 'lucide-react';

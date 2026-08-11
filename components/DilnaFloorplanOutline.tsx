@@ -129,25 +129,19 @@ export const DilnaFloorplanOutline: React.FC<DilnaFloorplanOutlineProps> = ({
                 pinDot.setAttribute('id', 'dynamic-map-pin');
                 pinDot.setAttribute('cx', String(targetCenter.cx));
                 pinDot.setAttribute('cy', String(targetCenter.cy));
-                pinDot.setAttribute('r', '4.5');
+                pinDot.setAttribute('r', '3.2');
                 pinDot.setAttribute('fill', '#ff1744');
                 pinDot.setAttribute('stroke', '#ffffff');
-                pinDot.setAttribute('stroke-width', '1.5');
+                pinDot.setAttribute('stroke-width', '1.2');
+                pinDot.setAttribute('opacity', '1');
 
                 const animR = doc.createElementNS('http://www.w3.org/2000/svg', 'animate');
                 animR.setAttribute('attributeName', 'r');
-                animR.setAttribute('values', '3.5;7;3.5');
+                animR.setAttribute('values', '2.5;4.8;2.5');
                 animR.setAttribute('dur', '1.2s');
                 animR.setAttribute('repeatCount', 'indefinite');
 
-                const animOpacity = doc.createElementNS('http://www.w3.org/2000/svg', 'animate');
-                animOpacity.setAttribute('attributeName', 'opacity');
-                animOpacity.setAttribute('values', '1;0.4;1');
-                animOpacity.setAttribute('dur', '1.2s');
-                animOpacity.setAttribute('repeatCount', 'indefinite');
-
                 pinDot.appendChild(animR);
-                pinDot.appendChild(animOpacity);
                 layer.appendChild(pinDot);
             }
 

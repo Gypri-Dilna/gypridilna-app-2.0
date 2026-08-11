@@ -12,6 +12,7 @@ interface AccessControlProps {
     onAddChip: (newChip: Omit<Chip, 'id'>) => Promise<void>;
     onUpdateChip: (updatedChip: Chip) => Promise<void>;
     onDeleteChip: (chipId: number) => Promise<void>;
+    onBatchDeleteChips?: (chipIds: number[]) => Promise<void>;
     onRemoteOpening: () => Promise<void>;
     onToggleServiceMode: (enabled: boolean) => Promise<void>;
     onRefresh: () => void;
@@ -25,6 +26,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
     onAddChip,
     onUpdateChip,
     onDeleteChip,
+    onBatchDeleteChips,
     onRemoteOpening,
     onToggleServiceMode,
     onRefresh,
@@ -110,6 +112,7 @@ export const AccessControl: React.FC<AccessControlProps> = ({
                         onAddChip={onAddChip}
                         onUpdateChip={onUpdateChip}
                         onDeleteChip={onDeleteChip}
+                        onBatchDeleteChips={onBatchDeleteChips}
                         showToast={showToast}
                     />
                 ) : (

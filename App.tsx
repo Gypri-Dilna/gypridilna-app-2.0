@@ -288,10 +288,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to add chip');
                 throw new Error(err);
             }
-            showToast(`RFID Chip for ${newChip.name} added.`, 'success');
-            fetchAllData();
+            showToast(`RFID Čip pro ${newChip.name} byl úspěšně přidán.`, 'success');
+            await fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error adding chip.', 'error');
+            showToast(e.message || 'Chyba při přidávání čipu.', 'error');
         }
     };
 
@@ -306,10 +306,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to update chip');
                 throw new Error(err);
             }
-            showToast(`Chip for ${updatedChip.name} updated.`, 'success');
-            fetchAllData();
+            showToast(`Čip pro ${updatedChip.name} byl upraven.`, 'success');
+            await fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error updating chip.', 'error');
+            showToast(e.message || 'Chyba při úpravě čipu.', 'error');
         }
     };
 
@@ -320,10 +320,21 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Failed to delete chip');
                 throw new Error(err);
             }
-            showToast('RFID Chip deleted.', 'success');
-            fetchAllData();
+            showToast('RFID Čip byl smazán.', 'success');
+            await fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error deleting chip.', 'error');
+            showToast(e.message || 'Chyba při mazání čipu.', 'error');
+        }
+    };
+
+    const handleBatchDeleteChips = async (chipIds: number[]) => {
+        if (!chipIds.length) return;
+        try {
+            await Promise.all(chipIds.map(id => fetch(`${API_BASE_URL}/api/chips/${id}`, { method: 'DELETE' })));
+            showToast(`${chipIds.length} RFID čipů bylo úspěšně smazáno.`, 'success');
+            await fetchAllData();
+        } catch (e: any) {
+            showToast('Chyba při hromadném mazání čipů.', 'error');
         }
     };
 
@@ -339,10 +350,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Door unlock failed');
                 throw new Error(err);
             }
-            showToast('Remote door unlock signal transmitted!', 'success');
-            setTimeout(fetchAllData, 1000);
+            showToast('Dveře byly dálkově otevřeny!', 'success');
+            await fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error sending remote door unlock signal.', 'error');
+            showToast(e.message || 'Chyba při otvírání dveří.', 'error');
         }
     };
 
@@ -354,9 +365,10 @@ const App: React.FC = () => {
                 const err = await parseResponseError(res, 'Service mode command failed');
                 throw new Error(err);
             }
-            showToast(`Door service mode set to ${enabled ? 'ENABLED' : 'DISABLED'}.`, 'success');
+            showToast(`Servisní režim dveří nastaven na ${enabled ? 'ZAPNUTO' : 'VYPNUTO'}.`, 'success');
+            await fetchAllData();
         } catch (e: any) {
-            showToast(e.message || 'Error setting service mode.', 'error');
+            showToast(e.message || 'Chyba při nastavení servisního režimu.', 'error');
         }
     };
 
@@ -373,11 +385,11 @@ const App: React.FC = () => {
                 throw new Error(err);
             }
             const created = await res.json();
-            showToast(`Added item '${itemData.title}'.`, 'success');
+            showToast(`Přidána položka '${itemData.title}'.`, 'success');
             await fetchAllData();
             setSelectedItem(created);
         } catch (e: any) {
-            showToast(e.message || 'Error adding inventory item.', 'error');
+            showToast(e.message || 'Chyba při přidávání položky.', 'error');
         }
     };
 
@@ -414,9 +426,23 @@ const App: React.FC = () => {
             }
             showToast('Položka byla smazána ze zásob.', 'success');
             setSelectedItem(null);
-            fetchAllData();
+            await fetchAllData();
         } catch (e: any) {
             showToast(e.message || 'Chyba při mazání položky.', 'error');
+        }
+    };
+
+    const handleBatchDeleteInventoryItems = async (itemIds: number[]) => {
+        if (!itemIds.length) return;
+        try {
+            await Promise.all(itemIds.map(id => fetch(`${API_BASE_URL}/api/inventory/${id}`, { method: 'DELETE' })));
+            showToast(`${itemIds.length} položek bylo smazáno ze zásob.`, 'success');
+            if (selectedItem && itemIds.includes(selectedItem.id)) {
+                setSelectedItem(null);
+            }
+            await fetchAllData();
+        } catch (e: any) {
+            showToast('Chyba při hromadném mazání položek.', 'error');
         }
     };
 
@@ -557,6 +583,7 @@ const App: React.FC = () => {
                         onAddChip={handleAddChip}
                         onUpdateChip={handleUpdateChip}
                         onDeleteChip={handleDeleteChip}
+                        onBatchDeleteChips={handleBatchDeleteChips}
                         onRemoteOpening={handleRemoteOpening}
                         onToggleServiceMode={handleToggleServiceMode}
                         onRefresh={fetchAllData}
@@ -586,6 +613,7 @@ const App: React.FC = () => {
                         onAddItem={handleAddInventoryItem}
                         onUpdateItem={handleUpdateInventoryItem}
                         onDeleteItem={handleDeleteInventoryItem}
+                        onBatchDeleteItems={handleBatchDeleteInventoryItems}
                         onDeleteCategory={handleDeleteCategory}
                         onSelectItem={(item) => handleSelectItem(item, 'inventory')}
                         showToast={showToast}
@@ -617,7 +645,7 @@ const App: React.FC = () => {
                     />
                 );
             case 'users':
-                return <UserManagement chips={chips} showToast={showToast} currentUser={user} onUpdateCurrentUser={setUser} />;
+                return <UserManagement chips={chips} showToast={showToast} currentUser={user} onUpdateCurrentUser={setUser} onRefresh={fetchAllData} />;
             default:
                 return (
                     <Dashboard
