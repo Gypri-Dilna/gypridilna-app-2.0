@@ -193,7 +193,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     }
                     setScannedFeedback({
                         title: `Spárováno s PC (${sessionId})`,
-                        location_code: 'PAIRING SUCCESS',
+                        location_code: 'SPÁROVÁNO ÚSPĚŠNĚ',
                         mode: 'pc'
                     });
                     setTimeout(() => { setScannedFeedback(null); isProcessingRef.current = false; }, 2200);
@@ -246,7 +246,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         if (res.ok) {
                             setScannedFeedback({
                                 title: item.title,
-                                location_code: `${item.location_code || 'Bez lokace'} → Odesláno do PC`,
+                                location_code: `${item.location_code || 'Bez lokace'} (Odesláno na PC)`,
                                 mode: 'pc',
                                 item: item
                             } as any);
@@ -482,18 +482,6 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     `}</style>
 
                     <div id="remote-mobile-reader" className="w-full h-[340px] max-h-[340px]" />
-
-                    {/* Camera Switcher Floating Button (if phone has multiple cameras) */}
-                    {cameraDevices.length > 1 && (
-                        <button
-                            type="button"
-                            onClick={handleSwitchLens}
-                            className="absolute top-3 right-3 z-30 px-3 py-1.5 bg-black/75 hover:bg-black/90 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20 transition flex items-center gap-1.5 shadow-lg active:scale-95"
-                        >
-                            <CameraIcon className="h-3.5 w-3.5 text-brand-teal" />
-                            <span>Objektiv {activeCamIndex + 1}/{cameraDevices.length}</span>
-                        </button>
-                    )}
 
                     {/* Single Non-blocking Bottom Floating Scanned Feedback Toast Card */}
                     {scannedFeedback && (

@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
         { id: 'dashboard', label: 'Přehled', icon: DashboardIcon, show: true },
         { id: 'access', label: 'Vstup a čipy', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
         { id: 'inventory', label: 'Inventář', icon: InventoryIcon, show: true },
-        { id: 'scanner', label: isMobile ? 'QR Skener' : 'Vyhledat položku', icon: isMobile ? QrCodeIcon : SearchIcon, show: true },
+        { id: 'scanner', label: 'QR Skener', icon: QrCodeIcon, show: true },
         { id: 'users', label: 'Správa uživatelů', icon: UserManagementIcon, show: user.is_admin },
     ];
 
