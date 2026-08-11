@@ -412,7 +412,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                                     Zařízení: <span className="text-brand-teal">{remoteDeviceName || 'Mobilní telefon'}</span>
                                 </p>
                                 <p className="text-xs text-gray-300 max-w-sm mx-auto leading-relaxed">
-                                    🟢 Bezdrátové propojení aktivní přes jakoukoliv síť. Jakýkoliv kód naskenovaný fotoaparátem v telefonu se okamžitě vyhledá na tomto PC.
+                                    Bezdrátové propojení aktivní přes jakoukoliv síť. Jakýkoliv kód naskenovaný fotoaparátem v telefonu se okamžitě vyhledá na tomto PC.
                                 </p>
                             </div>
                         ) : (

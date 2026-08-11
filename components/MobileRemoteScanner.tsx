@@ -245,7 +245,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
                         if (res.ok) {
                             setScannedFeedback({
-                                title: `✅ ${item.title}`,
+                                title: item.title,
                                 location_code: `${item.location_code || 'Bez lokace'} → Odesláno do PC`,
                                 mode: 'pc',
                                 item: item
@@ -259,7 +259,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         // Local Mode
                         setScannedItem(item);
                         setScannedFeedback({
-                            title: `✅ ${item.title}`,
+                            title: item.title,
                             location_code: item.location_code || 'Bez lokace',
                             mode: 'local',
                             item: item
