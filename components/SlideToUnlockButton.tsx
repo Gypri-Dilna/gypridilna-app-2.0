@@ -19,12 +19,12 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
 
     const trackRef = useRef<HTMLDivElement>(null);
     const startXRef = useRef<number>(0);
+    const hasVibratedRef = useRef<boolean>(false);
 
     const handleSize = 44; // 44px circular handle
 
     const getMaxSlide = () => {
         if (!trackRef.current) return 200;
-        // 4px padding on left + 4px padding on right = 8px total track padding
         return trackRef.current.clientWidth - handleSize - 8;
     };
 
@@ -35,6 +35,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
     const startDrag = (clientX: number) => {
         if (isUnlocked || isUnlockingLoading) return;
         setIsDragging(true);
+        hasVibratedRef.current = false;
         startXRef.current = clientX - dragX;
     };
 
@@ -46,7 +47,16 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
         setDragX(clampedX);
 
         if (clampedX >= max * 0.88) {
-            triggerUnlock();
+            // Immediate haptic vibration in gesture handler context
+            if (!hasVibratedRef.current) {
+                hasVibratedRef.current = true;
+                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+                    try {
+                        navigator.vibrate([70, 40, 70]);
+                    } catch (e) {}
+                }
+            }
+            triggerUnlock(max);
         }
     };
 
@@ -69,7 +79,7 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
         if (isDragging) {
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mouseup', onMouseUp);
-            window.addEventListener('touchmove', onTouchMove);
+            window.addEventListener('touchmove', onTouchMove, { passive: true });
             window.addEventListener('touchend', onTouchEnd);
         }
 
@@ -81,18 +91,11 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
         };
     }, [isDragging, dragX]);
 
-    const triggerUnlock = async () => {
+    const triggerUnlock = async (maxPos: number) => {
         setIsDragging(false);
-        const max = getMaxSlide();
-        setDragX(max);
+        setDragX(maxPos);
         setIsUnlocked(true);
         setIsUnlockingLoading(true);
-
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-            try {
-                navigator.vibrate([50, 30, 50]);
-            } catch (e) {}
-        }
 
         try {
             await onUnlock();
@@ -100,10 +103,11 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
             console.error('Unlock error:', err);
         } finally {
             setIsUnlockingLoading(false);
+            // Snappy fast return: wait only 700ms after unlock finishes, then spring back to start!
             setTimeout(() => {
                 setIsUnlocked(false);
                 setDragX(0);
-            }, 2500);
+            }, 700);
         }
     };
 
@@ -114,24 +118,24 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                 ref={trackRef}
                 className={`relative w-full h-[52px] min-w-[240px] sm:min-w-[320px] md:min-w-[360px] rounded-full p-1 flex items-center select-none overflow-hidden transition-colors duration-300 ${
                     isUnlocked
-                        ? 'bg-emerald-950/40 border border-emerald-500/30'
+                        ? 'bg-emerald-950/60 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
                         : 'bg-[#181d24] border border-[#3aa398]/40 shadow-inner'
                 }`}
             >
-                {/* Active Fill Trail (Matches handle 44px height & 22px radius perfectly) */}
+                {/* Active Fill Trail */}
                 <div
                     className={`absolute left-1 top-1 bottom-1 rounded-full transition-all ${
                         isUnlocked
-                            ? 'bg-emerald-500/20 border border-emerald-500/20'
+                            ? 'bg-emerald-500/30 border border-emerald-500/30'
                             : 'bg-gradient-to-r from-[#3aa398]/10 via-[#3aa398]/25 to-[#3aa398]/50'
                     }`}
                     style={{
                         width: `${dragX + handleSize}px`,
-                        transition: isDragging ? 'none' : 'width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                        transition: isDragging ? 'none' : 'width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }}
                 />
 
-                {/* Shimmer Text & Chevron Arrow Guide (Hidden when unlocked to keep track clean) */}
+                {/* Shimmer Text & Chevron Arrow Guide */}
                 {!isUnlocked && (
                     <div 
                         className="absolute inset-0 flex items-center justify-center pointer-events-none pl-14 pr-4 transition-opacity duration-200"
@@ -146,24 +150,22 @@ export const SlideToUnlockButton: React.FC<SlideToUnlockButtonProps> = ({
                     </div>
                 )}
 
-                {/* Circular Slider Handle Button (Flush against edges) */}
+                {/* Circular Slider Handle Button */}
                 <div
                     onMouseDown={(e) => startDrag(e.clientX)}
                     onTouchStart={(e) => startDrag(e.touches[0].clientX)}
                     style={{
                         transform: `translateX(${dragX}px)`,
-                        transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                        transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                     }}
-                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing transition-colors duration-300 shrink-0 ${
+                    className={`relative z-10 w-[44px] h-[44px] rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing transition-all duration-300 shrink-0 ${
                         isUnlocked
-                            ? 'bg-emerald-500 text-black shadow-md'
+                            ? 'bg-emerald-400 text-black shadow-[0_0_12px_rgba(52,211,153,0.8)] scale-105'
                             : 'bg-[#3aa398] text-black shadow-[0_0_10px_rgba(58,163,152,0.4)] hover:bg-[#46c2b5]'
                     }`}
                 >
-                    {isUnlockingLoading ? (
-                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    ) : isUnlocked ? (
-                        <LockOpenIcon className="h-5 w-5 text-black animate-pulse" />
+                    {isUnlocked ? (
+                        <LockOpenIcon className="h-5 w-5 text-black stroke-[2.5]" />
                     ) : (
                         <LockClosedIcon className="h-5 w-5 text-black" />
                     )}
