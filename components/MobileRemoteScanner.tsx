@@ -357,8 +357,23 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 </button>
             </div>
 
-            {/* Viewport & Subheader Animated Container */}
-            <div className="animate-tab-switch space-y-4">
+            {/* Viewport & Subheader Animated Container with key={scanMode} for smooth mode transitions */}
+            <div key={scanMode} className="animate-mode-switch space-y-4">
+                <style>{`
+                    @keyframes modeSwitchFade {
+                        from {
+                            opacity: 0.2;
+                            transform: translateY(8px) scale(0.985);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0) scale(1);
+                        }
+                    }
+                    .animate-mode-switch {
+                        animation: modeSwitchFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `}</style>
                 {/* PC Pairing Status Subheader */}
                 {scanMode === 'pc' && (
                     <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl space-y-2 text-xs">
