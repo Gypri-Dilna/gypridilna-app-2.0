@@ -56,20 +56,34 @@ class AccessLog(db.Model):
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(200), nullable=True)
     password_hash = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     # Permissions stored as a JSON string
-    # { "service_mode": bool, "add_chips": bool, "view_logs": bool, "remote_opening": bool, "erase_logs": bool }
     permissions = db.Column(db.Text, nullable=False, default='{}')
     chip_id = db.Column(db.String(100), nullable=True) # Link to chip profile
+
+def auto_migrate_flask_db():
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            res = conn.execute(text("PRAGMA table_info(user)"))
+            columns = [row[1] for row in res.fetchall()]
+            if "email" not in columns:
+                conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR(200)"))
+                conn.commit()
+                print("Flask DB auto-migration: Added 'email' column to 'user' table.")
+    except Exception as e:
+        print("Auto-migration notice:", e)
 
 # --- Helper Functions ---
 def serialize_user(user):
     return {
         'id': user.id,
         'username': user.username,
+        'email': user.email,
         'is_admin': user.is_admin,
-        'permissions': json.loads(user.permissions),
+        'permissions': json.loads(user.permissions) if isinstance(user.permissions, str) else user.permissions,
         'chip_id': user.chip_id
     }
 def serialize_chip(chip):
@@ -489,10 +503,17 @@ def manage_users():
     if request.method == 'POST':
         data = request.json or {}
         if User.query.filter_by(username=data['username']).first():
-            return jsonify({'error': 'Username already exists'}), 400
+            return jsonify({'error': 'Uživatelské jméno již existuje'}), 400
             
+        clean_email = data.get('email', '').strip().lower() if data.get('email') else None
+        if clean_email:
+            existing_email = User.query.filter(User.email.ilike(clean_email)).first()
+            if existing_email:
+                return jsonify({'error': f"E-mail '{clean_email}' již používá uživatel '{existing_email.username}'."}), 400
+
         new_user = User(
             username=data['username'],
+            email=clean_email,
             password_hash=generate_password_hash(data['password']),
             is_admin=data.get('is_admin', False),
             permissions=json.dumps(data.get('permissions', {})),
@@ -510,6 +531,14 @@ def manage_single_user(user_id):
     if request.method == 'PUT':
         data = request.json or {}
         user.username = data['username']
+        
+        clean_email = data.get('email', '').strip().lower() if data.get('email') else None
+        if clean_email:
+            existing_email = User.query.filter(User.email.ilike(clean_email), User.id != user_id).first()
+            if existing_email:
+                return jsonify({'error': f"E-mail '{clean_email}' již používá uživatel '{existing_email.username}'."}), 400
+        user.email = clean_email
+
         if data.get('password'):
             user.password_hash = generate_password_hash(data['password'])
         user.is_admin = data.get('is_admin', False)
@@ -651,4 +680,5 @@ def serve_static(path):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        auto_migrate_flask_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
