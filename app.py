@@ -499,6 +499,40 @@ def manage_logs():
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
+import re
+
+def auto_sequence_location_code(location_code: str) -> str:
+    if not location_code:
+        return "11-0001"
+        
+    clean_code = location_code.strip()
+    match = re.match(r"^(\d)(\d)-(\d)(\d{3})$", clean_code)
+    if not match:
+        return clean_code
+
+    rack, sector, box, item_id = match.groups()
+    prefix = f"{rack}{sector}-{box}"
+
+    existing_items = InventoryItem.query.filter(
+        InventoryItem.location_code.like(f"{prefix}%")
+    ).all()
+
+    used_ids = set()
+    for item in existing_items:
+        if item.location_code:
+            m = re.match(r"^\d\d-\d(\d{3})$", item.location_code)
+            if m:
+                try:
+                    used_ids.add(int(m.group(1)))
+                except ValueError:
+                    pass
+
+    next_seq = 1
+    while next_seq in used_ids:
+        next_seq += 1
+
+    return f"{prefix}{next_seq:03d}"
+
 # --- Inventory Management Endpoints ---
 @app.route('/api/inventory', methods=['GET', 'POST'])
 def manage_inventory():
