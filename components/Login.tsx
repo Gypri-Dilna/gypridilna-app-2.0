@@ -33,6 +33,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     const cid = data.google_client_id.trim();
                     setGoogleClientId(cid);
                     localStorage.setItem('gypri_google_client_id', cid);
+                    setShowPasswordForm(false);
                 }
             })
             .catch(() => {});
