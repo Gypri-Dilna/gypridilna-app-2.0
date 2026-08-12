@@ -63,13 +63,21 @@ export const Header: React.FC<HeaderProps> = ({
         setIsMobileMenuOpen(true);
     };
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobileDevice(window.innerWidth < 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const navItems = [
         { id: 'dashboard', label: 'Přehled', icon: DashboardIcon, show: true },
         { id: 'access', label: 'Vstup a čipy', icon: ScanIcon, show: user.is_admin || user.permissions?.add_chips || user.permissions?.view_logs },
         { id: 'inventory', label: 'Inventář', icon: InventoryIcon, show: true },
-        { id: 'scanner', label: 'QR Skener', icon: QrCodeIcon, show: true },
+        { id: 'scanner', label: isMobileDevice ? 'QR Skener' : 'Vyhledat položku', icon: isMobileDevice ? QrCodeIcon : SearchIcon, show: true },
         { id: 'users', label: 'Správa uživatelů', icon: UserManagementIcon, show: user.is_admin },
     ];
 
