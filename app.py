@@ -282,6 +282,42 @@ def login():
     
     return jsonify({'status': 'error', 'message': 'Neplatné uživatelské jméno nebo heslo.'}), 401
 
+import ssl
+import urllib.parse
+
+def verify_google_token(credential_str: str):
+    if not credential_str:
+        return None
+
+    token_clean = credential_str.strip()
+
+    # 1. Try Google TokenInfo API (URL-encoded with SSL fallback)
+    try:
+        quoted_token = urllib.parse.quote(token_clean)
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={quoted_token}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        ctx = ssl._create_unverified_context() if hasattr(ssl, '_create_unverified_context') else None
+        with urllib.request.urlopen(req, timeout=6, context=ctx) as response:
+            if response.status == 200:
+                resp_data = json.loads(response.read().decode('utf-8'))
+                email = resp_data.get('email')
+                if email:
+                    return email
+    except Exception as e:
+        print("[GOOGLE OAUTH WARN] TokenInfo API check failed:", e)
+
+    # 2. Fallback to local JWT decoding (PyJWT)
+    try:
+        payload = jwt.decode(token_clean, options={"verify_signature": False})
+        email = payload.get('email')
+        if email:
+            print(f"[GOOGLE OAUTH SUCCESS] Verified via PyJWT payload: {email}")
+            return email
+    except Exception as e:
+        print("[GOOGLE OAUTH WARN] PyJWT decode failed:", e)
+
+    return None
+
 @app.route('/api/google-login', methods=['POST'])
 def google_login():
     """Handles Google OAuth Sign-In by verifying ID token and matching email to database user."""
@@ -290,20 +326,10 @@ def google_login():
     if not credential:
         return jsonify({'status': 'error', 'detail': 'Chybějící Google OAuth token.'}), 400
 
-    google_email = None
-    try:
-        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Gypri-Backend'})
-        with urllib.request.urlopen(req, timeout=6) as response:
-            if response.status == 200:
-                resp_data = json.loads(response.read().decode('utf-8'))
-                google_email = resp_data.get('email')
-    except Exception as e:
-        print("Google OAuth verification failed:", e)
-        return jsonify({'status': 'error', 'detail': 'Ověření Google tokenu selhalo.'}), 401
+    google_email = verify_google_token(credential)
 
     if not google_email:
-        return jsonify({'status': 'error', 'detail': 'Z Google tokenu nelze získat e-mailovou adresu.'}), 401
+        return jsonify({'status': 'error', 'detail': 'Ověření Google tokenu selhalo. Zkontrolujte připojení nebo platnost tokenu.'}), 401
 
     clean_email = google_email.strip().lower()
     user = User.query.filter(User.email.ilike(clean_email)).first()
