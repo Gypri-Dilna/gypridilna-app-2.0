@@ -61,6 +61,7 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     permissions = db.Column(db.Text, nullable=False, default='{}')
     chip_id = db.Column(db.String(100), nullable=True) # Link to chip profile
+    picture_url = db.Column(db.Text, nullable=True)
 
 class InventoryItem(db.Model):
     __tablename__ = 'inventory_items'
@@ -74,8 +75,7 @@ class InventoryItem(db.Model):
     location_code = db.Column(db.String(100), nullable=False, default='A1-01')
     location_x = db.Column(db.Float, default=50.0)
     location_y = db.Column(db.Float, default=50.0)
-    zone = db.Column(db.String(100), default='General Storage')
-    qr_code = db.Column(db.String(100), unique=True, nullable=False)
+    qr_code = db.Column(db.String(200), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -89,6 +89,10 @@ def auto_migrate_flask_db():
                 conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR(200)"))
                 conn.commit()
                 print("Flask DB auto-migration: Added 'email' column to 'user' table.")
+            if "picture_url" not in columns:
+                conn.execute(text("ALTER TABLE user ADD COLUMN picture_url TEXT"))
+                conn.commit()
+                print("Flask DB auto-migration: Added 'picture_url' column to 'user' table.")
     except Exception as e:
         print("Auto-migration notice:", e)
 
@@ -100,7 +104,8 @@ def serialize_user(user):
         'email': user.email,
         'is_admin': user.is_admin,
         'permissions': json.loads(user.permissions) if isinstance(user.permissions, str) else user.permissions,
-        'chip_id': user.chip_id
+        'chip_id': user.chip_id,
+        'picture_url': user.picture_url
     }
 
 def serialize_chip(chip):
@@ -340,14 +345,16 @@ def google_login():
             'detail': f"E-mail '{clean_email}' není autorizován. Administrátor vám musí ve Správě uživatelů přiřadit tento e-mail."
         }), 401
 
-    user_dict = serialize_user(user)
-    user_dict['picture_url'] = google_data.get('picture')
+    google_picture = google_data.get('picture')
+    if google_picture and user.picture_url != google_picture:
+        user.picture_url = google_picture
+        db.session.commit()
 
     token = create_user_token(user)
     return jsonify({
         'status': 'success',
         'token': token,
-        'user': user_dict
+        'user': serialize_user(user)
     }), 200
 
 

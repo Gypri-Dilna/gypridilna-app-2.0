@@ -230,7 +230,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                             </button>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{u.username}</td>
+                                    <td className="px-6 py-4 font-bold text-white whitespace-nowrap">
+                                        <div className="flex items-center gap-2.5">
+                                            {u.picture_url ? (
+                                                <img src={u.picture_url} alt={u.username} className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-7 h-7 rounded-lg bg-brand-teal/10 border border-brand-teal/20 flex items-center justify-center text-brand-teal flex-shrink-0 text-xs font-bold">
+                                                    {u.username.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <span>{u.username}</span>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 font-mono text-gray-300">{u.email || <span className="text-gray-500 italic">Nenastaven</span>}</td>
                                     <td className="px-6 py-4 font-semibold">
                                         <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider whitespace-nowrap leading-none ${

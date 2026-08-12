@@ -13,3 +13,4 @@ class User(Base):
     # {"service_mode": bool, "add_chips": bool, "view_logs": bool, "remote_opening": bool, "erase_logs": bool, "inventory_edit": bool}
     permissions = Column(Text, nullable=False, default="{}")
     chip_id = Column(String(100), nullable=True)
+    picture_url = Column(Text, nullable=True)

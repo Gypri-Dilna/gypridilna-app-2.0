@@ -153,7 +153,7 @@ def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
 import ssl
 import urllib.parse
 
-def verify_google_token(credential_str: str) -> Optional[str]:
+def verify_google_token(credential_str: str) -> Optional[dict]:
     if not credential_str:
         return None
 
@@ -170,7 +170,7 @@ def verify_google_token(credential_str: str) -> Optional[str]:
                 resp_data = json.loads(response.read().decode('utf-8'))
                 email = resp_data.get('email')
                 if email:
-                    return email
+                    return {'email': email, 'picture': resp_data.get('picture')}
     except Exception as e:
         print("[GOOGLE OAUTH WARN] TokenInfo API check failed:", e)
 
@@ -181,7 +181,7 @@ def verify_google_token(credential_str: str) -> Optional[str]:
         email = payload.get('email')
         if email:
             print(f"[GOOGLE OAUTH SUCCESS] Verified via PyJWT payload: {email}")
-            return email
+            return {'email': email, 'picture': payload.get('picture')}
     except Exception as e:
         print("[GOOGLE OAUTH WARN] PyJWT decode failed:", e)
 
@@ -195,15 +195,15 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
             detail="Missing Google OAuth ID token credential."
         )
 
-    google_email = verify_google_token(payload.credential)
+    google_data = verify_google_token(payload.credential)
 
-    if not google_email:
+    if not google_data or not google_data.get('email'):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Ověření Google tokenu selhalo. Zkontrolujte připojení nebo platnost tokenu."
         )
 
-    clean_email = google_email.strip().lower()
+    clean_email = google_data['email'].strip().lower()
 
     # Search for system user assigned to this Google email
     user = db.query(User).filter(User.email.ilike(clean_email)).first()
@@ -212,8 +212,13 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access Denied: Google account ({google_email}) is not assigned to any user. Please contact an administrator."
+            detail=f"Access Denied: Google account ({clean_email}) is not assigned to any user. Please contact an administrator."
         )
+
+    google_picture = google_data.get('picture')
+    if google_picture and user.picture_url != google_picture:
+        user.picture_url = google_picture
+        db.commit()
 
     perms = json.loads(user.permissions) if isinstance(user.permissions, str) and user.permissions else {}
     return {
@@ -225,6 +230,7 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "is_admin": user.is_admin,
             "permissions": perms,
-            "chip_id": user.chip_id
+            "chip_id": user.chip_id,
+            "picture_url": user.picture_url
         }
     }
