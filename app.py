@@ -59,9 +59,25 @@ class User(db.Model):
     email = db.Column(db.String(200), nullable=True)
     password_hash = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    # Permissions stored as a JSON string
     permissions = db.Column(db.Text, nullable=False, default='{}')
     chip_id = db.Column(db.String(100), nullable=True) # Link to chip profile
+
+class InventoryItem(db.Model):
+    __tablename__ = 'inventory_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(100), nullable=False, default='General')
+    quantity = db.Column(db.Integer, default=1, nullable=False)
+    unit = db.Column(db.String(50), default='pcs', nullable=False)
+    min_quantity = db.Column(db.Integer, default=1, nullable=False)
+    location_code = db.Column(db.String(100), nullable=False, default='A1-01')
+    location_x = db.Column(db.Float, default=50.0)
+    location_y = db.Column(db.Float, default=50.0)
+    zone = db.Column(db.String(100), default='General Storage')
+    qr_code = db.Column(db.String(100), unique=True, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 def auto_migrate_flask_db():
     try:
@@ -86,6 +102,7 @@ def serialize_user(user):
         'permissions': json.loads(user.permissions) if isinstance(user.permissions, str) else user.permissions,
         'chip_id': user.chip_id
     }
+
 def serialize_chip(chip):
     return {
         'id': chip.id,
@@ -97,7 +114,6 @@ def serialize_chip(chip):
     }
 
 def serialize_log(log):
-    # Ensure the timestamp is treated as UTC by appending 'Z' if not present
     ts = log.timestamp.isoformat()
     if not ts.endswith('Z') and not '+' in ts:
         ts += 'Z'
@@ -107,6 +123,23 @@ def serialize_log(log):
         'chip_id': log.chip_id,
         'name': log.name,
         'result': log.result,
+    }
+
+def serialize_inventory_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'category': item.category,
+        'quantity': item.quantity,
+        'unit': item.unit,
+        'min_quantity': item.min_quantity,
+        'location_code': item.location_code,
+        'location_x': item.location_x,
+        'location_y': item.location_y,
+        'zone': item.zone,
+        'qr_code': item.qr_code,
+        'notes': item.notes,
+        'last_updated': item.last_updated.isoformat() if item.last_updated else None
     }
 
 import jwt
@@ -465,6 +498,107 @@ def manage_logs():
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
+
+# --- Inventory Management Endpoints ---
+@app.route('/api/inventory', methods=['GET', 'POST'])
+def manage_inventory():
+    if request.method == 'GET':
+        search = request.args.get('search')
+        category = request.args.get('category')
+        zone = request.args.get('zone')
+        
+        query = InventoryItem.query
+        if search:
+            s = f"%{search}%"
+            query = query.filter(
+                (InventoryItem.title.ilike(s)) |
+                (InventoryItem.location_code.ilike(s)) |
+                (InventoryItem.qr_code.ilike(s)) |
+                (InventoryItem.notes.ilike(s))
+            )
+        if category:
+            query = query.filter_by(category=category)
+        if zone:
+            query = query.filter_by(zone=zone)
+            
+        items = query.order_by(InventoryItem.title).all()
+        return jsonify([serialize_inventory_item(i) for i in items])
+        
+    if request.method == 'POST':
+        user = get_auth_user_from_request()
+        if user and not user.is_admin:
+            perms = json.loads(user.permissions or '{}')
+            if perms.get('inventory_edit') is False:
+                return jsonify({'error': 'Forbidden', 'message': 'Chybí oprávnění pro úpravu inventáře.'}), 403
+
+        data = request.json or {}
+        raw_location = data.get('location_code', '11-0001')
+        final_location = auto_sequence_location_code(raw_location)
+        
+        new_item = InventoryItem(
+            title=data.get('title', 'Nová položka'),
+            category=data.get('category', 'General'),
+            quantity=int(data.get('quantity', 1)),
+            unit=data.get('unit', 'pcs'),
+            min_quantity=int(data.get('min_quantity', 1)),
+            location_code=final_location,
+            location_x=float(data.get('location_x', 50.0)),
+            location_y=float(data.get('location_y', 50.0)),
+            zone=data.get('zone', 'General Storage'),
+            qr_code=final_location,
+            notes=data.get('notes')
+        )
+        db.session.add(new_item)
+        db.session.commit()
+        return jsonify(serialize_inventory_item(new_item)), 201
+
+@app.route('/api/inventory/<int:item_id>', methods=['PUT', 'DELETE'])
+def manage_single_inventory_item(item_id):
+    item = InventoryItem.query.get_or_404(item_id)
+    
+    user = get_auth_user_from_request()
+    if user and not user.is_admin:
+        perms = json.loads(user.permissions or '{}')
+        if perms.get('inventory_edit') is False:
+            return jsonify({'error': 'Forbidden', 'message': 'Chybí oprávnění pro úpravu inventáře.'}), 403
+
+    if request.method == 'PUT':
+        data = request.json or {}
+        if 'title' in data: item.title = data['title']
+        if 'category' in data: item.category = data['category']
+        if 'quantity' in data: item.quantity = int(data['quantity'])
+        if 'unit' in data: item.unit = data['unit']
+        if 'min_quantity' in data: item.min_quantity = int(data['min_quantity'])
+        if 'location_code' in data: item.location_code = data['location_code']
+        if 'location_x' in data: item.location_x = float(data['location_x'])
+        if 'location_y' in data: item.location_y = float(data['location_y'])
+        if 'zone' in data: item.zone = data['zone']
+        if 'qr_code' in data: item.qr_code = data['qr_code']
+        if 'notes' in data: item.notes = data['notes']
+        
+        item.last_updated = datetime.now(timezone.utc)
+        db.session.commit()
+        return jsonify(serialize_inventory_item(item))
+
+    if request.method == 'DELETE':
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'message': 'Item deleted successfully'})
+
+@app.route('/api/inventory/categories', methods=['GET'])
+def get_inventory_categories():
+    categories = db.session.query(InventoryItem.category).distinct().all()
+    return jsonify([c[0] for c in categories if c[0]])
+
+@app.route('/api/inventory/categories/<string:category_name>', methods=['DELETE'])
+def delete_inventory_category(category_name):
+    clean_cat = category_name.strip()
+    if clean_cat.lower() in ["general", "all", "všechny"]:
+        return jsonify({'error': 'Nelze smazat výchozí systémovou kategorii.'}), 400
+    
+    InventoryItem.query.filter_by(category=clean_cat).update({'category': 'General'})
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': f"Kategorie '{clean_cat}' byla smazána."})
 
 @app.route('/api/logs/export', methods=['GET'])
 def export_logs():
