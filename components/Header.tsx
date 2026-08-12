@@ -209,8 +209,8 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
             </aside>
 
-            {/* Mobile Top Header Bar */}
-            <div className="md:hidden sticky top-0 z-40 bg-brand-dark border-b border-brand-border px-4 py-3 flex items-center justify-between font-sans">
+            {/* Mobile Top Header Bar (Fixed & Locked permanently at top edge with glassmorphism blur) */}
+            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-brand-border px-4 py-3 flex items-center justify-between font-sans shadow-lg select-none">
                 <div className="flex items-center gap-2.5">
                     <Logo variant="light" className="h-7 w-auto" />
                     <span className="font-black text-sm tracking-tight lowercase">
@@ -225,6 +225,9 @@ export const Header: React.FC<HeaderProps> = ({
                     <Menu className="h-5 w-5" />
                 </button>
             </div>
+
+            {/* Mobile Header Top Spacer so main content is never overlapped by fixed top bar */}
+            <div className="md:hidden h-14 w-full flex-shrink-0" />
 
             {/* Bi-Directional Animated Mobile Slide Drawer Overlay (Slide-In & Slide-Out) */}
             {(isMobileMenuOpen || isClosing) && (
