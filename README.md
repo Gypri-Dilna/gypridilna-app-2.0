@@ -93,15 +93,31 @@ npm run dev
 
 ---
 
-## 🖨️ Brother PT-D460BTVP Print Setup
+## 🖨️ Brother b-PAC Tiskový Agent (Instalace pro PC u tiskárny Brother PT-D460BTVP)
 
-1. Connect Brother PT-D460BTVP via USB or Bluetooth to client PC.
-2. In the Web App, click **Label** on any inventory item to open the 18 mm print engine modal.
-3. Click **Print Label Now**. In the browser print dialog:
-   - Select **Brother PT-D460BTVP** as the destination printer.
-   - Set Paper Size to **18 mm Tape / User Defined (64 mm x 18 mm)**.
-   - Margins: **None**.
+Pro automatický tisk štítků z libovolného zařízení (mobil, tablet, PC) na fyzickou tiskárnu **Brother PT-D460BTVP** slouží Tiskový Agent běžíci na pozadí Windows na počítači, ke kterému je tiskárna připojena.
+
+### 📦 Stažení Balíčku Tiskového Agenta
+
+Můžete si stáhnout hotový balíček se všemi potřebnými soubory:
+- 📥 **[Stáhnout Gypri_PrintAgent_Package.zip](https://github.com/dilna-netizen/gypridilna-app-2.0/raw/main/Gypri_PrintAgent_Package.zip)**
+
+### 🚀 Návod na instalaci v 2 krocích:
+
+1. **Rozbalte ZIP balíček** do libovolné trvalé složky na PC u tiskárny (např. `C:\GypriPrintAgent\`).
+2. **Dvakrát klikněte na soubor `setup_autostart.bat`**.
 
 ---
 
-© 2026 Gypri Dílna. Built for High-Efficiency Workshop Operations.
+#### 📌 Co balíček obsahuje:
+- `print_agent.py` - HTTP server (port 5001) komunikující s ovladačem Brother b-PAC 3.x COM SDK.
+- `setup_autostart.bat` - 1-kliknutí instalátor do *Po spuštění Windows* (Startup).
+- `install_print_agent_autostart.vbs` - VBScript launcher pro tichý běh bez černého terminálového okna.
+- `templates/` - Šablony štítků v formátu `.lbx` pro 18 mm (`label_18mm.lbx`) a 9 mm (`label_9mm.lbx`) pásky TZe.
+
+#### ❓ Chybová hlášení:
+Pokud při startu Windows chybí v systému ovladač Brother b-PAC SDK, Tiskový Agent zobrazí chybové okno s instrukcí ke stažení zdarma *b-PAC Client Component* z webu Brother.
+
+---
+
+© 2026 Gypri Dílna. Platforma pro správu dílny a přístupový systém.
