@@ -184,6 +184,21 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({
             </div>
 
             <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
+                <style>{`
+                    @keyframes slideDownRow {
+                        0% {
+                            opacity: 0;
+                            transform: translateY(-14px);
+                        }
+                        100% {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    .animate-slide-down {
+                        animation: slideDownRow 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `}</style>
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-300 border-collapse">
@@ -216,7 +231,7 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({
                         </thead>
                         <tbody className="divide-y divide-brand-border/60 text-xs">
                             {chips.map((chip) => (
-                                <tr key={chip.id} className={`border-b border-brand-border/60 transition ${
+                                <tr key={chip.id} className={`border-b border-brand-border/60 transition-all duration-300 animate-slide-down ${
                                     selectedChipIds.has(chip.id) ? 'bg-brand-teal/10' : 'bg-brand-dark hover:bg-[#343b47]/40'
                                 }`}>
                                     {/* Centered Checkbox Column */}
@@ -278,7 +293,7 @@ export const ChipManagement: React.FC<ChipManagementProps> = ({
                 {/* Mobile Card List */}
                 <div className="md:hidden divide-y divide-brand-border/60">
                     {chips.map((chip) => (
-                        <div key={chip.id} className={`p-4 transition ${
+                        <div key={chip.id} className={`p-4 transition-all duration-300 animate-slide-down ${
                             selectedChipIds.has(chip.id) ? 'bg-brand-teal/10' : 'bg-brand-dark'
                         }`}>
                             <div className="flex justify-between items-start gap-3">

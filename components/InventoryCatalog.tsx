@@ -302,7 +302,22 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
             </div>
 
             {/* Inventory Table */}
-            <div className="bg-brand-dark border border-brand-border rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-brand-dark border border-brand-border rounded-xl shadow-md overflow-hidden font-sans">
+                <style>{`
+                    @keyframes slideDownRow {
+                        0% {
+                            opacity: 0;
+                            transform: translateY(-14px);
+                        }
+                        100% {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    .animate-slide-down {
+                        animation: slideDownRow 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `}</style>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -334,7 +349,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item) => {
                                     return (
-                                        <tr key={item.id} className={`border-b border-brand-border/60 transition ${
+                                        <tr key={item.id} className={`border-b border-brand-border/60 transition-all duration-300 animate-slide-down ${
                                             selectedItemIds.has(item.id) ? 'bg-brand-teal/10' : 'bg-brand-dark hover:bg-[#343b47]/40'
                                         }`}>
                                             {/* Centered Checkbox Column */}

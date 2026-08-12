@@ -202,13 +202,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                         {isLoading ? 'Ověřování...' : 'Přihlásit se do systému'}
                     </button>
                 </form>
-
-                {/* Default Credential Hint Box */}
-                <div className="pt-2 text-center border-t border-brand-border/60">
-                    <p className="text-[11px] font-mono text-gray-400">
-                        Výchozí admin: <span className="text-gray-200">admin</span> / <span className="text-gray-200">rfid_admin_pass</span>
-                    </p>
-                </div>
             </div>
         </div>
     );
