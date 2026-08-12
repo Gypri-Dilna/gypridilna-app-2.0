@@ -282,6 +282,45 @@ def login():
     
     return jsonify({'status': 'error', 'message': 'Neplatné uživatelské jméno nebo heslo.'}), 401
 
+@app.route('/api/google-login', methods=['POST'])
+def google_login():
+    """Handles Google OAuth Sign-In by verifying ID token and matching email to database user."""
+    data = request.json or {}
+    credential = data.get('credential', '').strip()
+    if not credential:
+        return jsonify({'status': 'error', 'detail': 'Chybějící Google OAuth token.'}), 400
+
+    google_email = None
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Gypri-Backend'})
+        with urllib.request.urlopen(req, timeout=6) as response:
+            if response.status == 200:
+                resp_data = json.loads(response.read().decode('utf-8'))
+                google_email = resp_data.get('email')
+    except Exception as e:
+        print("Google OAuth verification failed:", e)
+        return jsonify({'status': 'error', 'detail': 'Ověření Google tokenu selhalo.'}), 401
+
+    if not google_email:
+        return jsonify({'status': 'error', 'detail': 'Z Google tokenu nelze získat e-mailovou adresu.'}), 401
+
+    clean_email = google_email.strip().lower()
+    user = User.query.filter(User.email.ilike(clean_email)).first()
+    
+    if not user:
+        return jsonify({
+            'status': 'error',
+            'detail': f"E-mail '{clean_email}' není autorizován. Administrátor vám musí ve Správě uživatelů přiřadit tento e-mail."
+        }), 401
+
+    token = create_user_token(user)
+    return jsonify({
+        'status': 'success',
+        'token': token,
+        'user': serialize_user(user)
+    }), 200
+
 
 
 # --- Remote Opening Endpoints ---
