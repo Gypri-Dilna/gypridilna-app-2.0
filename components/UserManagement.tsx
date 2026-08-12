@@ -263,7 +263,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                     <td className="px-6 py-4 font-bold text-white whitespace-nowrap">
                                         <div className="flex items-center gap-2.5">
                                             {u.picture_url ? (
-                                                <img src={u.picture_url} alt={u.username} className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0" />
+                                                <img src={u.picture_url} alt={u.username} referrerPolicy="no-referrer" className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0" />
                                             ) : (
                                                 <div className="w-7 h-7 rounded-lg bg-brand-teal/10 border border-brand-teal/20 flex items-center justify-center text-brand-teal flex-shrink-0 text-xs font-bold">
                                                     {u.username.charAt(0).toUpperCase()}

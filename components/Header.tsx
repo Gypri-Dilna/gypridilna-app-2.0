@@ -175,7 +175,8 @@ export const Header: React.FC<HeaderProps> = ({
                                 {user.picture_url || (user as any).picture ? (
                                     <img 
                                         src={user.picture_url || (user as any).picture} 
-                                        alt={user.username} 
+                                        alt={user.username}
+                                        referrerPolicy="no-referrer"
                                         className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0"
                                     />
                                 ) : (
