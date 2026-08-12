@@ -11,6 +11,17 @@ interface ChipModalProps {
     showToast: (message: string, type: 'success' | 'error') => void;
 }
 
+export const removeDiacritics = (str: string): string => {
+    if (!str) return '';
+    return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/Ł/g, 'L')
+        .replace(/ł/g, 'l')
+        .replace(/Đ/g, 'D')
+        .replace(/đ/g, 'd');
+};
+
 export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSave, showToast }) => {
     const [formData, setFormData] = useState({
         name: '',
@@ -25,7 +36,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
     useEffect(() => {
         if (chip) {
             setFormData({
-                name: chip.name,
+                name: removeDiacritics(chip.name),
                 chip_id: chip.chip_id,
                 is_allowed: chip.is_allowed,
                 is_one_time: chip.is_one_time,
@@ -36,9 +47,10 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
+        const finalValue = (type !== 'checkbox' && name === 'name') ? removeDiacritics(value) : (type === 'checkbox' ? checked : value);
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value,
+            [name]: finalValue,
         }));
     };
 
@@ -83,8 +95,10 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        const sanitizedName = removeDiacritics(formData.name).trim();
         const submissionData = {
             ...formData,
+            name: sanitizedName,
             valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
         };
         if (chip) {
@@ -109,7 +123,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
 
                     <div className="p-6 space-y-4 overflow-y-auto text-xs flex-1">
                         <div>
-                            <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Jméno držitele *</label>
+                            <label htmlFor="name" className="block text-xs font-semibold text-gray-300 mb-1">Jméno držitele (bez diakritiky) *</label>
                             <input 
                                 type="text" 
                                 name="name" 
@@ -117,8 +131,10 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                 value={formData.name} 
                                 onChange={handleChange} 
                                 required 
+                                placeholder="např. Ondrej Moudry"
                                 className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-400 focus:outline-none focus:border-brand-teal transition" 
                             />
+                            <p className="text-[10px] text-brand-teal mt-1">Háčky a čárky se automaticky přepisují na základní písmena bez diakritiky.</p>
                         </div>
                         <div>
                             <label htmlFor="chip_id" className="block text-xs font-semibold text-gray-300 mb-1">ID čipu *</label>

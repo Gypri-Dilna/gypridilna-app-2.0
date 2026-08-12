@@ -363,6 +363,14 @@ def check_access():
         'daily_entry_count': daily_entry_count
     })
 
+import unicodedata
+
+def remove_diacritics(text: str) -> str:
+    if not text:
+        return ""
+    normalized = unicodedata.normalize('NFKD', str(text))
+    return "".join([c for c in normalized if not unicodedata.combining(c)]).replace('Ł', 'L').replace('ł', 'l').replace('Đ', 'D').replace('đ', 'd')
+
 # CRUD for chips
 @app.route('/api/chips', methods=['GET', 'POST'])
 def manage_chips():
@@ -377,10 +385,11 @@ def manage_chips():
 
         data = request.json or {}
         valid_until = datetime.fromisoformat(data['valid_until'].replace('Z', '+00:00')) if data.get('valid_until') else None
+        sanitized_name = remove_diacritics(data.get('name', '')).strip()
         
         new_chip = Chip(
             chip_id=data['chip_id'],
-            name=data['name'],
+            name=sanitized_name,
             is_allowed=data['is_allowed'],
             is_one_time=data['is_one_time'],
             valid_until=valid_until
@@ -400,7 +409,7 @@ def manage_single_chip(chip_id):
     if request.method == 'PUT':
         data = request.json or {}
         old_name = chip.name
-        new_name = data.get('name', '').strip()
+        new_name = remove_diacritics(data.get('name', '')).strip()
         
         if old_name and new_name and old_name != new_name:
             Chip.query.filter_by(name=old_name).update({'name': new_name})

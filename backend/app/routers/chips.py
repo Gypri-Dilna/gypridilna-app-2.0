@@ -2,12 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
+import unicodedata
 
 from app.database import get_db
 from app.models.rfid_chip import Chip
 from app.schemas.rfid_chip import ChipCreate, ChipUpdate, ChipResponse
 
 router = APIRouter(prefix="/api/chips", tags=["Chips"])
+
+def remove_diacritics(text: str) -> str:
+    if not text:
+        return ""
+    normalized = unicodedata.normalize('NFKD', str(text))
+    return "".join([c for c in normalized if not unicodedata.combining(c)]).replace('Ł', 'L').replace('ł', 'l').replace('Đ', 'D').replace('đ', 'd')
 
 def serialize_chip(chip: Chip):
     return {
@@ -30,9 +37,10 @@ def create_chip(chip_in: ChipCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Chip ID already registered")
         
+    sanitized_name = remove_diacritics(chip_in.name).strip()
     new_chip = Chip(
         chip_id=chip_in.chip_id,
-        name=chip_in.name,
+        name=sanitized_name,
         is_allowed=chip_in.is_allowed,
         is_one_time=chip_in.is_one_time,
         valid_until=chip_in.valid_until
@@ -49,7 +57,7 @@ def update_chip(chip_id: int, chip_in: ChipUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Chip not found")
         
     old_name = chip.name
-    new_name = chip_in.name.strip() if chip_in.name else None
+    new_name = remove_diacritics(chip_in.name).strip() if chip_in.name else None
 
     if old_name and new_name and old_name != new_name:
         from app.models.access_log import AccessLog
