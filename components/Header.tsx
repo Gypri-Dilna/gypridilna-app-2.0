@@ -288,12 +288,21 @@ export const Header: React.FC<HeaderProps> = ({
                         <div className="pt-4 border-t border-brand-border space-y-3 mt-4">
                             <div className="p-3 bg-brand-darker rounded-xl border border-brand-border flex items-center justify-between">
                                 <div className="flex items-center gap-2.5 overflow-hidden">
-                                    <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
-                                        <UserIcon className="h-4 w-4" />
-                                    </div>
+                                    {user.picture_url || (user as any).picture ? (
+                                        <img 
+                                            src={user.picture_url || (user as any).picture} 
+                                            alt={user.username}
+                                            referrerPolicy="no-referrer"
+                                            className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
+                                            <UserIcon className="h-4 w-4" />
+                                        </div>
+                                    )}
                                     <div className="truncate">
                                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                        <p className="text-[9px] text-gray-400 uppercase font-bold">{user.is_admin ? 'Admin' : 'Uživatel'}</p>
+                                        <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
                                     </div>
                                 </div>
 
