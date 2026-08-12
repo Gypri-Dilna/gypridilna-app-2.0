@@ -172,12 +172,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
                         <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
                             <div className="flex items-center gap-2 overflow-hidden">
-                                <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
-                                    <UserIcon className="h-4 w-4" />
-                                </div>
+                                {user.picture_url || (user as any).picture ? (
+                                    <img 
+                                        src={user.picture_url || (user as any).picture} 
+                                        alt={user.username} 
+                                        className="w-7 h-7 rounded-lg object-cover border border-brand-teal/40 flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="p-1.5 bg-brand-teal/10 text-brand-teal rounded-lg flex-shrink-0">
+                                        <UserIcon className="h-4 w-4" />
+                                    </div>
+                                )}
                                 <div className="overflow-hidden">
                                     <p className="text-xs font-bold text-white truncate">{user.username}</p>
-                                    <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Admin' : 'Operator'}</p>
+                                    <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
                                 </div>
                             </div>
                             <button

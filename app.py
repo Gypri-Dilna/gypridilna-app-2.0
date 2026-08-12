@@ -302,7 +302,7 @@ def verify_google_token(credential_str: str):
                 resp_data = json.loads(response.read().decode('utf-8'))
                 email = resp_data.get('email')
                 if email:
-                    return email
+                    return {'email': email, 'picture': resp_data.get('picture')}
     except Exception as e:
         print("[GOOGLE OAUTH WARN] TokenInfo API check failed:", e)
 
@@ -312,7 +312,7 @@ def verify_google_token(credential_str: str):
         email = payload.get('email')
         if email:
             print(f"[GOOGLE OAUTH SUCCESS] Verified via PyJWT payload: {email}")
-            return email
+            return {'email': email, 'picture': payload.get('picture')}
     except Exception as e:
         print("[GOOGLE OAUTH WARN] PyJWT decode failed:", e)
 
@@ -326,12 +326,12 @@ def google_login():
     if not credential:
         return jsonify({'status': 'error', 'detail': 'Chybějící Google OAuth token.'}), 400
 
-    google_email = verify_google_token(credential)
+    google_data = verify_google_token(credential)
 
-    if not google_email:
+    if not google_data or not google_data.get('email'):
         return jsonify({'status': 'error', 'detail': 'Ověření Google tokenu selhalo. Zkontrolujte připojení nebo platnost tokenu.'}), 401
 
-    clean_email = google_email.strip().lower()
+    clean_email = google_data['email'].strip().lower()
     user = User.query.filter(User.email.ilike(clean_email)).first()
     
     if not user:
@@ -340,11 +340,14 @@ def google_login():
             'detail': f"E-mail '{clean_email}' není autorizován. Administrátor vám musí ve Správě uživatelů přiřadit tento e-mail."
         }), 401
 
+    user_dict = serialize_user(user)
+    user_dict['picture_url'] = google_data.get('picture')
+
     token = create_user_token(user)
     return jsonify({
         'status': 'success',
         'token': token,
-        'user': serialize_user(user)
+        'user': user_dict
     }), 200
 
 

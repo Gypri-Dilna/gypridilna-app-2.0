@@ -23,6 +23,7 @@ export interface User {
     is_admin: boolean;
     permissions: Permissions;
     chip_id: string | null;
+    picture_url?: string | null;
 }
 
 export interface Chip {
