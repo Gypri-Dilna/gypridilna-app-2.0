@@ -127,9 +127,9 @@ export const Header: React.FC<HeaderProps> = ({
                 }
             `}</style>
 
-            {/* Desktop & Tablet Sidebar (Permanently Anchored 240px Fixed Viewport: top:0, bottom:0, left:0) */}
-            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border fixed top-0 bottom-0 left-0 z-30 font-sans overflow-hidden">
-                <div className="flex flex-col h-full overflow-hidden">
+            {/* Desktop & Tablet Sidebar (Permanently Anchored Fixed Viewport: top:0, left:0, h-screen h-[100dvh]) */}
+            <aside className="hidden md:flex md:flex-col w-64 flex-shrink-0 bg-brand-dark border-r border-brand-border fixed top-0 left-0 h-screen h-[100dvh] z-30 font-sans overflow-hidden select-none">
+                <div className="flex flex-col h-full h-[100dvh] overflow-hidden">
                     {/* Scrollable Top Section (Logo + Nav Links) with min-h-0 so flex container never overflows */}
                     <div className="p-4 flex-1 min-h-0 overflow-y-auto relative z-10 space-y-3">
                         {/* Official Brand Logo & Name */}
@@ -169,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     {/* Permanent Pinned Bottom Section: User Profile & Logout (Solidly anchored to bottom edge) */}
-                    <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2">
+                    <div className="p-3.5 border-t border-brand-border bg-brand-dark flex-shrink-0 relative z-20 space-y-2 mt-auto">
                         <div className="flex items-center justify-between p-2 rounded-xl bg-brand-darker border border-brand-border">
                             <div className="flex items-center gap-2 overflow-hidden">
                                 {user.picture_url || (user as any).picture ? (
