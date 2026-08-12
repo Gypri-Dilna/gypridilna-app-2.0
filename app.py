@@ -75,6 +75,7 @@ class InventoryItem(db.Model):
     location_code = db.Column(db.String(100), nullable=False, default='A1-01')
     location_x = db.Column(db.Float, default=50.0)
     location_y = db.Column(db.Float, default=50.0)
+    zone = db.Column(db.String(100), default='General Storage')
     qr_code = db.Column(db.String(200), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -93,6 +94,14 @@ def auto_migrate_flask_db():
                 conn.execute(text("ALTER TABLE user ADD COLUMN picture_url TEXT"))
                 conn.commit()
                 print("Flask DB auto-migration: Added 'picture_url' column to 'user' table.")
+
+            # Auto-migrate inventory_items table
+            res_inv = conn.execute(text("PRAGMA table_info(inventory_items)"))
+            inv_columns = [row[1] for row in res_inv.fetchall()]
+            if "zone" not in inv_columns:
+                conn.execute(text("ALTER TABLE inventory_items ADD COLUMN zone VARCHAR(100) DEFAULT 'General Storage'"))
+                conn.commit()
+                print("Flask DB auto-migration: Added 'zone' column to 'inventory_items' table.")
     except Exception as e:
         print("Auto-migration notice:", e)
 
@@ -141,7 +150,7 @@ def serialize_inventory_item(item):
         'location_code': item.location_code,
         'location_x': item.location_x,
         'location_y': item.location_y,
-        'zone': item.zone,
+        'zone': getattr(item, 'zone', 'General Storage') or 'General Storage',
         'qr_code': item.qr_code,
         'notes': item.notes,
         'last_updated': item.last_updated.isoformat() if item.last_updated else None
