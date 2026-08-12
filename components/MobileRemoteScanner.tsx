@@ -357,8 +357,8 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                 </button>
             </div>
 
-            {/* Viewport & Subheader Animated Container with key={scanMode} for smooth mode transitions */}
-            <div key={scanMode} className="animate-mode-switch space-y-4">
+            {/* Viewport & Subheader Container (DOM persistent to keep camera stream alive without blackouts) */}
+            <div className="space-y-4">
                 <style>{`
                     @keyframes modeSwitchFade {
                         from {
@@ -374,9 +374,10 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                         animation: modeSwitchFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                     }
                 `}</style>
+
                 {/* PC Pairing Status Subheader */}
                 {scanMode === 'pc' && (
-                    <div className="bg-brand-dark border border-brand-teal/30 p-3 rounded-xl space-y-2 text-xs">
+                    <div key="pc-subheader" className="animate-mode-switch bg-brand-dark border border-brand-teal/30 p-3 rounded-xl space-y-2 text-xs">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full ${pairedSessionId ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />

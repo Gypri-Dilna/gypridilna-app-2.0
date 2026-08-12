@@ -234,12 +234,17 @@ def get_current_user_profile():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """Handles user login."""
+    """Handles user login (supports Username or E-mail)."""
     data = request.json or {}
     username = data.get('username')
     password = data.get('password')
     
-    user = User.query.filter_by(username=username).first()
+    clean_identifier = (username or '').strip().lower()
+    
+    # Allow logging in with either E-mail address OR username (case-insensitive)
+    user = User.query.filter(
+        (User.email.ilike(clean_identifier)) | (User.username.ilike(clean_identifier))
+    ).first()
     
     if user and check_password_hash(user.password_hash, password):
         token = create_user_token(user)
