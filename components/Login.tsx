@@ -1,6 +1,7 @@
 import React, { useState, FormEvent, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { Logo } from './Logo';
+import { KeyIcon } from './icons';
 
 interface LoginProps {
     onLoginSuccess: (user: User, token?: string, rememberMe?: boolean) => void;
@@ -20,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const [googleClientId] = useState(() => (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || localStorage.getItem('gypri_google_client_id') || '');
+    const [showPasswordForm, setShowPasswordForm] = useState<boolean>(() => !googleClientId);
     const googleBtnRef = useRef<HTMLDivElement>(null);
 
     const handleGoogleCredential = async (credential: string) => {
@@ -92,7 +94,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             if (response.ok && data.status === 'success') {
                 onLoginSuccess(data.user, data.token, rememberMe);
             } else {
-                setError(data.detail || data.message || 'Nesprávné uživatelské jméno nebo heslo.');
+                setError(data.message || data.detail || 'Neplatné uživatelské jméno nebo heslo.');
             }
         } catch (err) {
             setError('Chyba připojení k serveru. Ujistěte se, že běží backend.');
@@ -132,76 +134,92 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     )}
                 </div>
 
-                <div className="relative flex py-1 items-center">
-                    <div className="flex-grow border-t border-brand-border/80"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">nebo se přihlaste heslem</span>
-                    <div className="flex-grow border-t border-brand-border/80"></div>
+                {/* Collapsible Password Login Toggle */}
+                <div className="pt-1 text-center">
+                    <button
+                        type="button"
+                        onClick={() => setShowPasswordForm(!showPasswordForm)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-brand-teal transition py-1.5 px-3 rounded-xl hover:bg-brand-darker active:scale-95"
+                    >
+                        <KeyIcon className="h-3.5 w-3.5" />
+                        <span>{showPasswordForm ? 'Skrýt přihlášení heslem' : 'Přihlásit se heslem'}</span>
+                        <span className={`text-[10px] transition-transform duration-200 ${showPasswordForm ? 'rotate-180' : ''}`}>▼</span>
+                    </button>
                 </div>
 
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                    <div className="space-y-3">
-                        <div>
-                            <label htmlFor="username" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
-                                E-mail / Uživatelské jméno
+                {/* Collapsible Password Form */}
+                {showPasswordForm && (
+                    <form className="space-y-4 pt-2 border-t border-brand-border/60 animate-fadeIn" onSubmit={handleSubmit}>
+                        <div className="space-y-3">
+                            <div>
+                                <label htmlFor="username" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
+                                    E-mail / Uživatelské jméno
+                                </label>
+                                <input
+                                    id="username"
+                                    name="username"
+                                    type="text"
+                                    autoComplete="username"
+                                    required
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
+                                    placeholder="Zadejte e-mail (např. uzivatel@email.cz)"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="password-input" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
+                                    Heslo
+                                </label>
+                                <input
+                                    id="password-input"
+                                    name="password"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
+                                    placeholder="••••••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="remember-me" className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
+                                <input
+                                    id="remember-me"
+                                    name="remember-me"
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="h-4 w-4 rounded border-brand-border bg-brand-darker text-brand-teal focus:ring-brand-teal cursor-pointer"
+                                />
+                                <span>Zapamatovat si mě</span>
                             </label>
-                            <input
-                                id="username"
-                                name="username"
-                                type="text"
-                                autoComplete="username"
-                                required
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
-                                placeholder="Zadejte e-mail (např. uzivatel@email.cz)"
-                            />
                         </div>
-                        <div>
-                            <label htmlFor="password-input" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
-                                Heslo
-                            </label>
-                            <input
-                                id="password-input"
-                                name="password"
-                                type="password"
-                                autoComplete="current-password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-2.5 text-xs text-white bg-brand-darker border border-brand-border rounded-xl focus:outline-none focus:border-brand-teal transition"
-                                placeholder="••••••••••••"
-                            />
-                        </div>
+
+                        {error && (
+                            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-2.5 text-xs font-extrabold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 disabled:bg-teal-900 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? 'Ověřování...' : 'Přihlásit se do systému'}
+                        </button>
+                    </form>
+                )}
+
+                {!showPasswordForm && error && (
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center animate-fadeIn">
+                        {error}
                     </div>
-
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="remember-me" className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
-                            <input
-                                id="remember-me"
-                                name="remember-me"
-                                type="checkbox"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                                className="h-4 w-4 rounded border-brand-border bg-brand-darker text-brand-teal focus:ring-brand-teal cursor-pointer"
-                            />
-                            <span>Zapamatovat si mě</span>
-                        </label>
-                    </div>
-
-                    {error && (
-                        <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold text-center">
-                            {error}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-2.5 text-xs font-extrabold text-black bg-brand-teal hover:bg-brand-teal-hover rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 disabled:bg-teal-900 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Ověřování...' : 'Přihlásit se do systému'}
-                    </button>
-                </form>
+                )}
             </div>
         </div>
     );
