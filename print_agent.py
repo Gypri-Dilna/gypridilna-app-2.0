@@ -16,17 +16,25 @@ try:
 except ImportError:
     HAS_PYWIN32 = False
 
+def show_windows_error_dialog(title: str, message: str):
+    """Displays a native Windows error dialog box if running silently in background."""
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, message, title, 0x10 | 0x0)  # MB_ICONERROR | MB_OK
+    except Exception:
+        pass
+
 def check_bpac_com_available() -> tuple[bool, str]:
     """
     Checks if Brother b-PAC 3.x COM Automation server ("bpac.Document") is registered in Windows.
     """
     if not HAS_PYWIN32:
-        return False, "Python 'pywin32' package is missing. Install with 'pip install pywin32'."
+        return False, "Chybí Python balíček 'pywin32'. Nainstalujte v terminálu: pip install pywin32"
     try:
         doc = win32com.client.Dispatch("bpac.Document")
         return True, "b-PAC 3.x COM Component Registered & Ready."
     except Exception as e:
-        return False, f"b-PAC 3.x Software NOT INSTALLED on Windows. (COM Error: {str(e)})"
+        return False, f"Ovladač / SDK Brother b-PAC není nainstalován v systému Windows!\n\nStáhněte 'b-PAC Client Component' ze stránek Brother.\nDetail: {str(e)}"
 
 PRINTER_PORT = 5001
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
@@ -319,17 +327,14 @@ class PrintAgentHandler(BaseHTTPRequestHandler):
 
 def run_agent():
     is_bpac_ready, bpac_msg = check_bpac_com_available()
+    if not is_bpac_ready:
+        show_windows_error_dialog("Gypri Dílna - Chyba Tiskového Agenta", bpac_msg)
+        print(f"[PRINT AGENT ERROR] {bpac_msg}")
+
     print("=" * 70)
     print("  Gypri Dílna - Brother b-PAC Print Agent (PT-D460BTVP)")
     print(f"  Listening on http://0.0.0.0:{PRINTER_PORT}")
-    print(f"  PyWin32 Installed: {'YES' if HAS_PYWIN32 else 'NO'}")
     print(f"  Brother b-PAC SDK COM Status: {'READY' if is_bpac_ready else 'NOT INSTALLED'}")
-    print(f"  Detail: {bpac_msg}")
-    if not is_bpac_ready:
-        print("-" * 70)
-        print("  NOTE: To install Brother b-PAC Client Component SDK:")
-        print("  Download 'b-PAC Client Component' for Windows from Brother's site:")
-        print("  https://www.brother.com/g/b/agreement.aspx?c=eu_ot&lang=en&redirect=on&target=bpac34client")
     print("=" * 70)
 
     os.makedirs(TEMPLATES_DIR, exist_ok=True)
