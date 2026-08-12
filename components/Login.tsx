@@ -20,9 +20,23 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const [googleClientId] = useState(() => (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || localStorage.getItem('gypri_google_client_id') || '');
+    const [googleClientId, setGoogleClientId] = useState(() => (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || localStorage.getItem('gypri_google_client_id') || '');
     const [showPasswordForm, setShowPasswordForm] = useState<boolean>(() => !googleClientId);
     const googleBtnRef = useRef<HTMLDivElement>(null);
+
+    // Fetch server-configured Google Client ID automatically so mobile devices & all browsers render Google Login
+    useEffect(() => {
+        fetch('/api/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data?.google_client_id) {
+                    const cid = data.google_client_id.trim();
+                    setGoogleClientId(cid);
+                    localStorage.setItem('gypri_google_client_id', cid);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const handleGoogleCredential = async (credential: string) => {
         setError('');
@@ -52,26 +66,36 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     useEffect(() => {
         // Initialize native Google OAuth directly on login screen if Client ID is configured
-        if (googleClientId && window.google?.accounts?.id && googleBtnRef.current) {
-            try {
-                googleBtnRef.current.innerHTML = '';
-                window.google.accounts.id.initialize({
-                    client_id: googleClientId.trim(),
-                    callback: (response: any) => {
-                        if (response?.credential) {
-                            handleGoogleCredential(response.credential);
-                        }
+        if (googleClientId && googleBtnRef.current) {
+            const renderGoogleButton = () => {
+                if (window.google?.accounts?.id && googleBtnRef.current) {
+                    try {
+                        googleBtnRef.current.innerHTML = '';
+                        window.google.accounts.id.initialize({
+                            client_id: googleClientId.trim(),
+                            callback: (response: any) => {
+                                if (response?.credential) {
+                                    handleGoogleCredential(response.credential);
+                                }
+                            }
+                        });
+                        const btnWidth = Math.min(Math.max(window.innerWidth - 64, 250), 320);
+                        window.google.accounts.id.renderButton(googleBtnRef.current, {
+                            theme: 'filled_blue',
+                            size: 'large',
+                            width: btnWidth,
+                            text: 'signin_with'
+                        });
+                    } catch (e) {
+                        console.warn('Google GSI init notice:', e);
                     }
-                });
-                window.google.accounts.id.renderButton(googleBtnRef.current, {
-                    theme: 'filled_blue',
-                    size: 'large',
-                    width: 320,
-                    text: 'signin_with'
-                });
-            } catch (e) {
-                console.warn('Google GSI init notice:', e);
-            }
+                }
+            };
+
+            renderGoogleButton();
+            // Retry briefly if Google script hasn't loaded yet on slow mobile connections
+            const timer = setTimeout(renderGoogleButton, 800);
+            return () => clearTimeout(timer);
         }
     }, [googleClientId]);
 

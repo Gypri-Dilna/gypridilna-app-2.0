@@ -80,6 +80,10 @@ class InventoryItem(db.Model):
     notes = db.Column(db.Text, nullable=True)
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+class SystemSetting(db.Model):
+    key = db.Column(db.String(100), primary_key=True)
+    value = db.Column(db.Text, nullable=True)
+
 def auto_migrate_flask_db():
     try:
         with db.engine.connect() as conn:
@@ -748,6 +752,35 @@ def export_logs():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=access_logs.csv"}
     )
+
+# --- Public System Configuration Endpoints ---
+@app.route('/api/config', methods=['GET', 'POST'])
+def system_config():
+    if request.method == 'GET':
+        client_id_setting = SystemSetting.query.filter_by(key='google_client_id').first()
+        google_client_id = client_id_setting.value if client_id_setting and client_id_setting.value else os.environ.get('GOOGLE_CLIENT_ID', '')
+        return jsonify({
+            'google_client_id': google_client_id
+        }), 200
+
+    if request.method == 'POST':
+        user = get_auth_user_from_request()
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Forbidden', 'message': 'Pouze administrátor může měnit systémovou konfiguraci.'}), 403
+
+        data = request.json or {}
+        if 'google_client_id' in data:
+            val = data['google_client_id'].strip()
+            setting = SystemSetting.query.filter_by(key='google_client_id').first()
+            if not setting:
+                setting = SystemSetting(key='google_client_id', value=val)
+                db.session.add(setting)
+            else:
+                setting.value = val
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Google Client ID byl úspěšně uložen do databáze serveru.'}), 200
+
+        return jsonify({'error': 'Invalid payload'}), 400
 
 # --- User Management Endpoints (Strict Admin Protection) ---
 @app.route('/api/users', methods=['GET', 'POST'])

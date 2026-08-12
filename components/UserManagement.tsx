@@ -25,9 +25,39 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
     const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('gypri_google_client_id') || '');
 
-    const handleSaveClientId = () => {
-        localStorage.setItem('gypri_google_client_id', googleClientId.trim());
-        showToast('Google OAuth Client ID saved successfully!', 'success');
+    useEffect(() => {
+        fetch('/api/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data?.google_client_id) {
+                    setGoogleClientId(data.google_client_id.trim());
+                    localStorage.setItem('gypri_google_client_id', data.google_client_id.trim());
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    const handleSaveClientId = async () => {
+        try {
+            const token = localStorage.getItem('gypri_auth_token');
+            const res = await fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ google_client_id: googleClientId.trim() })
+            });
+
+            if (res.ok) {
+                localStorage.setItem('gypri_google_client_id', googleClientId.trim());
+                showToast('Google OAuth Client ID byl úspěšně uložen na server!', 'success');
+            } else {
+                throw new Error('Uložení selhalo.');
+            }
+        } catch (e: any) {
+            showToast('Chyba při ukládání Client ID na server.', 'error');
+        }
     };
 
     const getAuthHeaders = (extraHeaders: Record<string, string> = {}) => {
