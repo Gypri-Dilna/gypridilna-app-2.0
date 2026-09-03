@@ -87,6 +87,8 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
     }, [scanMode, pairedSessionId]);
 
     // Hardware Zoom and Autofocus Controller
+    const [cameraPermissionState, setCameraPermissionState] = useState<'granted' | 'denied' | 'insecure' | 'not_found' | 'error' | null>(null);
+
     const applyHardwareZoomAndFocus = useCallback(() => {
         try {
             const videoElem = document.querySelector('#remote-mobile-reader video') as HTMLVideoElement;
@@ -98,12 +100,15 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
                     const constraints: any = { advanced: [] };
 
-                    if (capabilities.focusMode) {
-                        if (capabilities.focusMode.includes('continuous')) {
-                            constraints.advanced.push({ focusMode: 'continuous' });
-                        } else if (capabilities.focusMode.includes('single-shot')) {
-                            constraints.advanced.push({ focusMode: 'single-shot' });
-                        }
+                    if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                        constraints.advanced.push({ focusMode: 'continuous' });
+                    }
+
+                    if (capabilities.zoom) {
+                        const min = capabilities.zoom.min || 1;
+                        const max = capabilities.zoom.max || 4;
+                        const defaultOptimum = Math.min(max, Math.max(min, 2.0));
+                        constraints.advanced.push({ zoom: defaultOptimum });
                     }
 
                     if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
@@ -127,6 +132,14 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         const container = document.getElementById('remote-mobile-reader');
         if (!container) return;
 
+        // Check for secure context (HTTPS requirement on modern smartphones)
+        const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        if (!window.isSecureContext && !isLocalHost) {
+            setCameraPermissionState('insecure');
+            setErrorMsg("Prohlížeč blokuje kameru z důvodu nezabezpečeného připojení HTTP. Připojte se přes HTTPS nebo localhost.");
+            return;
+        }
+
         // Gracefully stop previous scanner instance if running
         if (scannerRef.current) {
             try {
@@ -139,7 +152,27 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
 
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error("Camera hardware unavailable.");
+                setCameraPermissionState('error');
+                throw new Error("Funkce fotoaparátu není v tomto prohlížeči podporována.");
+            }
+
+            // Explicitly request camera permission to trigger OS/browser prompt on modern phones
+            try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                tempStream.getTracks().forEach(t => t.stop());
+                setCameraPermissionState('granted');
+            } catch (permErr: any) {
+                console.warn("Explicit getUserMedia permission check:", permErr);
+                const permStr = (permErr?.name || permErr?.message || String(permErr)).toLowerCase();
+                if (permStr.includes('notallowed') || permStr.includes('permission') || permStr.includes('denied')) {
+                    setCameraPermissionState('denied');
+                    setErrorMsg("Přístup k fotoaparátu byl v prohlížeči nebo v telefonu zamítnut.");
+                    return;
+                } else if (permStr.includes('notfound') || permStr.includes('devicesnotfound')) {
+                    setCameraPermissionState('not_found');
+                    setErrorMsg("V tomto zařízení nebyl nalezen žádný fotoaparát.");
+                    return;
+                }
             }
 
             const html5QrCode = new Html5Qrcode("remote-mobile-reader", false);
@@ -283,6 +316,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             );
 
             setIsScanning(true);
+            setCameraPermissionState('granted');
 
             setTimeout(() => {
                 applyHardwareZoomAndFocus();
@@ -291,9 +325,45 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
         } catch (err: any) {
             console.error("Camera startup error:", err);
             setIsScanning(false);
-            setErrorMsg(err.message || "Chyba při spouštění fotoaparátu.");
+            const errStr = (err?.name || err?.message || String(err)).toLowerCase();
+            if (errStr.includes('notallowed') || errStr.includes('permission') || errStr.includes('denied')) {
+                setCameraPermissionState('denied');
+                setErrorMsg("Přístup k fotoaparátu byl v prohlížeči nebo v telefonu zamítnut.");
+            } else if (errStr.includes('notfound') || errStr.includes('devicesnotfound')) {
+                setCameraPermissionState('not_found');
+                setErrorMsg("V tomto zařízení nebyl nalezen žádný fotoaparát.");
+            } else {
+                setCameraPermissionState('error');
+                setErrorMsg(err.message || "Chyba při spouštění fotoaparátu.");
+            }
         }
     }, [onLookupItem, applyHardwareZoomAndFocus]);
+
+    const requestCameraPermissionAndStart = useCallback(async () => {
+        setErrorMsg(null);
+        setCameraPermissionState(null);
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setCameraPermissionState('error');
+                setErrorMsg("Fotoaparát není v tomto prostředí podporován.");
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            stream.getTracks().forEach(t => t.stop());
+            setCameraPermissionState('granted');
+            await startCamera();
+        } catch (permErr: any) {
+            console.warn("Manual permission request error:", permErr);
+            const permStr = (permErr?.name || permErr?.message || String(permErr)).toLowerCase();
+            if (permStr.includes('notallowed') || permStr.includes('permission') || permStr.includes('denied')) {
+                setCameraPermissionState('denied');
+                setErrorMsg("Přístup k fotoaparátu byl zamítnut. V nastavení prohlížeče (ikona zámku 🔒 u adresy webu) povolte přístup ke kameře a klikněte znova.");
+            } else {
+                setCameraPermissionState('error');
+                setErrorMsg("Fotoaparát se nepodařilo spustit. Ujistěte se, že není používán jinou aplikací.");
+            }
+        }
+    }, [startCamera]);
 
     const isCameraStartedRef = useRef(false);
 
@@ -498,6 +568,38 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
                     `}</style>
 
                     <div id="remote-mobile-reader" className="w-full h-[340px] max-h-[340px]" />
+
+                    {/* Camera Permission / Access Error Card Overlay */}
+                    {cameraPermissionState && cameraPermissionState !== 'granted' && (
+                        <div className="absolute inset-2 bg-brand-darker/95 backdrop-blur-md border border-amber-500/40 rounded-xl p-5 text-center flex flex-col items-center justify-center space-y-3 z-40 animate-fadeIn">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                                <CameraIcon className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-white font-black text-sm">
+                                    {cameraPermissionState === 'denied' && "Přístup k fotoaparátu byl zamítnut"}
+                                    {cameraPermissionState === 'insecure' && "Vyžadováno zabezpečené připojení (HTTPS)"}
+                                    {cameraPermissionState === 'not_found' && "Fotoaparát nebyl nalezen"}
+                                    {cameraPermissionState === 'error' && "Fotoaparát nelze spustit"}
+                                </h4>
+                                <p className="text-xs text-gray-300 leading-relaxed max-w-xs mx-auto">
+                                    {cameraPermissionState === 'denied' && "V nastavení prohlížeče (ikona zámku 🔒 u adresy webu nebo v nastavení telefonu) povolte přístup ke kameře a klikněte znova."}
+                                    {cameraPermissionState === 'insecure' && "Prohlížeče na nových telefonech blokují kameru na nezabezpečených HTTP adresách."}
+                                    {cameraPermissionState === 'not_found' && "Ujistěte se, že je kamera v telefonu funkční."}
+                                    {cameraPermissionState === 'error' && "Zavřete ostatní aplikace (fotoaparát/WhatsApp) a klikněte na zkusit znova."}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={requestCameraPermissionAndStart}
+                                className="px-4 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow-lg shadow-brand-teal/20 transition active:scale-95 flex items-center gap-2"
+                            >
+                                <CameraIcon className="w-4 h-4" />
+                                <span>Povolit fotoaparát a zkusit znova</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Single Non-blocking Bottom Floating Scanned Feedback Toast Card */}
                     {scannedFeedback && (

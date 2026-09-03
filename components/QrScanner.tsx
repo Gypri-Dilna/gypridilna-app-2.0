@@ -160,7 +160,21 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
 
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error("Camera API not supported on this browser context.");
+                throw new Error("Funkce fotoaparátu není v tomto prohlížeči podporována.");
+            }
+
+            // Explicitly request camera permission to trigger OS/browser prompt on modern phones
+            try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                tempStream.getTracks().forEach(t => t.stop());
+            } catch (permErr: any) {
+                console.warn("Explicit getUserMedia permission check:", permErr);
+                const permStr = (permErr?.name || permErr?.message || String(permErr)).toLowerCase();
+                if (permStr.includes('notallowed') || permStr.includes('permission') || permStr.includes('denied')) {
+                    setErrorMsg("Přístup k fotoaparátu byl v prohlížeči nebo v telefonu zamítnut. Povolte kameru v nastavení u adresy webu.");
+                    setIsScanning(false);
+                    return;
+                }
             }
 
             const html5QrCode = new Html5Qrcode("reader", false);
@@ -207,11 +221,11 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                             onSelectItemRef.current(item);
                         }
                     } else {
-                        setErrorMsg(`No item found matching: "${decodedText}"`);
+                        setErrorMsg(`Položka s kódem "${decodedText}" nebyla nalezena v databázi.`);
                         isProcessingRef.current = false;
                     }
                 } catch (err) {
-                    setErrorMsg(`Error processing scanned QR code.`);
+                    setErrorMsg(`Chyba při zpracování QR kódu.`);
                     isProcessingRef.current = false;
                 }
             };
@@ -261,7 +275,12 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
             console.error("All camera start attempts failed:", err);
             setIsScanning(false);
             if (!isInsecureOrigin) {
-                setErrorMsg("Camera permission denied or camera unavailable.");
+                const errStr = (err?.name || err?.message || String(err)).toLowerCase();
+                if (errStr.includes('notallowed') || errStr.includes('permission') || errStr.includes('denied')) {
+                    setErrorMsg("Přístup k fotoaparátu byl v prohlížeči zamítnut. Povolte přístup k fotoaparátu v nastavení u adresy webu.");
+                } else {
+                    setErrorMsg("Fotoaparát se nepodařilo spustit. Ujistěte se, že není používán jinou aplikací.");
+                }
             }
         }
     }, [isMobileDevice, isInsecureOrigin, applyZoomAndFocus, zoomFactor]);
