@@ -524,8 +524,19 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
+    // When adding a new item, prefill the location scheme (X, Y, Z) from the most
+    // recently added item so consecutive registrations are quick and consistent.
+    const lastAddedItem = useMemo(() => {
+        if (item) return null; // editing an existing item → keep its own location
+        if (!allItems.length) return null;
+        return [...allItems].sort((a, b) =>
+            String(b.last_updated || '').localeCompare(String(a.last_updated || '')) || b.id - a.id
+        )[0];
+    }, [item, allItems]);
+
     // XY-ZAAA Fields
-    const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
+    const prefillCode = item?.location_code || lastAddedItem?.location_code || '12-0001';
+    const parsedInitial = parseLocationCode(prefillCode);
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
