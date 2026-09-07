@@ -10,6 +10,7 @@ interface PrintQueueModalProps {
     onRemoveFromQueue: (index: number) => void;
     onClearQueue: () => void;
     onUpdateQueueItemTape: (index: number, tape_size: '18mm' | '9mm') => void;
+    onBulkUpdateQueueTape: (tape_size: '18mm' | '9mm') => void;
     onPrintQueue: () => Promise<void>;
     showToast: (message: string, type: 'success' | 'error') => void;
 }
@@ -21,6 +22,7 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
     onRemoveFromQueue,
     onClearQueue,
     onUpdateQueueItemTape,
+    onBulkUpdateQueueTape,
     onPrintQueue,
     showToast
 }) => {
@@ -143,15 +145,44 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
                 </div>
 
                 {/* Actions Footer */}
-                <div className="p-4 border-t border-brand-border bg-brand-darker flex items-center justify-between gap-3">
+                <div className="p-4 border-t border-brand-border bg-brand-darker flex flex-wrap items-center justify-between gap-3">
                     {queue.length > 0 ? (
-                        <button
-                            type="button"
-                            onClick={onClearQueue}
-                            className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition font-mono"
-                        >
-                            Vyprázdnit frontu
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Bulk tape-size toggle */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-mono text-gray-500 mr-1">Vše na:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => onBulkUpdateQueueTape('18mm')}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
+                                        queue.every(q => q.tape_size === '18mm')
+                                            ? 'bg-brand-teal text-black border-brand-teal'
+                                            : 'bg-slate-800 text-gray-400 border-brand-border hover:text-white'
+                                    }`}
+                                >
+                                    18mm
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onBulkUpdateQueueTape('9mm')}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
+                                        queue.every(q => q.tape_size === '9mm')
+                                            ? 'bg-brand-teal text-black border-brand-teal'
+                                            : 'bg-slate-800 text-gray-400 border-brand-border hover:text-white'
+                                    }`}
+                                >
+                                    9mm
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={onClearQueue}
+                                className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition font-mono"
+                            >
+                                Vyprázdnit frontu
+                            </button>
+                        </div>
                     ) : <div />}
 
                     <div className="flex gap-2">
