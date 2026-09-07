@@ -524,32 +524,39 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
-    // XY-ZAAA Fields
+    // XY-ZAAA Fields (kept as strings so clearing a field doesn't force a "0")
     const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
-    const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
-    const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
-    const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
+    const [rack, setRack] = useState<string>(String(parsedInitial ? parsedInitial.rack : 1));
+    const [sector, setSector] = useState<string>(String(parsedInitial ? parsedInitial.sector : 2));
+    const [box, setBox] = useState<string>(String(parsedInitial ? parsedInitial.box : 0));
 
     // Auto-calculate initial sequence ID if creating new item
     const initialSeq = item
         ? (parsedInitial ? parsedInitial.itemId : '001')
-        : getNextSequenceForItem(allItems, 1, 2, 0);
+        : getNextSequenceForItem(allItems, parsedInitial ? parsedInitial.rack : 1, parsedInitial ? parsedInitial.sector : 2, parsedInitial ? parsedInitial.box : 0);
 
     const [itemNum, setItemNum] = useState<string>(initialSeq);
     const [notes, setNotes] = useState(item?.notes || '');
     const [codeError, setCodeError] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const locationPartsValid = rack !== '' && sector !== '' && box !== '' &&
+        Number.isInteger(Number(rack)) && Number.isInteger(Number(sector)) && Number.isInteger(Number(box));
 
     // Auto-assign next sequential 3-digit AAA ID whenever location prefix (rack, sector, box) changes for new items
     React.useEffect(() => {
-        if (!item) {
-            const nextSeq = getNextSequenceForItem(allItems, rack, sector, box);
+        if (!item && locationPartsValid) {
+            const nextSeq = getNextSequenceForItem(allItems, Number(rack), Number(sector), Number(box));
             setItemNum(nextSeq);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rack, sector, box, allItems, item]);
 
     if (!isOpen) return null;
 
-    const computedLocationCode = formatLocationCode(rack, sector, box, itemNum);
+    const computedLocationCode = locationPartsValid
+        ? formatLocationCode(Number(rack), Number(sector), Number(box), itemNum)
+        : '';
 
     const [isClosing, setIsClosing] = useState(false);
 
@@ -561,6 +568,10 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
     };
 
     const parseLocationInput = () => {
+        if (!locationPartsValid) {
+            setCodeError('Vyplňte prosím X (Rack), Y (Police) a Z (Box) schématu lokace XY-ZAAA.');
+            return null;
+        }
         const validated = parseLocationCode(computedLocationCode);
         if (!validated) {
             setCodeError('Kód umístění musí striktně odpovídat schématu XY-ZAAA (např. 12-0001)');
@@ -571,12 +582,14 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSaving) return; // prevent double-submit creating duplicate items
         setCodeError('');
         const validated = parseLocationInput();
         if (!validated) return;
 
         const finalCategory = activeCategory.trim() || 'General';
 
+        setIsSaving(true);
         onSave({
             title: title.slice(0, 30),
             category: finalCategory.slice(0, 22),
@@ -589,7 +602,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
             notes,
             location_x: 50,
             location_y: 50
-        });
+        }).finally(() => setIsSaving(false));
         handleClose();
     };
 
@@ -703,7 +716,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     min="1"
                                     max="9"
                                     value={rack}
-                                    onChange={(e) => setRack(Number(e.target.value))}
+                                    onChange={(e) => setRack(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
@@ -716,7 +729,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     min="0"
                                     max="9"
                                     value={sector}
-                                    onChange={(e) => setSector(Number(e.target.value))}
+                                    onChange={(e) => setSector(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
@@ -729,7 +742,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     min="0"
                                     max="9"
                                     value={box}
-                                    onChange={(e) => setBox(Number(e.target.value))}
+                                    onChange={(e) => setBox(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
