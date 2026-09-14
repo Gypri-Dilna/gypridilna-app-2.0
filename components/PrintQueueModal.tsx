@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { InventoryItem, PrintQueueItem } from '../types';
 import { PrinterIcon, CloseIcon, TrashIcon, TagIcon } from './icons';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface PrintQueueModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
     showToast
 }) => {
     const [isPrinting, setIsPrinting] = useState<boolean>(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState<boolean>(false);
 
     // Lock background page scroll when modal is open
     React.useEffect(() => {
@@ -148,7 +150,6 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
                 <div className="p-4 border-t border-brand-border bg-brand-darker flex flex-wrap items-center justify-between gap-3">
                     {queue.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-3">
-                            {/* Bulk tape-size toggle */}
                             <div className="flex items-center gap-1.5">
                                 <span className="text-[10px] font-mono text-gray-500 mr-1">Vše na:</span>
                                 <button
@@ -177,7 +178,7 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
 
                             <button
                                 type="button"
-                                onClick={onClearQueue}
+                                onClick={() => setIsClearConfirmOpen(true)}
                                 className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition font-mono"
                             >
                                 Vyprázdnit frontu
@@ -208,6 +209,20 @@ export const PrintQueueModal: React.FC<PrintQueueModalProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Confirmation before emptying the queue */}
+            {isClearConfirmOpen && (
+                <ConfirmationModal
+                    isOpen={isClearConfirmOpen}
+                    onClose={() => setIsClearConfirmOpen(false)}
+                    onConfirm={() => {
+                        setIsClearConfirmOpen(false);
+                        onClearQueue();
+                    }}
+                    title="Vyprázdnit tiskovou frontu"
+                    message={`Opravdu chcete odstranit všech ${queue.length} položek z tiskové fronty? Tato akce je nevratná.`}
+                />
+            )}
         </div>,
         document.body
     );

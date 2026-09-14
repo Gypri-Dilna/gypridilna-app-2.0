@@ -4,7 +4,7 @@ from datetime import datetime
 
 class InventoryItemBase(BaseModel):
     title: str = Field(..., max_length=30, description="Title limited to 30 characters")
-    category: str = Field(..., max_length=22, description="Category limited to 22 characters")
+    category: str = Field(..., description="Category name")
     quantity: int = 1
     unit: str = "pcs"
     min_quantity: int = 1
@@ -20,7 +20,7 @@ class InventoryItemCreate(InventoryItemBase):
 
 class InventoryItemUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=30)
-    category: Optional[str] = Field(None, max_length=22)
+    category: Optional[str] = Field(None)
     quantity: Optional[int] = None
     unit: Optional[str] = None
     min_quantity: Optional[int] = None

@@ -43,6 +43,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
+    const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'category' | 'location'>('name-asc');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -65,9 +66,9 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     // Check permissions
     const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
-    // Filter items by category & search query
+    // Filter items by category & search query, then sort
     const filteredItems = useMemo(() => {
-        return items.filter((item) => {
+        const filtered = items.filter((item) => {
             const matchesSearch =
                 item.title.toLowerCase().includes(search.toLowerCase()) ||
                 (item.location_code && item.location_code.toLowerCase().includes(search.toLowerCase())) ||
@@ -78,7 +79,25 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 
             return matchesSearch && matchesCategory;
         });
-    }, [items, search, selectedCategory]);
+
+        const sorted = [...filtered];
+        const locale = 'cs';
+        switch (sortBy) {
+            case 'name-desc':
+                sorted.sort((a, b) => b.title.localeCompare(a.title, locale) || a.location_code.localeCompare(b.location_code, locale));
+                break;
+            case 'category':
+                sorted.sort((a, b) => (a.category || '').localeCompare(b.category || '', locale) || a.title.localeCompare(b.title, locale));
+                break;
+            case 'location':
+                sorted.sort((a, b) => (a.location_code || '').localeCompare(b.location_code || '', locale) || a.title.localeCompare(b.title, locale));
+                break;
+            case 'name-asc':
+            default:
+                sorted.sort((a, b) => a.title.localeCompare(b.title, locale) || a.location_code.localeCompare(b.location_code, locale));
+        }
+        return sorted;
+    }, [items, search, selectedCategory, sortBy]);
 
     // Unique category names
     const categories = useMemo(() => {
@@ -225,6 +244,22 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 {cat === 'ALL' ? 'Všechny kategorie' : cat}
                             </option>
                         ))}
+                    </select>
+                </div>
+
+                {/* Sort Select */}
+                <div className="flex items-center gap-2">
+                    <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                        className="bg-brand-darker border border-brand-border text-xs rounded-xl px-3 py-2 text-gray-200 focus:outline-none focus:border-brand-teal"
+                        title="Řadit položky"
+                    >
+                        <option value="name-asc">Název (A–Z)</option>
+                        <option value="name-desc">Název (Z–A)</option>
+                        <option value="category">Kategorie (A–Z)</option>
+                        <option value="location">Umístění (ID)</option>
                     </select>
                 </div>
             </div>
@@ -524,8 +559,19 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
+    // When adding a new item, prefill the location scheme (X, Y, Z) from the most
+    // recently added item so consecutive registrations are quick and consistent.
+    const lastAddedItem = useMemo(() => {
+        if (item) return null; // editing an existing item → keep its own location
+        if (!allItems.length) return null;
+        return [...allItems].sort((a, b) =>
+            String(b.last_updated || '').localeCompare(String(a.last_updated || '')) || b.id - a.id
+        )[0];
+    }, [item, allItems]);
+
     // XY-ZAAA Fields
-    const parsedInitial = parseLocationCode(item?.location_code || '12-0001');
+    const prefillCode = item?.location_code || lastAddedItem?.location_code || '12-0001';
+    const parsedInitial = parseLocationCode(prefillCode);
     const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
     const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
     const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
@@ -579,7 +625,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
         onSave({
             title: title.slice(0, 30),
-            category: finalCategory.slice(0, 22),
+            category: finalCategory,
             quantity: 1,
             unit: "pcs",
             min_quantity: 0,
@@ -644,10 +690,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     </button>
                                 )}
                             </div>
-                            <span className={`text-xs font-mono font-bold transition-colors shrink-0 ${
-                                activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
-                            }`}>
-                                {activeCategory.length}/22
+                            <span className="text-xs font-mono font-bold transition-colors shrink-0 text-gray-400">
+                                {activeCategory.length}
                             </span>
                         </div>
 
@@ -670,13 +714,10 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             <input
                                 type="text"
                                 required
-                                maxLength={22}
                                 value={customCategory}
                                 onChange={(e) => setCustomCategory(e.target.value)}
                                 placeholder="Zadejte název kategorie..."
-                                className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                    customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
-                                }`}
+                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                             />
                         )}
                     </div>

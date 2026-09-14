@@ -22,7 +22,7 @@ Place your P-touch Editor `.lbx` template files in this `templates` folder:
 2. **`label_9mm.lbx`** (9mm TZe Tape - Compact 9mm layout)
    - Object Named `title`: Text object for Item Name (max 30 chars)
    - Object Named `location_code`: Text object for Location Code (e.g. `12-0001`)
-   - Object Named `category`: Text object for Category (max 22 chars)
+   - Object Named `category`: Text object for Category
    - Object Named `qr_code`: QR Barcode object (Payload = `12-0001`)
 
 ### How to set Object Names in P-touch Editor:
