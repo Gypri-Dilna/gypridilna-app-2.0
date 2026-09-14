@@ -43,6 +43,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 }) => {
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
+    const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'category' | 'location'>('name-asc');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -65,9 +66,9 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     // Check permissions
     const canEdit = user.is_admin || user.permissions?.inventory_edit !== false;
 
-    // Filter items by category & search query
+    // Filter items by category & search query, then sort
     const filteredItems = useMemo(() => {
-        return items.filter((item) => {
+        const filtered = items.filter((item) => {
             const matchesSearch =
                 item.title.toLowerCase().includes(search.toLowerCase()) ||
                 (item.location_code && item.location_code.toLowerCase().includes(search.toLowerCase())) ||
@@ -78,7 +79,25 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
 
             return matchesSearch && matchesCategory;
         });
-    }, [items, search, selectedCategory]);
+
+        const sorted = [...filtered];
+        const locale = 'cs';
+        switch (sortBy) {
+            case 'name-desc':
+                sorted.sort((a, b) => b.title.localeCompare(a.title, locale) || a.location_code.localeCompare(b.location_code, locale));
+                break;
+            case 'category':
+                sorted.sort((a, b) => (a.category || '').localeCompare(b.category || '', locale) || a.title.localeCompare(b.title, locale));
+                break;
+            case 'location':
+                sorted.sort((a, b) => (a.location_code || '').localeCompare(b.location_code || '', locale) || a.title.localeCompare(b.title, locale));
+                break;
+            case 'name-asc':
+            default:
+                sorted.sort((a, b) => a.title.localeCompare(b.title, locale) || a.location_code.localeCompare(b.location_code, locale));
+        }
+        return sorted;
+    }, [items, search, selectedCategory, sortBy]);
 
     // Unique category names
     const categories = useMemo(() => {
@@ -225,6 +244,22 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                 {cat === 'ALL' ? 'Všechny kategorie' : cat}
                             </option>
                         ))}
+                    </select>
+                </div>
+
+                {/* Sort Select */}
+                <div className="flex items-center gap-2">
+                    <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                        className="bg-brand-darker border border-brand-border text-xs rounded-xl px-3 py-2 text-gray-200 focus:outline-none focus:border-brand-teal"
+                        title="Řadit položky"
+                    >
+                        <option value="name-asc">Název (A–Z)</option>
+                        <option value="name-desc">Název (Z–A)</option>
+                        <option value="category">Kategorie (A–Z)</option>
+                        <option value="location">Umístění (ID)</option>
                     </select>
                 </div>
             </div>
