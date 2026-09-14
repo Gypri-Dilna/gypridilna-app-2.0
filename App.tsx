@@ -275,7 +275,16 @@ const App: React.FC = () => {
 
             if (invRes.ok) {
                 const invData = await invRes.json();
-                setInventoryItems(invData);
+                // De-duplicate items so the overview never shows the same physical item twice
+                // (guards against duplicate rows / location codes created by fast repeated submits).
+                setInventoryItems(Array.isArray(invData)
+                    ? invData.filter((item: any, index: number, arr: any[]) => {
+                          const key = item.id ?? item.location_code ?? item.qr_code;
+                          return arr.findIndex((it: any) =>
+                              (it.id ?? it.location_code ?? it.qr_code) === key
+                          ) === index;
+                      })
+                    : invData);
             }
 
             if (directPrinterStatus) {
