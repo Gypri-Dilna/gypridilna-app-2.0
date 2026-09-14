@@ -311,7 +311,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
 
         await onSave({
             title: title.slice(0, 30),
-            category: finalCategory.slice(0, 22),
+            category: finalCategory,
             location_code: computedLocationCode,
             zone: `Rack ${rack}`,
             qr_code: computedLocationCode,
@@ -359,10 +359,8 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <label className="block text-xs font-semibold text-gray-300 font-sans">Kategorie *</label>
-                            <span className={`text-xs font-mono font-bold transition-colors ${
-                                activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
-                            }`}>
-                                {activeCategory.length}/22
+                            <span className="text-xs font-mono font-bold transition-colors shrink-0 text-gray-400">
+                                {activeCategory.length}
                             </span>
                         </div>
 
@@ -385,13 +383,10 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             <input
                                 type="text"
                                 required
-                                maxLength={22}
                                 value={customCategory}
                                 onChange={(e) => setCustomCategory(e.target.value)}
                                 placeholder="Zadejte název kategorie..."
-                                className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                    customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
-                                }`}
+                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                             />
                         )}
                     </div>

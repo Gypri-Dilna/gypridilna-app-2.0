@@ -625,7 +625,7 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
 
         onSave({
             title: title.slice(0, 30),
-            category: finalCategory.slice(0, 22),
+            category: finalCategory,
             quantity: 1,
             unit: "pcs",
             min_quantity: 0,
@@ -690,10 +690,8 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                                     </button>
                                 )}
                             </div>
-                            <span className={`text-xs font-mono font-bold transition-colors shrink-0 ${
-                                activeCategory.length >= 22 ? 'text-rose-400 font-extrabold animate-pulse' : 'text-gray-400'
-                            }`}>
-                                {activeCategory.length}/22
+                            <span className="text-xs font-mono font-bold transition-colors shrink-0 text-gray-400">
+                                {activeCategory.length}
                             </span>
                         </div>
 
@@ -716,13 +714,10 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
                             <input
                                 type="text"
                                 required
-                                maxLength={22}
                                 value={customCategory}
                                 onChange={(e) => setCustomCategory(e.target.value)}
                                 placeholder="Zadejte název kategorie..."
-                                className={`w-full px-3 py-2 bg-brand-darker border rounded-xl text-xs text-white focus:outline-none font-sans transition ${
-                                    customCategory.length >= 22 ? 'border-rose-500/80 focus:border-rose-500 ring-1 ring-rose-500/30' : 'border-brand-border focus:border-brand-teal'
-                                }`}
+                                className="w-full px-3 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-sans"
                             />
                         )}
                     </div>
