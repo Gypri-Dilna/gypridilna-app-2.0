@@ -275,7 +275,16 @@ const App: React.FC = () => {
 
             if (invRes.ok) {
                 const invData = await invRes.json();
-                setInventoryItems(invData);
+                // De-duplicate items so the overview never shows the same physical item twice
+                // (guards against duplicate rows / location codes created by fast repeated submits).
+                setInventoryItems(Array.isArray(invData)
+                    ? invData.filter((item: any, index: number, arr: any[]) => {
+                          const key = item.id ?? item.location_code ?? item.qr_code;
+                          return arr.findIndex((it: any) =>
+                              (it.id ?? it.location_code ?? it.qr_code) === key
+                          ) === index;
+                      })
+                    : invData);
             }
 
             if (directPrinterStatus) {
@@ -324,6 +333,7 @@ const App: React.FC = () => {
     const handleTabChange = (tab: TabType) => {
         setSelectedItem(null);
         setActiveTab(tab);
+        pushHistoryState({ tab, itemId: null });
     };
 
     // Handle Login
@@ -564,6 +574,7 @@ const App: React.FC = () => {
     });
     const lastRemoteScanTimeRef = useRef<number>(Date.now() / 1000);
     const lastProcessedQrRef = useRef<string>('');
+    const historyDepthRef = useRef<number>(0);
 
     // Global Remote Scan Poller for PC Screen
     // Keeps polling continuously even when ItemDetailView is open so scanning item #2 refreshes PC screen instantly!
@@ -583,6 +594,10 @@ const App: React.FC = () => {
                         if (item) {
                             setSelectedItem(item);
                             setActiveTab('inventory');
+                            // Replace (don't push) so automated scans don't fill the back stack.
+                            try {
+                                window.history.replaceState({ tab: 'inventory', itemId: item.id }, '');
+                            } catch (e) { /* ignore */ }
                         }
                     }
                 }
@@ -594,11 +609,45 @@ const App: React.FC = () => {
         return () => clearInterval(interval);
     }, [pcSessionId]);
 
+    // Browser / device "Back" support: we push a history entry for every tab switch and
+    // item open, and restore the matching view on popstate. Without this, the back button
+    // drops the user onto a blank page because the app never touched the history API.
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            historyDepthRef.current = Math.max(0, historyDepthRef.current - 1);
+            const state = event.state as { tab?: TabType; itemId?: number | null } | null;
+            if (!state || typeof state.tab !== 'string') {
+                setActiveTab('dashboard');
+                setSelectedItem(null);
+                return;
+            }
+            setActiveTab(state.tab);
+            if (state.itemId != null) {
+                const found = inventoryItems.find(i => i.id === state.itemId);
+                setSelectedItem(found || null);
+            } else {
+                setSelectedItem(null);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [inventoryItems]);
+
+    const pushHistoryState = useCallback((state: { tab: TabType; itemId?: number | null }) => {
+        try {
+            window.history.pushState(state, '');
+            historyDepthRef.current += 1;
+        } catch (e) {
+            // History API unavailable (e.g. file://) – fall back to pure state navigation.
+        }
+    }, []);
+
     const handleSelectItem = (item: InventoryItem, sourceTab?: TabType) => {
         setSelectedItem(item);
         if (sourceTab) {
             setActiveTab(sourceTab);
         }
+        pushHistoryState({ tab: sourceTab || activeTab, itemId: item.id });
     };
 
     const handleCloseItemDetail = () => {
@@ -606,6 +655,10 @@ const App: React.FC = () => {
         // Advance time ref by 10s so past remote scans NEVER re-trigger when closing on PC
         lastRemoteScanTimeRef.current = Date.now() / 1000 + 10;
         lastProcessedQrRef.current = '';
+        // Step back through in-app history instead of dumping the user on a blank page.
+        if (historyDepthRef.current > 0) {
+            window.history.back();
+        }
     };
 
     const handleDeleteCategory = async (categoryName: string) => {
