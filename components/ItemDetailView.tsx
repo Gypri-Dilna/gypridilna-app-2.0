@@ -286,15 +286,22 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
     const activeCategory = selectedCatOption === '__NEW__' ? customCategory : selectedCatOption;
 
     const parsedInitial = parseLocationCode(itemLocation);
-    const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
-    const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
-    const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
+    // Kept as strings so clearing a field doesn't force it back to "0" while editing.
+    const [rack, setRack] = useState<string>(String(parsedInitial ? parsedInitial.rack : 1));
+    const [sector, setSector] = useState<string>(String(parsedInitial ? parsedInitial.sector : 2));
+    const [box, setBox] = useState<string>(String(parsedInitial ? parsedInitial.box : 0));
     const [itemNum, setItemNum] = useState<string>(parsedInitial ? parsedInitial.itemId : '001');
     const [notes, setNotes] = useState(item?.notes || '');
+    const [codeError, setCodeError] = useState<string>('');
+
+    const locationPartsValid = rack !== '' && sector !== '' && box !== '' &&
+        Number.isInteger(Number(rack)) && Number.isInteger(Number(sector)) && Number.isInteger(Number(box));
 
     if (!isOpen || !item) return null;
 
-    const computedLocationCode = formatLocationCode(rack, sector, box, itemNum);
+    const computedLocationCode = locationPartsValid
+        ? formatLocationCode(Number(rack), Number(sector), Number(box), itemNum)
+        : '';
 
     const [isClosing, setIsClosing] = useState(false);
 
@@ -307,6 +314,12 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!locationPartsValid) {
+            setCodeError('Vyplňte prosím X (Rack), Y (Police) a Z (Box) schématu lokace XY-ZAAA.');
+            return;
+        }
+        if (isClosing) return;
+        setCodeError('');
         const finalCategory = activeCategory.trim() || 'General';
 
         await onSave({
@@ -413,7 +426,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     min="1"
                                     max="9"
                                     value={rack}
-                                    onChange={(e) => setRack(Number(e.target.value))}
+                                    onChange={(e) => setRack(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
@@ -426,7 +439,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     min="0"
                                     max="9"
                                     value={sector}
-                                    onChange={(e) => setSector(Number(e.target.value))}
+                                    onChange={(e) => setSector(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
@@ -439,7 +452,7 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                                     min="0"
                                     max="9"
                                     value={box}
-                                    onChange={(e) => setBox(Number(e.target.value))}
+                                    onChange={(e) => setBox(e.target.value)}
                                     className="w-full h-10 px-0 bg-slate-900 border border-brand-border rounded-xl text-sm text-white font-mono font-bold text-center focus:outline-none focus:border-brand-teal transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
@@ -456,6 +469,12 @@ const EditItemModal: React.FC<EditModalProps> = ({ isOpen, onClose, item, allIte
                             ID se přiřazuje automaticky podle volných ID. <strong>(Není-li v boxu, nastavte Box na 0)</strong>.
                         </p>
                     </div>
+
+                    {codeError && (
+                        <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold">
+                            {codeError}
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-300 mb-1">Poznámky / Popis</label>

@@ -569,28 +569,33 @@ const InventoryItemFormModal: React.FC<FormModalProps> = ({ isOpen, onClose, ite
         )[0];
     }, [item, allItems]);
 
-    // XY-ZAAA Fields
+    // XY-ZAAA Fields (kept as strings so clearing a field doesn't force a "0")
     const prefillCode = item?.location_code || lastAddedItem?.location_code || '12-0001';
     const parsedInitial = parseLocationCode(prefillCode);
-    const [rack, setRack] = useState<number>(parsedInitial ? parsedInitial.rack : 1);
-    const [sector, setSector] = useState<number>(parsedInitial ? parsedInitial.sector : 2);
-    const [box, setBox] = useState<number>(parsedInitial ? parsedInitial.box : 0);
+    const [rack, setRack] = useState<string>(String(parsedInitial ? parsedInitial.rack : 1));
+    const [sector, setSector] = useState<string>(String(parsedInitial ? parsedInitial.sector : 2));
+    const [box, setBox] = useState<string>(String(parsedInitial ? parsedInitial.box : 0));
 
     // Auto-calculate initial sequence ID if creating new item
     const initialSeq = item
         ? (parsedInitial ? parsedInitial.itemId : '001')
-        : getNextSequenceForItem(allItems, 1, 2, 0);
+        : getNextSequenceForItem(allItems, parsedInitial ? parsedInitial.rack : 1, parsedInitial ? parsedInitial.sector : 2, parsedInitial ? parsedInitial.box : 0);
 
     const [itemNum, setItemNum] = useState<string>(initialSeq);
     const [notes, setNotes] = useState(item?.notes || '');
     const [codeError, setCodeError] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const locationPartsValid = rack !== '' && sector !== '' && box !== '' &&
+        Number.isInteger(Number(rack)) && Number.isInteger(Number(sector)) && Number.isInteger(Number(box));
 
     // Auto-assign next sequential 3-digit AAA ID whenever location prefix (rack, sector, box) changes for new items
     React.useEffect(() => {
-        if (!item) {
-            const nextSeq = getNextSequenceForItem(allItems, rack, sector, box);
+        if (!item && locationPartsValid) {
+            const nextSeq = getNextSequenceForItem(allItems, Number(rack), Number(sector), Number(box));
             setItemNum(nextSeq);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rack, sector, box, allItems, item]);
 
     if (!isOpen) return null;
