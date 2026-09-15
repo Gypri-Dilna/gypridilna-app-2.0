@@ -133,6 +133,12 @@ const App: React.FC = () => {
         setPrintQueue(prev => prev.map((q, i) => i === index ? { ...q, tape_size } : q));
     };
 
+    const handleBulkUpdateQueueTape = (tape_size: '18mm' | '9mm') => {
+        if (printQueue.length === 0) return;
+        setPrintQueue(prev => prev.map(q => ({ ...q, tape_size })));
+        showToast(`Všechny položky ve frontě byly nastaveny na ${tape_size}.`, 'success');
+    };
+
     const handlePrintQueueBatch = async () => {
         if (printQueue.length === 0) return;
         
@@ -844,6 +850,7 @@ const App: React.FC = () => {
                             onRemoveFromQueue={handleRemoveFromPrintQueue}
                             onClearQueue={handleClearPrintQueue}
                             onUpdateQueueItemTape={handleUpdateQueueItemTape}
+                            onBulkUpdateQueueTape={handleBulkUpdateQueueTape}
                             onPrintQueue={handlePrintQueueBatch}
                             showToast={showToast}
                         />
