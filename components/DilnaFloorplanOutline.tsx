@@ -30,10 +30,11 @@ export const DilnaFloorplanOutline: React.FC<DilnaFloorplanOutlineProps> = ({
         }, 200);
     };
 
-    // Fetch SVG layout content
+    // Fetch SVG layout content (with cache-busting to ensure latest layout is always loaded)
     useEffect(() => {
         let isMounted = true;
-        fetch('/location-pictures/dilna_storage_layout.svg')
+        const cacheBuster = `?v=${Date.now()}`;
+        fetch(`/location-pictures/dilna_storage_layout.svg${cacheBuster}`, { cache: 'no-cache' })
             .then(res => {
                 if (res.ok) return res.text();
                 throw new Error('SVG not found');
@@ -42,7 +43,7 @@ export const DilnaFloorplanOutline: React.FC<DilnaFloorplanOutlineProps> = ({
                 if (isMounted) setSvgContent(text);
             })
             .catch(() => {
-                fetch('/public/location-pictures/dilna_storage_layout.svg')
+                fetch(`/public/location-pictures/dilna_storage_layout.svg${cacheBuster}`, { cache: 'no-cache' })
                     .then(res => res.text())
                     .then(text => { if (isMounted) setSvgContent(text); })
                     .catch(() => {});
