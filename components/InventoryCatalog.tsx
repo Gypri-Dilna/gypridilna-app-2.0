@@ -52,6 +52,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
     // Batch Selection Mode State
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
+    const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
     const [isBatchConfirmOpen, setIsBatchConfirmOpen] = useState(false);
 
     // Responsive mobile device detection
@@ -108,7 +109,33 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
         return ['ALL', ...Array.from(set).sort()];
     }, [items]);
 
-    const toggleSelectItem = (id: number) => {
+    const toggleSelectItem = (id: number, event?: React.MouseEvent) => {
+        if (event?.shiftKey && lastSelectedId !== null && lastSelectedId !== id) {
+            const currentIndex = filteredItems.findIndex(i => i.id === id);
+            const lastIndex = filteredItems.findIndex(i => i.id === lastSelectedId);
+
+            if (currentIndex !== -1 && lastIndex !== -1) {
+                const start = Math.min(currentIndex, lastIndex);
+                const end = Math.max(currentIndex, lastIndex);
+                const rangeIds = filteredItems.slice(start, end + 1).map(i => i.id);
+
+                setSelectedItemIds(prev => {
+                    const next = new Set(prev);
+                    const shouldSelect = !prev.has(id);
+                    rangeIds.forEach(rId => {
+                        if (shouldSelect) {
+                            next.add(rId);
+                        } else {
+                            next.delete(rId);
+                        }
+                    });
+                    return next;
+                });
+                setLastSelectedId(id);
+                return;
+            }
+        }
+
         setSelectedItemIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) {
@@ -118,6 +145,7 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
             }
             return next;
         });
+        setLastSelectedId(id);
     };
 
     const handleBatchAddToQueue = () => {
@@ -384,9 +412,21 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                             {filteredItems.length > 0 ? (
                                 filteredItems.map((item) => {
                                     return (
-                                        <tr key={item.id} className={`border-b border-brand-border/60 transition-all duration-300 animate-slide-down ${
-                                            selectedItemIds.has(item.id) ? 'bg-brand-teal/10' : 'bg-brand-dark hover:bg-[#343b47]/40'
-                                        }`}>
+                                        <tr 
+                                            key={item.id}
+                                            onClick={(e) => {
+                                                if (isSelectMode) {
+                                                    const target = e.target as HTMLElement;
+                                                    if (target.closest('button') || target.closest('a')) return;
+                                                    toggleSelectItem(item.id, e);
+                                                }
+                                            }}
+                                            className={`border-b border-brand-border/60 transition-all duration-300 animate-slide-down ${
+                                                isSelectMode ? 'cursor-pointer select-none' : ''
+                                            } ${
+                                                selectedItemIds.has(item.id) ? 'bg-brand-teal/10' : 'bg-brand-dark hover:bg-[#343b47]/40'
+                                            }`}
+                                        >
                                             {/* Centered Checkbox Column */}
                                             <td className="px-3 py-4 text-center align-middle">
                                                 {isSelectMode && (
@@ -394,7 +434,11 @@ export const InventoryCatalog: React.FC<InventoryCatalogProps> = ({
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedItemIds.has(item.id)}
-                                                            onChange={() => toggleSelectItem(item.id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleSelectItem(item.id, e);
+                                                            }}
+                                                            onChange={() => {}}
                                                             className="w-4 h-4 rounded border-brand-border text-brand-teal focus:ring-brand-teal bg-brand-darker accent-brand-teal cursor-pointer"
                                                         />
                                                     </div>
