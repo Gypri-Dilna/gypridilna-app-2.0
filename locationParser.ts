@@ -94,6 +94,10 @@ export function getRackCoordinates(rackNumber: number): { x: number; y: number }
             return { x: 55, y: 70 }; // Rack 5: South Center (3D Print)
         case 6:
             return { x: 82, y: 70 }; // Rack 6: South East (Entrance Door)
+        case 7:
+            return { x: 20, y: 90 }; // Rack 7: Bottom West Wall (former Rack 8)
+        case 8:
+            return { x: 20, y: 50 }; // Rack 8: Middle West Wall (former Rack 7)
         default:
             return { x: 50, y: 50 }; // Center Default
     }
