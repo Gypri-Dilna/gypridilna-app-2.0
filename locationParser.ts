@@ -95,9 +95,9 @@ export function getRackCoordinates(rackNumber: number): { x: number; y: number }
         case 6:
             return { x: 82, y: 70 }; // Rack 6: South East (Entrance Door)
         case 7:
-            return { x: 20, y: 90 }; // Rack 7: Bottom West Wall (former Rack 8)
+            return { x: 20, y: 50 }; // Rack 7: Middle West Wall (id X7)
         case 8:
-            return { x: 20, y: 50 }; // Rack 8: Middle West Wall (former Rack 7)
+            return { x: 20, y: 90 }; // Rack 8: Bottom West Wall (ids X8Y1, X8Y2, X8Y3)
         default:
             return { x: 50, y: 50 }; // Center Default
     }
