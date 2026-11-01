@@ -357,7 +357,7 @@ export const MobileRemoteScanner: React.FC<MobileRemoteScannerProps> = ({ onLook
             const permStr = (permErr?.name || permErr?.message || String(permErr)).toLowerCase();
             if (permStr.includes('notallowed') || permStr.includes('permission') || permStr.includes('denied')) {
                 setCameraPermissionState('denied');
-                setErrorMsg("Přístup k fotoaparátu byl zamítnut. V nastavení prohlížeče (ikona zámku 🔒 u adresy webu) povolte přístup ke kameře a klikněte znova.");
+                setErrorMsg("Přístup k fotoaparátu byl zamítnut. V nastavení prohlížeče (ikona zámku u adresy webu) povolte přístup ke kameře a klikněte znova.");
             } else {
                 setCameraPermissionState('error');
                 setErrorMsg("Fotoaparát se nepodařilo spustit. Ujistěte se, že není používán jinou aplikací.");

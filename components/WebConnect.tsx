@@ -6,10 +6,10 @@ interface WebConnectProps {
 }
 
 const PRESET_TOOLS = [
-    { name: "3D Printer Web UI (Mainsail/OctoPrint)", url: "http://192.168.1.100", icon: "🖨️" },
-    { name: "CNC Router Web Controller", url: "http://192.168.1.101", icon: "⚙️" },
-    { name: "Gypri Dílna Documentation & Wiki", url: "https://www.gypridilna.cz", icon: "🌐" },
-    { name: "ESP32 Hardware Monitor", url: "http://192.168.1.200", icon: "⚡" }
+    { name: "3D Printer Web UI (Mainsail/OctoPrint)", url: "http://192.168.1.100", icon: "" },
+    { name: "CNC Router Web Controller", url: "http://192.168.1.101", icon: "" },
+    { name: "Gypri Dílna Documentation & Wiki", url: "https://www.gypridilna.cz", icon: "" },
+    { name: "ESP32 Hardware Monitor", url: "http://192.168.1.200", icon: "" }
 ];
 
 export const WebConnect: React.FC<WebConnectProps> = ({ defaultUrl = "https://www.gypridilna.cz" }) => {

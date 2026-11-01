@@ -224,23 +224,12 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {onOpenSettings && (
-                        <button
-                            onClick={onOpenSettings}
-                            className="p-2 text-gray-400 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
-                            title="Nastavení"
-                        >
-                            <SettingsIcon className="h-5 w-5" />
-                        </button>
-                    )}
-                    <button
-                        onClick={openMobileMenu}
-                        className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
-                    >
-                        <Menu className="h-5 w-5" />
-                    </button>
-                </div>
+                <button
+                    onClick={openMobileMenu}
+                    className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
+                >
+                    <Menu className="h-5 w-5" />
+                </button>
             </div>
 
             {/* Mobile Header Top Spacer so main content is never overlapped by fixed top bar */}

@@ -42,10 +42,14 @@ export const QuickUnlockModal: React.FC<QuickUnlockModalProps> = ({
                 triggerHaptic('success');
                 soundEffects.playUnlockSuccess();
 
-                // Stay on screen for 1.8s then IMMEDIATELY exit and close the mobile app
+                // Stay on screen for 1.8s then IMMEDIATELY exit native app
+                // Calling exitNativeApp() FIRST keeps the modal covering the entire screen
+                // so the dashboard NEVER flickers!
                 setTimeout(async () => {
-                    onClose();
                     await exitNativeApp();
+                    setTimeout(() => {
+                        onClose();
+                    }, 600);
                 }, 1800);
             } else {
                 setStatus('error');

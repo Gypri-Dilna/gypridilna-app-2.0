@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         if (this.state.hasError) {
             return (
                 <div className="p-8 text-center bg-brand-dark border border-rose-500/30 rounded-2xl max-w-xl mx-auto my-12 font-sans space-y-4 shadow-2xl">
-                    <div className="text-rose-400 font-extrabold text-lg">⚠️ Chybový stav aplikace</div>
+                    <div className="text-rose-400 font-extrabold text-lg">Chybový stav aplikace</div>
                     <p className="text-xs text-gray-300">
                         {this.state.error?.message || "Došlo k neočekávané chybě při vykreslování."}
                     </p>

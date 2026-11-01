@@ -197,7 +197,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                            <span>🔑</span> Nastavení Google OAuth 2.0 Client ID
+                            Nastavení Google OAuth 2.0 Client ID
                         </h2>
                         <p className="text-xs text-gray-300 mt-0.5">
                             Zadejte Google Cloud Client ID pro aktivaci přihlašování přes Google pro přiřazené e-maily.

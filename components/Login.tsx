@@ -190,7 +190,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     ) : (
                         <div className="p-3 bg-brand-darker border border-brand-border/60 rounded-xl text-center">
                             <p className="text-[11px] text-gray-400 font-medium">
-                                🔑 Google OAuth je k dispozici. Přihlaste se jako správce a nastavte Google Client ID ve <span className="text-brand-teal font-semibold">Správě uživatelů</span>.
+                                Google OAuth je k dispozici. Přihlaste se jako správce a nastavte Google Client ID ve <span className="text-brand-teal font-semibold">Správě uživatelů</span>.
                             </p>
                         </div>
                     )}

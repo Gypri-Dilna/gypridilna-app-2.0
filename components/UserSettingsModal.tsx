@@ -4,8 +4,6 @@ import { CloseIcon, SuccessIcon, SettingsIcon, KeyIcon } from './icons';
 import { 
     isNativeMobileApp, 
     isWebNfcSupported, 
-    getServerUrl, 
-    setServerUrl, 
     isNfcUnlockEnabled, 
     setNfcUnlockEnabled,
     triggerHaptic 
@@ -26,10 +24,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'app' | 'password'>('app');
     
-    // App settings state
-    const [serverUrl, setLocalServerUrl] = useState(getServerUrl());
+    // App settings state (fixed server URL: access.gypridilna.cz)
     const [nfcEnabled, setLocalNfcEnabled] = useState(isNfcUnlockEnabled());
-    const [isTesting, setIsTesting] = useState(false);
 
     // Password change state
     const [oldPassword, setOldPassword] = useState('');
@@ -40,35 +36,10 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     if (!isOpen) return null;
 
     const handleSaveAppSettings = () => {
-        setServerUrl(serverUrl);
         setNfcUnlockEnabled(nfcEnabled);
         triggerHaptic('success');
         showToast('Nastavení aplikace bylo uloženo.', 'success');
         onClose();
-    };
-
-    const handleTestConnection = async () => {
-        setIsTesting(true);
-        triggerHaptic('heavy');
-        try {
-            let base = serverUrl.trim();
-            if (base.endsWith('/')) base = base.slice(0, -1);
-            const testUrl = base ? `${base}/api/config` : '/api/config';
-            
-            const res = await fetch(testUrl, { cache: 'no-cache' });
-            if (res.ok) {
-                showToast('Spojení se serverem dílny je v pořádku!', 'success');
-                triggerHaptic('success');
-            } else {
-                showToast(`Server odpověděl s chybou: ${res.status}`, 'error');
-                triggerHaptic('error');
-            }
-        } catch (e: any) {
-            showToast(`Nelze se připojit k serveru: ${e.message}`, 'error');
-            triggerHaptic('error');
-        } finally {
-            setIsTesting(false);
-        }
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
@@ -151,7 +122,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                                 : 'border-transparent text-gray-400 hover:text-gray-200'
                         }`}
                     >
-                        📱 Aplikace & NFC
+                        Aplikace a NFC
                     </button>
                     <button
                         type="button"
@@ -162,7 +133,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                                 : 'border-transparent text-gray-400 hover:text-gray-200'
                         }`}
                     >
-                        🔐 Změna hesla
+                        Změna hesla
                     </button>
                 </div>
 
@@ -172,9 +143,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                         {/* Toggle: NFC Quick Unlock */}
                         <div className="bg-brand-darker border border-brand-border rounded-xl p-3.5 flex items-center justify-between gap-3">
                             <div className="space-y-0.5">
-                                <div className="font-bold text-white flex items-center gap-1.5">
-                                    <span>⚡</span>
-                                    <span>Rychlé NFC odemykání</span>
+                                <div className="font-bold text-white">
+                                    Rychlé NFC odemykání
                                 </div>
                                 <p className="text-[11px] text-gray-400">
                                     Automaticky odemkne dveře po přiložení k nálepce.
@@ -191,28 +161,10 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                             </label>
                         </div>
 
-                        {/* Server URL Input */}
-                        <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-300">
-                                Adresa serveru dílny (URL)
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={serverUrl}
-                                    onChange={(e) => setLocalServerUrl(e.target.value)}
-                                    placeholder="https://access.gypridilna.cz"
-                                    className="flex-1 bg-brand-darker border border-brand-border rounded-xl px-3.5 py-2 text-white text-xs font-mono placeholder:text-gray-600 focus:outline-none focus:border-brand-teal"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleTestConnection}
-                                    disabled={isTesting}
-                                    className="px-3 py-2 bg-brand-darker hover:bg-slate-800 text-gray-200 font-bold rounded-xl text-xs transition border border-brand-border disabled:opacity-50"
-                                >
-                                    {isTesting ? 'Ověřuji...' : 'Otestovat'}
-                                </button>
-                            </div>
+                        {/* Read-Only Server Info */}
+                        <div className="bg-brand-darker border border-brand-border rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-gray-400">
+                            <span>Centrální server:</span>
+                            <span className="font-bold text-gray-200">access.gypridilna.cz</span>
                         </div>
 
                         {/* Diagnostics */}

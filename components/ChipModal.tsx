@@ -212,7 +212,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                             }`}
                                             title="Přiložit RFID čip přímo k telefonu"
                                         >
-                                            <span>📱</span>
+                                            <ScanIcon className="h-4 w-4" />
                                             <span>{isNfcScanning ? 'Čtu NFC...' : 'Přiložit k mobilu'}</span>
                                         </button>
                                     )}
@@ -237,7 +237,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                             {isNfcScanning && (
                                 <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-300 animate-pulse">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-base">📡</span>
+                                        <ScanIcon className="h-4 w-4" />
                                         <span className="font-bold">Přiložte RFID klíčenku nebo kartu k zádům telefonu...</span>
                                     </div>
                                     <button
