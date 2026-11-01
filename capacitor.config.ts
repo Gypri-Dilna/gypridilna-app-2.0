@@ -7,7 +7,17 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://access.gypridilna.cz',
     androidScheme: 'https',
-    cleartext: true
+    cleartext: true,
+    allowNavigation: [
+      'access.gypridilna.cz',
+      '*.access.gypridilna.cz',
+      'accounts.google.com',
+      '*.accounts.google.com',
+      '*.google.com',
+      '*.googleusercontent.com',
+      '*.gstatic.com',
+      '*.googleapis.com'
+    ]
   }
 };
 
