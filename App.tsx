@@ -945,6 +945,7 @@ const App: React.FC = () => {
                 isOpen={isUserSettingsOpen}
                 onClose={() => setIsUserSettingsOpen(false)}
                 showToast={showToast}
+                userId={user?.id || 0}
             />
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

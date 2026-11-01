@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     DashboardIcon, ScanIcon, LogoutIcon,
     Menu, X, UserManagementIcon, UserIcon, KeyIcon,
-    InventoryIcon, QrCodeIcon, SearchIcon
+    InventoryIcon, QrCodeIcon, SearchIcon, SettingsIcon
 } from './icons';
 import { Logo } from './Logo';
 import { BoltGlyphChain } from './BoltGlyph';
@@ -196,18 +196,11 @@ export const Header: React.FC<HeaderProps> = ({
                                     <button
                                         onClick={onOpenSettings}
                                         className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
-                                        title="Mobilní nastavení & NFC"
+                                        title="Nastavení"
                                     >
-                                        <span className="text-xs">📱</span>
+                                        <SettingsIcon className="h-4 w-4" />
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => setIsChangePasswordOpen(true)}
-                                    className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
-                                    title="Změnit heslo"
-                                >
-                                    <KeyIcon className="h-4 w-4" />
-                                </button>
                             </div>
                         </div>
 
@@ -231,12 +224,23 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                 </div>
 
-                <button
-                    onClick={openMobileMenu}
-                    className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
-                >
-                    <Menu className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    {onOpenSettings && (
+                        <button
+                            onClick={onOpenSettings}
+                            className="p-2 text-gray-400 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
+                            title="Nastavení"
+                        >
+                            <SettingsIcon className="h-5 w-5" />
+                        </button>
+                    )}
+                    <button
+                        onClick={openMobileMenu}
+                        className="p-2 text-gray-300 hover:text-white bg-brand-darker rounded-xl border border-brand-border transition active:scale-95"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Header Top Spacer so main content is never overlapped by fixed top bar */}
@@ -329,21 +333,13 @@ export const Header: React.FC<HeaderProps> = ({
                                                 closeMobileMenu();
                                                 onOpenSettings();
                                             }}
-                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-brand-teal text-[10px] font-bold rounded-lg transition border border-brand-teal/30"
-                                            title="Mobilní nastavení & NFC"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-dark hover:bg-slate-700 text-brand-teal text-xs font-bold rounded-xl transition border border-brand-teal/30"
+                                            title="Nastavení"
                                         >
-                                            <span>📱 Nastavení</span>
+                                            <SettingsIcon className="h-4 w-4" />
+                                            <span>Nastavení</span>
                                         </button>
                                     )}
-                                    <button
-                                        onClick={() => {
-                                            closeMobileMenu();
-                                            setIsChangePasswordOpen(true);
-                                        }}
-                                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[10px] font-semibold rounded-lg transition border border-brand-border"
-                                    >
-                                        <KeyIcon className="h-3 w-3 flex-shrink-0" /> Heslo
-                                    </button>
                                 </div>
                             </div>
 
@@ -359,15 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
             )}
 
-            {/* Change Password Modal */}
-            {isChangePasswordOpen && (
-                <ChangePasswordModal
-                    isOpen={isChangePasswordOpen}
-                    onClose={() => setIsChangePasswordOpen(false)}
-                    userId={user.id}
-                    showToast={showToast}
-                />
-            )}
+
         </>
     );
 };

@@ -111,6 +111,25 @@ export const triggerHaptic = async (type: 'success' | 'warning' | 'error' | 'hea
     }
 };
 
+// Immediately exit native mobile app
+export const exitNativeApp = async (): Promise<void> => {
+    try {
+        if (typeof window !== 'undefined' && (window as any).AndroidGoogleAuth && (window as any).AndroidGoogleAuth.closeApp) {
+            (window as any).AndroidGoogleAuth.closeApp();
+            return;
+        }
+    } catch {}
+
+    try {
+        if (isNativeMobileApp()) {
+            await CapApp.exitApp();
+            return;
+        }
+    } catch (e) {
+        console.warn('CapApp.exitApp error:', e);
+    }
+};
+
 // Futuristic Sci-Fi Audio Synthesizer (Zero asset dependencies, Web Audio API)
 class AudioSynth {
     private ctx: AudioContext | null = null;

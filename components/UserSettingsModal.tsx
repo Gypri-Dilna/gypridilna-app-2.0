@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseIcon, SuccessIcon } from './icons';
+import { CloseIcon, SuccessIcon, SettingsIcon, KeyIcon } from './icons';
 import { 
     isNativeMobileApp, 
     isWebNfcSupported, 
@@ -15,20 +15,31 @@ interface UserSettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     showToast: (message: string, type: 'success' | 'error') => void;
+    userId?: number;
 }
 
 export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     isOpen,
     onClose,
-    showToast
+    showToast,
+    userId
 }) => {
+    const [activeTab, setActiveTab] = useState<'app' | 'password'>('app');
+    
+    // App settings state
     const [serverUrl, setLocalServerUrl] = useState(getServerUrl());
     const [nfcEnabled, setLocalNfcEnabled] = useState(isNfcUnlockEnabled());
     const [isTesting, setIsTesting] = useState(false);
 
+    // Password change state
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
     if (!isOpen) return null;
 
-    const handleSave = () => {
+    const handleSaveAppSettings = () => {
         setServerUrl(serverUrl);
         setNfcUnlockEnabled(nfcEnabled);
         triggerHaptic('success');
@@ -60,18 +71,64 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         }
     };
 
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (newPassword !== confirmPassword) {
+            showToast('Nová hesla se neshodují.', 'error');
+            return;
+        }
+
+        if (newPassword.length < 4) {
+            showToast('Nové heslo musí mít alespoň 4 znaky.', 'error');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        try {
+            const token = localStorage.getItem('gypri_auth_token');
+            const res = await fetch('/api/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    old_password: oldPassword,
+                    new_password: newPassword
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || data.detail || 'Změna hesla selhala.');
+            }
+
+            showToast('Heslo bylo úspěšně změněno.', 'success');
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            onClose();
+        } catch (err: any) {
+            showToast(err.message || 'Chyba při změně hesla.', 'error');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-backdrop-fade font-sans select-none">
-            <div className="bg-brand-dark border border-brand-teal/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-modal-pop">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-backdrop-fade font-sans select-none">
+            <div className="bg-brand-dark border border-brand-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-modal-pop">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">
+                <div className="flex items-center justify-between p-4 px-6 border-b border-brand-border bg-brand-darker">
                     <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-brand-teal/15 text-brand-teal rounded-xl">
-                            <span className="text-base">📱</span>
+                        <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-xl">
+                            <SettingsIcon className="h-5 w-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-extrabold text-white tracking-tight">Nastavení Mobilní Aplikace</h3>
-                            <p className="text-[11px] text-gray-400">NFC odemykání & připojení k serveru</p>
+                            <h3 className="text-base font-extrabold text-white tracking-tight">Nastavení</h3>
+                            <p className="text-[11px] text-gray-400">Volby účtu a mobilní aplikace</p>
                         </div>
                     </div>
                     <button
@@ -83,91 +140,182 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* Settings Body */}
-                <div className="space-y-4 text-xs">
-                    {/* Toggle: NFC Quick Unlock */}
-                    <div className="bg-slate-900/70 border border-brand-border/60 rounded-2xl p-4 flex items-center justify-between gap-3">
-                        <div className="space-y-1">
-                            <div className="font-bold text-white flex items-center gap-1.5">
-                                <span>⚡</span>
-                                <span>Rychlé NFC odemykání</span>
-                            </div>
-                            <p className="text-[11px] text-gray-400 leading-relaxed">
-                                Automaticky odemkne dveře po přiložení telefonu k NFC nálepce u vstupu.
-                            </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input
-                                type="checkbox"
-                                checked={nfcEnabled}
-                                onChange={(e) => setLocalNfcEnabled(e.target.checked)}
-                                className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-teal" />
-                        </label>
-                    </div>
+                {/* Tabs */}
+                <div className="flex border-b border-brand-border bg-brand-darker/60 px-6 pt-2 gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('app')}
+                        className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                            activeTab === 'app'
+                                ? 'border-brand-teal text-brand-teal'
+                                : 'border-transparent text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                        📱 Aplikace & NFC
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('password')}
+                        className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                            activeTab === 'password'
+                                ? 'border-brand-teal text-brand-teal'
+                                : 'border-transparent text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                        🔐 Změna hesla
+                    </button>
+                </div>
 
-                    {/* Server URL Input */}
-                    <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-gray-300">
-                            Adresa serveru dílny (URL)
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={serverUrl}
-                                onChange={(e) => setLocalServerUrl(e.target.value)}
-                                placeholder="např. https://dilna.gypri.cz (nebo prázdné pro lokální web)"
-                                className="flex-1 bg-slate-950 border border-brand-border rounded-xl px-3.5 py-2 text-white text-xs font-mono placeholder:text-gray-600 focus:outline-none focus:border-brand-teal"
-                            />
+                {/* Tab Content: App & NFC Settings */}
+                {activeTab === 'app' && (
+                    <div className="p-6 space-y-4 text-xs">
+                        {/* Toggle: NFC Quick Unlock */}
+                        <div className="bg-brand-darker border border-brand-border rounded-xl p-3.5 flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <div className="font-bold text-white flex items-center gap-1.5">
+                                    <span>⚡</span>
+                                    <span>Rychlé NFC odemykání</span>
+                                </div>
+                                <p className="text-[11px] text-gray-400">
+                                    Automaticky odemkne dveře po přiložení k nálepce.
+                                </p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    checked={nfcEnabled}
+                                    onChange={(e) => setLocalNfcEnabled(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-teal" />
+                            </label>
+                        </div>
+
+                        {/* Server URL Input */}
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold text-gray-300">
+                                Adresa serveru dílny (URL)
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={serverUrl}
+                                    onChange={(e) => setLocalServerUrl(e.target.value)}
+                                    placeholder="https://access.gypridilna.cz"
+                                    className="flex-1 bg-brand-darker border border-brand-border rounded-xl px-3.5 py-2 text-white text-xs font-mono placeholder:text-gray-600 focus:outline-none focus:border-brand-teal"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleTestConnection}
+                                    disabled={isTesting}
+                                    className="px-3 py-2 bg-brand-darker hover:bg-slate-800 text-gray-200 font-bold rounded-xl text-xs transition border border-brand-border disabled:opacity-50"
+                                >
+                                    {isTesting ? 'Ověřuji...' : 'Otestovat'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Diagnostics */}
+                        <div className="bg-brand-darker border border-brand-border rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-gray-400">
+                            <span>Režim aplikace:</span>
+                            <span className="font-bold text-brand-teal">
+                                {isNativeMobileApp() ? 'Nativní Android' : 'Webová aplikace'}
+                            </span>
+                        </div>
+
+                        <div className="bg-brand-darker border border-brand-border rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-gray-400">
+                            <span>Hardwarové NFC:</span>
+                            <span className={`font-bold ${isWebNfcSupported() || isNativeMobileApp() ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                {isWebNfcSupported() || isNativeMobileApp() ? 'Dostupné' : 'Omezeno systémem'}
+                            </span>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-brand-border">
                             <button
                                 type="button"
-                                onClick={handleTestConnection}
-                                disabled={isTesting}
-                                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-gray-200 font-bold rounded-xl text-xs transition border border-brand-border disabled:opacity-50"
+                                onClick={onClose}
+                                className="px-4 py-2 bg-brand-darker hover:bg-slate-800 text-gray-300 font-bold text-xs rounded-xl transition border border-brand-border"
                             >
-                                {isTesting ? 'Ověřuji...' : 'Otestovat'}
+                                Zrušit
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveAppSettings}
+                                className="px-5 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow transition active:scale-95 flex items-center gap-1.5"
+                            >
+                                <SuccessIcon className="h-4 w-4" />
+                                <span>Uložit</span>
                             </button>
                         </div>
-                        <p className="text-[10px] text-gray-400">
-                            Zadejte doménu nebo IP adresu, pokud používáte nativní mobilní aplikaci mimo lokální síť.
-                        </p>
                     </div>
+                )}
 
-                    {/* Diagnostics Badge */}
-                    <div className="bg-slate-950/80 border border-brand-border/40 rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-gray-400">
-                        <span>Režim aplikace:</span>
-                        <span className="font-bold text-brand-teal">
-                            {isNativeMobileApp() ? 'Nativní Android / iOS Aplikace' : 'Webová aplikace (PWA)'}
-                        </span>
-                    </div>
+                {/* Tab Content: Password Change */}
+                {activeTab === 'password' && (
+                    <form onSubmit={handleChangePassword} className="p-6 space-y-4 text-xs">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">
+                                Současné heslo *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={oldPassword}
+                                onChange={e => setOldPassword(e.target.value)}
+                                placeholder="Zadejte současné heslo"
+                                className="w-full px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                            />
+                        </div>
 
-                    <div className="bg-slate-950/80 border border-brand-border/40 rounded-xl p-3 flex items-center justify-between text-[11px] font-mono text-gray-400">
-                        <span>Hardwarová podpora NFC:</span>
-                        <span className={`font-bold ${isWebNfcSupported() || isNativeMobileApp() ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {isWebNfcSupported() || isNativeMobileApp() ? 'Dostupná v zařízení' : 'Omezeno systémem'}
-                        </span>
-                    </div>
-                </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">
+                                Nové heslo *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                placeholder="Minimálně 4 znaky"
+                                className="w-full px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                            />
+                        </div>
 
-                {/* Footer Buttons */}
-                <div className="flex justify-end gap-2.5 pt-2 border-t border-brand-border/60">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs rounded-xl transition"
-                    >
-                        Zrušit
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        className="px-5 py-2.5 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow-lg shadow-teal-500/20 transition active:scale-95 flex items-center gap-1.5"
-                    >
-                        <SuccessIcon className="h-4 w-4" />
-                        <span>Uložit nastavení</span>
-                    </button>
-                </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-300 mb-1">
+                                Potvrzení nového hesla *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                placeholder="Zadejte nové heslo znovu"
+                                className="w-full px-3.5 py-2 bg-brand-darker border border-brand-border rounded-xl text-white text-xs placeholder-gray-500 focus:outline-none focus:border-brand-teal transition"
+                            />
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-brand-border">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 bg-brand-darker hover:bg-slate-800 text-gray-300 font-bold text-xs rounded-xl transition border border-brand-border"
+                            >
+                                Zrušit
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isChangingPassword}
+                                className="px-5 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-extrabold text-xs rounded-xl shadow transition active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                                <KeyIcon className="h-4 w-4" />
+                                <span>{isChangingPassword ? 'Ukládám...' : 'Změnit heslo'}</span>
+                            </button>
+                        </div>
+                    </form>
+                )}
             </div>
         </div>,
         document.body

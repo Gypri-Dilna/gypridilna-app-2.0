@@ -137,6 +137,13 @@ public class MainActivity extends BridgeActivity {
                 startGoogleSignIn(webClientId);
             });
         }
+
+        @JavascriptInterface
+        public void closeApp() {
+            runOnUiThread(() -> {
+                finishAffinity();
+            });
+        }
     }
 
     private void startGoogleSignIn(String webClientId) {
