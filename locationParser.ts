@@ -80,7 +80,7 @@ export function getNextSequenceForItem(
 }
 
 // Convert Rack # (X) to approximate coordinates on Dílna floorplan outline (0-100%)
-export function getRackCoordinates(rackNumber: number): { x: number; y: number } {
+export function getRackCoordinates(rackNumber: number, sectorNumber?: number): { x: number; y: number } {
     switch (rackNumber) {
         case 1:
             return { x: 20, y: 25 }; // Rack 1: West Wall (Woodworking)
@@ -98,6 +98,14 @@ export function getRackCoordinates(rackNumber: number): { x: number; y: number }
             return { x: 20, y: 50 }; // Rack 7: Middle West Wall (id X7)
         case 8:
             return { x: 20, y: 90 }; // Rack 8: Bottom West Wall (ids X8Y1, X8Y2, X8Y3)
+        case 9:
+            if (sectorNumber === 1) {
+                return { x: 63, y: 65 }; // Location 91: East Wall (Right)
+            }
+            if (sectorNumber === 2) {
+                return { x: 16, y: 24 }; // Location 92: West Wall near Rack 1 (Left)
+            }
+            return { x: 40, y: 45 };
         default:
             return { x: 50, y: 50 }; // Center Default
     }

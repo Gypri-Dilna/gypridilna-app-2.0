@@ -62,29 +62,30 @@ export const DilnaFloorplanOutline: React.FC<DilnaFloorplanOutlineProps> = ({
             const doc = parser.parseFromString(svgContent, 'image/svg+xml');
 
             const targetPrefixFull = `X${rack}Y${sector}`.toUpperCase();
+            const targetPrefixAlt = `X${rack}${sector}`.toUpperCase();
             const targetPrefixRack = `X${rack}`.toUpperCase();
 
             const allElements = doc.querySelectorAll('*');
             const svgEl = doc.querySelector('svg');
             const matchedElements: Element[] = [];
 
-            // 1. Check if ANY element in SVG matches the exact full sector code (e.g. X4Y3)
+            // 1. Check if ANY element in SVG matches the exact full sector code (e.g. X4Y3 or X91)
             let hasExactMatchInSvg = false;
             allElements.forEach(el => {
                 const elId = (el.getAttribute('id') || '').trim().toUpperCase();
-                if (elId && !elId.startsWith('RECT') && !elId.startsWith('LAYER') && elId.startsWith(targetPrefixFull)) {
+                if (elId && !elId.startsWith('RECT') && !elId.startsWith('LAYER') && (elId.startsWith(targetPrefixFull) || elId.startsWith(targetPrefixAlt))) {
                     hasExactMatchInSvg = true;
                 }
             });
 
-            // 2. Element matching logic: exact match (X4Y3A, X4Y3B) or rack fallback (X1, X2, X3)
+            // 2. Element matching logic: exact match (X4Y3A, X9Y1, X91) or rack fallback (X1, X2, X3)
             allElements.forEach(el => {
                 const elId = (el.getAttribute('id') || '').trim().toUpperCase();
                 if (!elId || elId === 'LAYER1' || elId === 'SVG1' || elId === 'PATH1' || elId.startsWith('RECT') || elId.startsWith('NAMEDVIEW') || elId.startsWith('DEFS')) {
                     return;
                 }
 
-                const isExactMatch = elId.startsWith(targetPrefixFull);
+                const isExactMatch = elId.startsWith(targetPrefixFull) || elId.startsWith(targetPrefixAlt);
                 const isRackMatch = !hasExactMatchInSvg && elId.startsWith(targetPrefixRack);
 
                 if (isExactMatch || isRackMatch) {
