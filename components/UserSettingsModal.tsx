@@ -22,9 +22,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     showToast,
     userId
 }) => {
-    const [activeTab, setActiveTab] = useState<'app' | 'password'>('app');
+    // NFC settings are only relevant on native mobile devices or devices supporting Web NFC
+    const isMobile = isNativeMobileApp() || isWebNfcSupported();
+    const [activeTab, setActiveTab] = useState<'app' | 'password'>(isMobile ? 'app' : 'password');
     
-    // App settings state (fixed server URL: access.gypridilna.cz)
+    // App settings state
     const [nfcEnabled, setLocalNfcEnabled] = useState(isNfcUnlockEnabled());
 
     // Password change state
@@ -99,7 +101,9 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                         </div>
                         <div>
                             <h3 className="text-base font-extrabold text-white tracking-tight">Nastavení</h3>
-                            <p className="text-[11px] text-gray-400">Volby účtu a mobilní aplikace</p>
+                            <p className="text-[11px] text-gray-400">
+                                {isMobile ? 'Volby účtu a mobilní aplikace' : 'Volby uživatelského účtu'}
+                            </p>
                         </div>
                     </div>
                     <button
@@ -111,34 +115,36 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b border-brand-border bg-brand-darker/60 px-6 pt-2 gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('app')}
-                        className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
-                            activeTab === 'app'
-                                ? 'border-brand-teal text-brand-teal'
-                                : 'border-transparent text-gray-400 hover:text-gray-200'
-                        }`}
-                    >
-                        Aplikace a NFC
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('password')}
-                        className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
-                            activeTab === 'password'
-                                ? 'border-brand-teal text-brand-teal'
-                                : 'border-transparent text-gray-400 hover:text-gray-200'
-                        }`}
-                    >
-                        Změna hesla
-                    </button>
-                </div>
+                {/* Tabs - Only rendered on mobile devices */}
+                {isMobile && (
+                    <div className="flex border-b border-brand-border bg-brand-darker/60 px-6 pt-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('app')}
+                            className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                                activeTab === 'app'
+                                    ? 'border-brand-teal text-brand-teal'
+                                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                            }`}
+                        >
+                            Aplikace a NFC
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('password')}
+                            className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                                activeTab === 'password'
+                                    ? 'border-brand-teal text-brand-teal'
+                                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                            }`}
+                        >
+                            Změna hesla
+                        </button>
+                    </div>
+                )}
 
-                {/* Tab Content: App & NFC Settings */}
-                {activeTab === 'app' && (
+                {/* Tab Content: App & NFC Settings (Mobile Only) */}
+                {isMobile && activeTab === 'app' && (
                     <div className="p-6 space-y-4 text-xs">
                         {/* Toggle: NFC Quick Unlock */}
                         <div className="bg-brand-darker border border-brand-border rounded-xl p-3.5 flex items-center justify-between gap-3">
@@ -203,8 +209,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                     </div>
                 )}
 
-                {/* Tab Content: Password Change */}
-                {activeTab === 'password' && (
+                {/* Tab Content: Password Change (Rendered on PC directly, or on Mobile under password tab) */}
+                {(!isMobile || activeTab === 'password') && (
                     <form onSubmit={handleChangePassword} className="p-6 space-y-4 text-xs">
                         <div>
                             <label className="block text-xs font-semibold text-gray-300 mb-1">

@@ -14,6 +14,7 @@ import { QuickUnlockModal } from './components/QuickUnlockModal';
 import { UserSettingsModal } from './components/UserSettingsModal';
 import { setupDeepLinkListener } from './mobile';
 import { Logo } from './components/Logo';
+import { ServerUnavailableScreen } from './components/ServerUnavailableScreen';
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
@@ -107,6 +108,7 @@ const App: React.FC = () => {
     const [isAuthChecking, setIsAuthChecking] = useState<boolean>(() => {
         return !!localStorage.getItem('gypri_auth_token');
     });
+    const [isServerAvailable, setIsServerAvailable] = useState<boolean>(true);
     const [quickUnlockKey, setQuickUnlockKey] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -242,40 +244,98 @@ const App: React.FC = () => {
         setToast({ message, type });
     }, []);
 
-    // Verify authentication token with backend server on app startup
+    const checkServerHealth = useCallback(async (): Promise<boolean> => {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const res = await fetch(`${API_BASE_URL}/api/config`, {
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return res.ok;
+        } catch {
+            return false;
+        }
+    }, []);
+
+    // Continuous background health polling when server is unavailable
     useEffect(() => {
-        const initAuthToken = async () => {
-            const token = localStorage.getItem('gypri_auth_token');
-            if (token) {
-                try {
-                    const res = await fetch(`${API_BASE_URL}/api/me`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'success' && data.user) {
-                            setUser(data.user);
-                            setIsAuthenticated(true);
-                            localStorage.setItem('savedUser', JSON.stringify(data.user));
-                            setIsAuthChecking(false);
-                            return;
-                        }
+        if (isServerAvailable) return;
+
+        const interval = setInterval(async () => {
+            const ok = await checkServerHealth();
+            if (ok) {
+                setIsServerAvailable(true);
+            }
+        }, 3500);
+
+        const handleOnline = async () => {
+            const ok = await checkServerHealth();
+            if (ok) {
+                setIsServerAvailable(true);
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, [isServerAvailable, checkServerHealth]);
+
+    // Verify authentication token with backend server on app startup
+    const initAuthToken = useCallback(async () => {
+        const token = localStorage.getItem('gypri_auth_token');
+        if (token) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.user) {
+                        setUser(data.user);
+                        setIsAuthenticated(true);
+                        localStorage.setItem('savedUser', JSON.stringify(data.user));
+                        setIsAuthChecking(false);
+                        setIsServerAvailable(true);
+                        return;
                     }
-                } catch (e) {
-                    console.warn('Auth token verification error:', e);
+                } else if (res.status >= 500) {
+                    // Server 502/503/504 Bad Gateway
+                    setIsServerAvailable(false);
                     setIsAuthChecking(false);
                     return;
                 }
+            } catch (e) {
+                console.warn('Auth token verification error:', e);
+                // Server network connection failed
+                setIsServerAvailable(false);
+                setIsAuthChecking(false);
+                return;
             }
-            // If token invalid, demoted, or expired -> clear storage
-            localStorage.removeItem('gypri_auth_token');
-            localStorage.removeItem('savedUser');
-            setUser(null);
-            setIsAuthenticated(false);
-            setIsAuthChecking(false);
-        };
+        } else {
+            // No saved token -> probe server health to ensure server is reachable
+            const isReachable = await checkServerHealth();
+            if (!isReachable) {
+                setIsServerAvailable(false);
+                setIsAuthChecking(false);
+                return;
+            }
+        }
+        // If token invalid (401/403), demoted, or expired -> clear storage
+        localStorage.removeItem('gypri_auth_token');
+        localStorage.removeItem('savedUser');
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsAuthChecking(false);
+    }, [checkServerHealth]);
+
+    useEffect(() => {
         initAuthToken();
-    }, []);
+    }, [initAuthToken]);
 
     const [isPrinterAvailable, setIsPrinterAvailable] = useState<boolean>(false);
 
@@ -354,10 +414,15 @@ const App: React.FC = () => {
                     }
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             if (!isSilent) {
                 console.error('Data sync error:', error);
                 showToast('Chyba při synchronizaci se serverem.', 'error');
+            }
+            if (error?.name === 'TypeError' || String(error).includes('fetch') || String(error).includes('Network')) {
+                checkServerHealth().then(ok => {
+                    if (!ok) setIsServerAvailable(false);
+                });
             }
         } finally {
             if (!isSilent) setIsLoading(false);
@@ -857,6 +922,22 @@ const App: React.FC = () => {
                 );
         }
     };
+
+    if (!isServerAvailable) {
+        return (
+            <ServerUnavailableScreen
+                onRetry={async () => {
+                    const ok = await checkServerHealth();
+                    if (ok) {
+                        setIsServerAvailable(true);
+                        await initAuthToken();
+                        return true;
+                    }
+                    return false;
+                }}
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-brand-bg text-brand-light font-sans relative overflow-hidden">
