@@ -1,9 +1,9 @@
 package cz.gypri.dilna;
 
-import android.app.Dialog;
-import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -14,7 +14,7 @@ import android.webkit.WebViewClient;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    private Dialog authDialog;
+    private WebView popupWebView = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -42,53 +42,58 @@ public class MainActivity extends BridgeActivity {
             settings.setSupportMultipleWindows(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
 
-            // Enable third-party cookies for OAuth tokens
-            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+            // Enable third-party cookies and Autofill for OAuth tokens
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-            // 3. Handle popup windows (Google Sign-In popup)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                webView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_YES);
+            }
+
+            // 3. Handle popup windows (Google Sign-In popup) directly as an overlay view
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                    if (authDialog != null && authDialog.isShowing()) {
-                        authDialog.dismiss();
-                    }
+                    closePopup();
 
-                    WebView popupWebView = new WebView(MainActivity.this);
+                    popupWebView = new WebView(MainActivity.this);
                     WebSettings popupSettings = popupWebView.getSettings();
                     popupSettings.setJavaScriptEnabled(true);
                     popupSettings.setDomStorageEnabled(true);
+                    popupSettings.setDatabaseEnabled(true);
                     popupSettings.setSupportMultipleWindows(true);
                     popupSettings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-                    // Enable third-party cookies for popup WebView
+                    // Enable third-party cookies and autofill for popup WebView
+                    CookieManager.getInstance().setAcceptCookie(true);
                     CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true);
 
-                    // Ensure same User-Agent without '; wv'
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        popupWebView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_YES);
+                    }
+
+                    // Ensure same clean User-Agent without '; wv'
                     String mainUa = view.getSettings().getUserAgentString();
                     if (mainUa != null) {
                         popupSettings.setUserAgentString(mainUa);
                     }
 
-                    authDialog = new Dialog(MainActivity.this, android.R.style.Theme_DeviceDefault_Light_NoActionBar_Fullscreen);
-                    authDialog.setContentView(popupWebView);
-                    if (authDialog.getWindow() != null) {
-                        authDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                    // Add popup directly as full-screen overlay to root view (guarantees native keyboard & autofill)
+                    ViewGroup root = findViewById(android.R.id.content);
+                    if (root != null) {
+                        root.addView(popupWebView, new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                        ));
                     }
-                    authDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface d) {
-                            popupWebView.destroy();
-                        }
-                    });
-                    authDialog.show();
+                    popupWebView.requestFocus();
 
                     popupWebView.setWebChromeClient(new WebChromeClient() {
                         @Override
                         public void onCloseWindow(WebView window) {
-                            if (authDialog != null && authDialog.isShowing()) {
-                                authDialog.dismiss();
-                            }
+                            closePopup();
                         }
                     });
 
@@ -108,18 +113,32 @@ public class MainActivity extends BridgeActivity {
 
                 @Override
                 public void onCloseWindow(WebView window) {
-                    if (authDialog != null && authDialog.isShowing()) {
-                        authDialog.dismiss();
-                    }
+                    closePopup();
                 }
             });
         }
     }
 
+    private void closePopup() {
+        if (popupWebView != null) {
+            ViewGroup root = findViewById(android.R.id.content);
+            if (root != null) {
+                root.removeView(popupWebView);
+            }
+            popupWebView.destroy();
+            popupWebView = null;
+            CookieManager.getInstance().flush();
+        }
+    }
+
     @Override
     public void onBackPressed() {
-        if (authDialog != null && authDialog.isShowing()) {
-            authDialog.dismiss();
+        if (popupWebView != null) {
+            if (popupWebView.canGoBack()) {
+                popupWebView.goBack();
+            } else {
+                closePopup();
+            }
             return;
         }
         super.onBackPressed();
