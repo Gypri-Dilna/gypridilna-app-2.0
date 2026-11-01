@@ -6,6 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     url: 'https://access.gypridilna.cz',
+    errorPath: '/server_offline.html',
     androidScheme: 'https',
     cleartext: true,
     allowNavigation: [

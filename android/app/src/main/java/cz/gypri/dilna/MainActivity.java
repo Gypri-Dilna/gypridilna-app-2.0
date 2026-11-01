@@ -8,10 +8,14 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -127,7 +131,44 @@ public class MainActivity extends BridgeActivity {
                     return false;
                 }
             });
+
+            // 5. Custom WebViewClient: Intercept all connection errors and load dark Gypri offline page
+            settings.setAllowFileAccess(true);
+            settings.setAllowContentAccess(true);
+            webView.setWebViewClient(new BridgeWebViewClient(bridge) {
+                @Override
+                public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                    if (request != null && request.isForMainFrame()) {
+                        showOfflinePage(view);
+                        return;
+                    }
+                    super.onReceivedError(view, request, error);
+                }
+
+                @Override
+                public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                    showOfflinePage(view);
+                }
+
+                @Override
+                public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                    if (request != null && request.isForMainFrame() && errorResponse != null && errorResponse.getStatusCode() >= 500) {
+                        showOfflinePage(view);
+                        return;
+                    }
+                    super.onReceivedHttpError(view, request, errorResponse);
+                }
+            });
         }
+    }
+
+    private void showOfflinePage(WebView view) {
+        runOnUiThread(() -> {
+            Log.d(TAG, "Server connection failed -> loading custom dark offline page");
+            if (view != null) {
+                view.loadUrl("file:///android_asset/server_offline.html");
+            }
+        });
     }
 
     public class GoogleAuthInterface {
