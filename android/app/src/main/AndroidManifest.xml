@@ -38,6 +38,14 @@
                 <data android:scheme="gypridilna" />
             </intent-filter>
 
+            <!-- App Links for access.gypridilna.cz -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="access.gypridilna.cz" />
+            </intent-filter>
+
             <!-- NFC NDEF Discovered for https quick-unlock URL -->
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
@@ -61,6 +69,7 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-permission android:name="android.permission.VIBRATE" />

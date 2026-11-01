@@ -14,14 +14,15 @@ export const isWebNfcSupported = (): boolean => {
 
 // Server URL storage for native mobile app connecting to central workshop server
 const SERVER_URL_KEY = 'gypri_server_url';
+const DEFAULT_SERVER_URL = 'https://access.gypridilna.cz';
 const NFC_UNLOCK_ENABLED_KEY = 'gypri_nfc_unlock_enabled';
 const BIOMETRIC_REQUIRED_KEY = 'gypri_biometric_required';
 
 export const getServerUrl = (): string => {
     try {
-        return localStorage.getItem(SERVER_URL_KEY) || '';
+        return localStorage.getItem(SERVER_URL_KEY) || DEFAULT_SERVER_URL;
     } catch {
-        return '';
+        return DEFAULT_SERVER_URL;
     }
 };
 

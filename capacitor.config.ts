@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Gypri Dílna',
   webDir: 'dist',
   server: {
+    url: 'https://access.gypridilna.cz',
     androidScheme: 'https',
     cleartext: true
   }
