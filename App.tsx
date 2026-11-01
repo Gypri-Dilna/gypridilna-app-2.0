@@ -10,6 +10,9 @@ import { Header, TabType } from './components/Header';
 import { Toast } from './components/Toast';
 import { User, Chip, AccessLog, InventoryItem, PrintQueueItem } from './types';
 import { PrintQueueModal } from './components/PrintQueueModal';
+import { QuickUnlockModal } from './components/QuickUnlockModal';
+import { UserSettingsModal } from './components/UserSettingsModal';
+import { setupDeepLinkListener } from './mobile';
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
@@ -101,6 +104,14 @@ const App: React.FC = () => {
         }
     });
     const [isPrintQueueOpen, setIsPrintQueueOpen] = useState<boolean>(false);
+    const [isQuickUnlockOpen, setIsQuickUnlockOpen] = useState<boolean>(false);
+    const [isUserSettingsOpen, setIsUserSettingsOpen] = useState<boolean>(false);
+
+    useEffect(() => {
+        setupDeepLinkListener(() => {
+            setIsQuickUnlockOpen(true);
+        });
+    }, []);
 
     useEffect(() => {
         try {
@@ -764,6 +775,7 @@ const App: React.FC = () => {
                         onAddToQueue={handleAddToPrintQueue}
                         queueCount={printQueue.length}
                         onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
+                        onOpenSettings={() => setIsUserSettingsOpen(true)}
                         isPrinterAvailable={isPrinterAvailable}
                     />
                 );
@@ -861,6 +873,28 @@ const App: React.FC = () => {
                     <Login onLoginSuccess={handleLoginSuccess} />
                 </div>
             )}
+
+            {/* Quick NFC Unlock Modal */}
+            <QuickUnlockModal
+                isOpen={isQuickUnlockOpen}
+                user={user}
+                isAuthenticated={isAuthenticated}
+                onClose={() => setIsQuickUnlockOpen(false)}
+                onRemoteOpen={async () => {
+                    await handleRemoteOpening();
+                    return true;
+                }}
+                onRequireLogin={() => {
+                    setIsQuickUnlockOpen(false);
+                }}
+            />
+
+            {/* Mobile & User Settings Modal */}
+            <UserSettingsModal
+                isOpen={isUserSettingsOpen}
+                onClose={() => setIsUserSettingsOpen(false)}
+                showToast={showToast}
+            />
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>

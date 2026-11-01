@@ -2,6 +2,7 @@ import React, { useState, FormEvent, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Chip } from '../types';
 import { CloseIcon, ScanIcon } from './icons';
+import { triggerHaptic, soundEffects, isWebNfcSupported, isNativeMobileApp } from '../mobile';
 
 interface ChipModalProps {
     chip: Chip | null;
@@ -31,7 +32,56 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
         valid_until: '',
     });
     const [isScanning, setIsScanning] = useState(false);
+    const [isNfcScanning, setIsNfcScanning] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
+
+    const handlePhoneNfcScan = async () => {
+        if (!('NDEFReader' in window)) {
+            showToast('Váš telefon nebo prohlížeč nepodporuje přímé čtení NFC.', 'error');
+            return;
+        }
+
+        try {
+            setIsNfcScanning(true);
+            setScanError(null);
+            triggerHaptic('heavy');
+
+            const ndef = new (window as any).NDEFReader();
+            await ndef.scan();
+            showToast('NFC čtečka aktivní! Přiložte RFID čip k zádům telefonu...', 'success');
+
+            ndef.onreading = (event: any) => {
+                const serial = event.serialNumber || '';
+                if (serial) {
+                    // Normalize UID (e.g. "04:a2:3b:4c" -> "04A23B4C")
+                    const cleanHex = serial.replace(/[:\s-]/g, '').toUpperCase();
+                    
+                    const existingChip = chips.find(c => c.chip_id.toUpperCase() === cleanHex);
+                    if (existingChip) {
+                        showToast(`Tento čip je již zaregistrován pro: ${existingChip.name}`, 'error');
+                        triggerHaptic('error');
+                        soundEffects.playErrorBuzz();
+                    } else {
+                        setFormData(prev => ({ ...prev, chip_id: cleanHex }));
+                        triggerHaptic('success');
+                        soundEffects.playChipBeep();
+                        showToast(`RFID čip načten mobilem: ${cleanHex}`, 'success');
+                    }
+                    setIsNfcScanning(false);
+                }
+            };
+
+            ndef.onreadingerror = () => {
+                showToast('Chyba při čtení NFC čipu. Zkuste přiložit znovu.', 'error');
+                triggerHaptic('error');
+            };
+        } catch (err: any) {
+            console.error('NFC error:', err);
+            setIsNfcScanning(false);
+            setScanError(`Chyba NFC: ${err.message || 'Nelze aktivovat NFC čtečku.'}`);
+            showToast('Nepodařilo se aktivovat NFC čtečku telefonu.', 'error');
+        }
+    };
 
     useEffect(() => {
         if (chip) {
@@ -138,7 +188,7 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                         </div>
                         <div>
                             <label htmlFor="chip_id" className="block text-xs font-semibold text-gray-300 mb-1">ID čipu *</label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <input 
                                     type="text" 
                                     name="chip_id" 
@@ -146,24 +196,59 @@ export const ChipModal: React.FC<ChipModalProps> = ({ chip, chips, onClose, onSa
                                     value={formData.chip_id} 
                                     onChange={handleChange} 
                                     required 
+                                    placeholder="např. 04A23B4C nebo 12345678"
                                     className="w-full px-4 py-2.5 bg-brand-darker border border-brand-border rounded-xl text-white text-xs font-mono placeholder-gray-400 focus:outline-none focus:border-brand-teal transition" 
                                 />
-                                <button
-                                    type="button"
-                                    onClick={handleScan}
-                                    disabled={isScanning}
-                                    className={`flex items-center gap-2 px-4 py-2.5 font-extrabold text-xs rounded-xl transition-all shadow flex-shrink-0 ${
-                                        isScanning 
-                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                                        : 'bg-brand-teal hover:bg-brand-teal-hover text-black active:scale-95'
-                                    }`}
-                                >
-                                    <ScanIcon className={`h-4 w-4 ${isScanning ? 'animate-pulse' : ''}`} />
-                                    {isScanning ? 'Skenuji...' : 'Naskenovat z čtečky'}
-                                </button>
+                                <div className="flex gap-2 flex-shrink-0">
+                                    {(isWebNfcSupported() || isNativeMobileApp()) && (
+                                        <button
+                                            type="button"
+                                            onClick={handlePhoneNfcScan}
+                                            disabled={isNfcScanning || isScanning}
+                                            className={`flex items-center gap-1.5 px-3.5 py-2.5 font-extrabold text-xs rounded-xl transition shadow active:scale-95 ${
+                                                isNfcScanning 
+                                                    ? 'bg-amber-500 text-black animate-pulse' 
+                                                    : 'bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-black shadow-teal-500/20'
+                                            }`}
+                                            title="Přiložit RFID čip přímo k telefonu"
+                                        >
+                                            <span>📱</span>
+                                            <span>{isNfcScanning ? 'Čtu NFC...' : 'Přiložit k mobilu'}</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleScan}
+                                        disabled={isScanning || isNfcScanning}
+                                        className={`flex items-center gap-1.5 px-3 py-2.5 font-bold text-xs rounded-xl transition-all shadow ${
+                                            isScanning 
+                                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                                            : 'bg-slate-800 hover:bg-slate-700 border border-brand-border text-gray-200 active:scale-95'
+                                        }`}
+                                        title="Čekat na přiložení čipu ke krabičce u dveří"
+                                    >
+                                        <ScanIcon className={`h-4 w-4 ${isScanning ? 'animate-pulse text-brand-teal' : ''}`} />
+                                        <span>{isScanning ? 'Čekám u dveří...' : 'Čtečka u dveří'}</span>
+                                    </button>
+                                </div>
                             </div>
                             {scanError && <p className="mt-1 text-xs text-rose-400 font-bold">{scanError}</p>}
                             {isScanning && <p className="mt-1 text-xs text-brand-teal font-mono font-bold animate-pulse">Přiložte fyzický čip ke čtečce u dveří...</p>}
+                            {isNfcScanning && (
+                                <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-300 animate-pulse">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">📡</span>
+                                        <span className="font-bold">Přiložte RFID klíčenku nebo kartu k zádům telefonu...</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsNfcScanning(false)}
+                                        className="text-gray-400 hover:text-white font-bold underline text-[11px]"
+                                    >
+                                        Zrušit
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label htmlFor="valid_until" className="block text-xs font-semibold text-gray-300 mb-1">Platnost do (volitelné)</label>

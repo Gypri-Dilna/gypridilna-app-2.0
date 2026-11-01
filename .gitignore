@@ -29,4 +29,15 @@ system.db
 __pycache__/
 *.pyc
 
+# Android build outputs
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.cxx/
+android/.idea/
+android/*.iml
+android/**/*.iml
+scratch/
+
 

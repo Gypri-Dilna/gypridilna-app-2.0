@@ -19,6 +19,7 @@ interface HeaderProps {
     showToast: (message: string, type: 'success' | 'error') => void;
     queueCount?: number;
     onOpenPrintQueue?: () => void;
+    onOpenSettings?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,7 +29,8 @@ export const Header: React.FC<HeaderProps> = ({
     user,
     showToast,
     queueCount = 0,
-    onOpenPrintQueue
+    onOpenPrintQueue,
+    onOpenSettings
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -189,13 +191,24 @@ export const Header: React.FC<HeaderProps> = ({
                                     <p className="text-[10px] text-brand-teal font-mono">{user.is_admin ? 'Administrátor' : 'Uživatel'}</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsChangePasswordOpen(true)}
-                                className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
-                                title="Změnit heslo"
-                            >
-                                <KeyIcon className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                {onOpenSettings && (
+                                    <button
+                                        onClick={onOpenSettings}
+                                        className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
+                                        title="Mobilní nastavení & NFC"
+                                    >
+                                        <span className="text-xs">📱</span>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setIsChangePasswordOpen(true)}
+                                    className="p-1.5 text-gray-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex-shrink-0"
+                                    title="Změnit heslo"
+                                >
+                                    <KeyIcon className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
 
                         <button
@@ -309,15 +322,29 @@ export const Header: React.FC<HeaderProps> = ({
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => {
-                                        closeMobileMenu();
-                                        setIsChangePasswordOpen(true);
-                                    }}
-                                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[10px] font-semibold rounded-lg transition border border-brand-border"
-                                >
-                                    <KeyIcon className="h-3 w-3 flex-shrink-0" /> Heslo
-                                </button>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    {onOpenSettings && (
+                                        <button
+                                            onClick={() => {
+                                                closeMobileMenu();
+                                                onOpenSettings();
+                                            }}
+                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-brand-teal text-[10px] font-bold rounded-lg transition border border-brand-teal/30"
+                                            title="Mobilní nastavení & NFC"
+                                        >
+                                            <span>📱 Nastavení</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            closeMobileMenu();
+                                            setIsChangePasswordOpen(true);
+                                        }}
+                                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-brand-dark hover:bg-slate-700 text-gray-300 text-[10px] font-semibold rounded-lg transition border border-brand-border"
+                                    >
+                                        <KeyIcon className="h-3 w-3 flex-shrink-0" /> Heslo
+                                    </button>
+                                </div>
                             </div>
 
                             <button
