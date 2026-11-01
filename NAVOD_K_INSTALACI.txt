@@ -3,33 +3,42 @@
 ====================================================================
 
 Tento balíček slouží ke zprovoznění tiskového agenta na počítači
-připojeném k tiskárně štítků Brother.
+připojeném k tiskárně štítků Brother PT-D460BTVP.
 
-KROKY INSTALACE:
-----------------
-1. KROK - INSTALACE BROTHER b-PAC:
-   Spusťte: "Instalovat_bPAC.exe"  (nebo poklikejte na "bPAC3CCISetup_64.msi")
-   V otevřeném okně instalátoru klikněte na: Next -> Install -> Finish.
-   (Tento krok nainstaluje systémovou knihovnu Brother pro tisk).
+NEJRYCHLEJŠÍ POSTUP (VŠE V JEDNOM KROKU):
+-----------------------------------------
+1. Spusťte soubor:
+   "Instalovat_bPAC.exe"
 
-2. KROK - INSTALACE PYTHON KNIHOVEN:
-   Ujistěte se, že máte nainstalovaný 64-bitový Python (z www.python.org).
-   Spusťte: "2_Instalovat_Python_Knihovny.bat" (nainstaluje pywin32).
+   Instalátor automaticky:
+   - Ověří architekturu Windows (64-bit) a Python.
+   - Zkontroluje a v případě potřeby doinstaluje knihovnu pywin32.
+   - Spustí instalaci oficiálního ovladače Brother b-PAC (bPAC3CCISetup_64.msi).
+     (V okně Brother stačí kliknout: Next -> Install -> Finish).
+   - Vytvoří stálou složku pro agenta v:
+     %LOCALAPPDATA%\GypriDilna\PrintAgent
+     a zkopíruje tam skript i tiskové šablony (.lbx).
+   - Zeptá se vás, zda chcete povolit automatický start po zapnutí Windows [A/n].
+   - Zeptá se vás, zda chcete agenta rovnou spustit na pozadí [A/n].
 
-3. KROK - TEST A PRVNÍ SPUŠTĚNÍ:
-   Spusťte: "3_Spustit_PrintAgent.bat"
-   Měli byste vidět: "Brother b-PAC SDK COM Status: READY"
-   a "Listening on http://0.0.0.0:5001".
+2. HOTOVO!
+   Tiskový agent poběží trvale na pozadí na portu 5001.
+   I když instalační složku se staženým balíčkem smažete, agent ve své stálé složce
+   zůstane a bude se spouštět při každém startu Windows.
 
-4. KROK - AUTOMATICKÝ START PO ZAPNUTÍ PC (VOLITELNÉ):
-   Pokud chcete, aby se tiskový agent spouštěl automaticky při každém
-   startu Windows na pozadí, spusťte:
-   "setup_autostart.bat"
+RUČNÍ OVLÁDÁNÍ (POKUD JE POTŘEBA):
+----------------------------------
+- Spuštění tiskového agenta v okně konzole:
+  Spusťte "3_Spustit_PrintAgent.bat" (nebo start_agent_console.bat ve stálé složce).
+- Zastavení agenta:
+  Ve stálé složce %LOCALAPPDATA%\GypriDilna\PrintAgent najdete "stop_agent.bat".
+- Logy a diagnostika tisku:
+  Ve složce najdete soubor "print_agent.log".
 
---------------------------------------------------------------------
-ČASTÉ CHYBY:
-- "b-PAC není nainstalovaný" i po instalaci:
-  Zkontrolujte, zda máte 64-bitový Python. Pokud máte nainstalovaný
-  32-bitový Python, nemůže komunikovat s 64-bitovým b-PAC.
+ČASTÉ DOTAZY:
+-------------
+- "Ovladač / SDK Brother b-PAC není nainstalován v systému Windows":
+  Zkontrolujte, zda máte nainstalovaný 64-bitový Python. Pokud máte
+  32-bitový Python, 64-bitový ovladač Brother nelze načíst.
   Nainstalujte 64-bitový Python z www.python.org.
 ====================================================================

@@ -7,7 +7,42 @@ Communicates via COM automation (win32com.client / bpac.Document).
 import os
 import sys
 import json
+import struct
+import platform
+import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
+
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "print_agent.log")
+
+class FileLogger:
+    """Redirects stdout/stderr to print_agent.log so headless pythonw runs are easily debuggable."""
+    def __init__(self, original_stream, filepath):
+        self.original_stream = original_stream
+        self.filepath = filepath
+
+    def write(self, message):
+        if self.original_stream:
+            try: self.original_stream.write(message)
+            except Exception: pass
+        if message and message.strip():
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                with open(self.filepath, "a", encoding="utf-8") as f:
+                    f.write(f"[{timestamp}] {message.strip()}\n")
+            except Exception:
+                pass
+
+    def flush(self):
+        if self.original_stream and hasattr(self.original_stream, "flush"):
+            try: self.original_stream.flush()
+            except Exception: pass
+
+# Setup file logging
+try:
+    sys.stdout = FileLogger(sys.stdout, LOG_FILE)
+    sys.stderr = FileLogger(sys.stderr, LOG_FILE)
+except Exception:
+    pass
 
 import struct
 import platform
@@ -371,7 +406,26 @@ class PrintAgentHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+def is_already_running(port: int) -> bool:
+    """Checks if another instance of print_agent is already running on the given port."""
+    try:
+        import urllib.request
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/status")
+        with urllib.request.urlopen(req, timeout=0.8) as res:
+            if res.status == 200:
+                data = json.loads(res.read().decode())
+                if "printer" in data or "bpac_available" in data:
+                    return True
+    except Exception:
+        pass
+    return False
+
 def run_agent():
+    # If already running on port 5001, exit cleanly instead of crashing
+    if is_already_running(PRINTER_PORT):
+        print(f"[PRINT AGENT] Tiskový agent již běží na pozadí na portu {PRINTER_PORT}.")
+        return
+
     is_bpac_ready, bpac_msg = check_bpac_com_available()
     if not is_bpac_ready:
         show_windows_error_dialog("Gypri Dílna - Chyba Tiskového Agenta", bpac_msg)
@@ -384,7 +438,12 @@ def run_agent():
     print("=" * 70)
 
     os.makedirs(TEMPLATES_DIR, exist_ok=True)
-    server = HTTPServer(("0.0.0.0", PRINTER_PORT), PrintAgentHandler)
+    try:
+        server = HTTPServer(("0.0.0.0", PRINTER_PORT), PrintAgentHandler)
+    except OSError as e:
+        print(f"[PRINT AGENT ERROR] Port {PRINTER_PORT} je již obsazen: {e}")
+        return
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:
