@@ -3,15 +3,14 @@ package cz.gypri.dilna;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -67,10 +66,10 @@ public class MainActivity extends BridgeActivity {
             // 3. Register Native Google Auth Interface into WebView JavaScript
             webView.addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
 
-            // 4. WebChromeClient: If a web Google button still tries to open a popup window, intercept with native Google Sign-In
+            // 4. WebChromeClient: If a web Google button opens popup, launch native Google Sign-In
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
-                public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
                     Log.d(TAG, "onCreateWindow intercepted -> launching native Google Sign-In bottom sheet");
                     startGoogleSignIn(DEFAULT_WEB_CLIENT_ID);
                     return false;
@@ -99,13 +98,14 @@ public class MainActivity extends BridgeActivity {
 
             googleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
 
-            // Clear previous cache so the native account picker always shows the phone's accounts
+            // Clear previous session cache so account picker always appears
             googleSignInClient.signOut().addOnCompleteListener(task -> {
                 Intent signInIntent = googleSignInClient.getSignInIntent();
                 startActivityForResult(signInIntent, RC_SIGN_IN);
             });
         } catch (Exception e) {
             Log.e(TAG, "Error initializing Google Sign-In", e);
+            Toast.makeText(MainActivity.this, "Chyba inicializace Google Sign-In: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -119,17 +119,33 @@ public class MainActivity extends BridgeActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 if (account != null) {
                     String idToken = account.getIdToken();
-                    Log.d(TAG, "Native Google Sign-In SUCCESS for user: " + account.getEmail());
-                    if (idToken != null) {
-                        deliverGoogleTokenToWebView(idToken);
+                    String email = account.getEmail();
+                    Log.d(TAG, "Native Google Sign-In SUCCESS for user: " + email);
+                    if (idToken != null && !idToken.isEmpty()) {
+                        deliverGoogleTokenToWebView(idToken, email);
+                    } else {
+                        Toast.makeText(this, "Google nevrátil ID token pro účet " + email, Toast.LENGTH_LONG).show();
                     }
                 }
             } catch (ApiException e) {
-                Log.e(TAG, "Native Google Sign-In failed with status code: " + e.getStatusCode(), e);
+                int code = e.getStatusCode();
+                Log.e(TAG, "Native Google Sign-In failed with status code: " + code, e);
+                if (code == 12501 || code == 12502) {
+                    // User simply dismissed or canceled the account picker dialog
+                    return;
+                }
+                String msg = "Chyba přihlášení Google (kód: " + code + ")";
+                if (code == 10) {
+                    msg = "Chyba konfigurace Google (kód 10): Zkontrolujte SHA-1 otisk certifikátu v Google Cloud Console.";
+                } else if (code == 12500) {
+                    msg = "Chyba Google Play Services (kód 12500). Zkuste to znovu.";
+                }
+                final String finalMsg = msg;
                 runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, finalMsg, Toast.LENGTH_LONG).show();
                     if (bridge != null && bridge.getWebView() != null) {
                         bridge.getWebView().evaluateJavascript(
-                            "if (window.handleGoogleError) { window.handleGoogleError('Chyba přihlášení Google (kód: " + e.getStatusCode() + ")'); }",
+                            "if (window.handleGoogleError) { window.handleGoogleError('" + finalMsg.replace("'", "\\'") + "'); }",
                             null
                         );
                     }
@@ -138,15 +154,37 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void deliverGoogleTokenToWebView(String idToken) {
+    private void deliverGoogleTokenToWebView(String idToken, String email) {
         runOnUiThread(() -> {
             if (bridge != null && bridge.getWebView() != null) {
-                String js = "if (typeof window.handleGoogleCredential === 'function') { " +
-                            "    window.handleGoogleCredential('" + idToken + "'); " +
-                            "} else if (typeof handleGoogleCredential === 'function') { " +
-                            "    handleGoogleCredential('" + idToken + "'); " +
-                            "}";
-                bridge.getWebView().evaluateJavascript(js, null);
+                // Execute self-contained asynchronous login flow directly inside the WebView
+                String script = "(async function() {" +
+                    "  const token = '" + idToken + "';" +
+                    "  if (typeof window.handleGoogleCredential === 'function') {" +
+                    "    window.handleGoogleCredential(token);" +
+                    "    return;" +
+                    "  }" +
+                    "  try {" +
+                    "    const res = await fetch('/api/google-login', {" +
+                    "      method: 'POST'," +
+                    "      headers: { 'Content-Type': 'application/json' }," +
+                    "      body: JSON.stringify({ credential: token })" +
+                    "    });" +
+                    "    const data = await res.json();" +
+                    "    if (res.ok && data.status === 'success' && data.token) {" +
+                    "      localStorage.setItem('gypri_auth_token', data.token);" +
+                    "      if (data.user) {" +
+                    "        localStorage.setItem('savedUser', JSON.stringify(data.user));" +
+                    "      }" +
+                    "      window.location.reload();" +
+                    "    } else {" +
+                    "      alert(data.detail || data.message || 'E-mail není autorizován pro žádného uživatele systému.');" +
+                    "    }" +
+                    "  } catch(err) {" +
+                    "    alert('Chyba komunikace se serverem: ' + err);" +
+                    "  }" +
+                    "})();";
+                bridge.getWebView().evaluateJavascript(script, null);
             }
         });
     }
