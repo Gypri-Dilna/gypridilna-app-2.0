@@ -25,16 +25,68 @@ public class MainActivity extends BridgeActivity {
     private static final String DEFAULT_WEB_CLIENT_ID = "1012530250854-aa1at0dleklpc133vd0841l2g9jn9ne6.apps.googleusercontent.com";
 
     private GoogleSignInClient googleSignInClient;
+    private boolean pendingQuickUnlock = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkAndTriggerQuickUnlock(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (bridge != null) {
+            bridge.onNewIntent(intent);
+        }
+        checkAndTriggerQuickUnlock(intent);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         setupWebView();
+        if (pendingQuickUnlock) {
+            pendingQuickUnlock = false;
+            triggerQuickUnlockInWebView();
+        }
+    }
+
+    private void checkAndTriggerQuickUnlock(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        String data = intent.getDataString();
+        Log.d(TAG, "checkAndTriggerQuickUnlock -> action: " + action + ", data: " + data);
+
+        boolean isUnlock = false;
+        if (data != null && (data.contains("unlock") || data.contains("quick-unlock"))) {
+            isUnlock = true;
+        } else if ("android.nfc.action.NDEF_DISCOVERED".equals(action)) {
+            isUnlock = true;
+        }
+
+        if (isUnlock) {
+            pendingQuickUnlock = true;
+            triggerQuickUnlockInWebView();
+        }
+    }
+
+    private void triggerQuickUnlockInWebView() {
+        runOnUiThread(() -> {
+            if (bridge != null && bridge.getWebView() != null) {
+                bridge.getWebView().evaluateJavascript(
+                    "(function() {" +
+                    "  if (typeof window.triggerQuickUnlock === 'function') {" +
+                    "    window.triggerQuickUnlock();" +
+                    "  } else {" +
+                    "    window.dispatchEvent(new CustomEvent('gypri-quick-unlock'));" +
+                    "  }" +
+                    "})();",
+                    null
+                );
+            }
+        });
     }
 
     private void setupWebView() {

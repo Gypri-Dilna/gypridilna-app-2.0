@@ -13,6 +13,7 @@ import { PrintQueueModal } from './components/PrintQueueModal';
 import { QuickUnlockModal } from './components/QuickUnlockModal';
 import { UserSettingsModal } from './components/UserSettingsModal';
 import { setupDeepLinkListener } from './mobile';
+import { Logo } from './components/Logo';
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
@@ -81,9 +82,32 @@ const parseResponseError = async (res: Response, fallbackMessage: string): Promi
     return `${fallbackMessage} (Status ${res.status})`;
 };
 
+const getInitialStoredUser = (): User | null => {
+    try {
+        const token = localStorage.getItem('gypri_auth_token');
+        const saved = localStorage.getItem('savedUser');
+        if (token && saved) {
+            return JSON.parse(saved);
+        }
+    } catch {}
+    return null;
+};
+
+const getInitialAuthStatus = (): boolean => {
+    try {
+        return !!(localStorage.getItem('gypri_auth_token') && localStorage.getItem('savedUser'));
+    } catch {
+        return false;
+    }
+};
+
 const App: React.FC = () => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [user, setUser] = useState<User | null>(getInitialStoredUser);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(getInitialAuthStatus);
+    const [isAuthChecking, setIsAuthChecking] = useState<boolean>(() => {
+        return !!localStorage.getItem('gypri_auth_token');
+    });
+    const [quickUnlockKey, setQuickUnlockKey] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
@@ -107,11 +131,14 @@ const App: React.FC = () => {
     const [isQuickUnlockOpen, setIsQuickUnlockOpen] = useState<boolean>(false);
     const [isUserSettingsOpen, setIsUserSettingsOpen] = useState<boolean>(false);
 
-    useEffect(() => {
-        setupDeepLinkListener(() => {
-            setIsQuickUnlockOpen(true);
-        });
+    const handleTriggerQuickUnlock = useCallback(() => {
+        setIsQuickUnlockOpen(true);
+        setQuickUnlockKey(Date.now());
     }, []);
+
+    useEffect(() => {
+        setupDeepLinkListener(handleTriggerQuickUnlock);
+    }, [handleTriggerQuickUnlock]);
 
     useEffect(() => {
         try {
@@ -230,11 +257,14 @@ const App: React.FC = () => {
                             setUser(data.user);
                             setIsAuthenticated(true);
                             localStorage.setItem('savedUser', JSON.stringify(data.user));
+                            setIsAuthChecking(false);
                             return;
                         }
                     }
                 } catch (e) {
                     console.warn('Auth token verification error:', e);
+                    setIsAuthChecking(false);
+                    return;
                 }
             }
             // If token invalid, demoted, or expired -> clear storage
@@ -242,6 +272,7 @@ const App: React.FC = () => {
             localStorage.removeItem('savedUser');
             setUser(null);
             setIsAuthenticated(false);
+            setIsAuthChecking(false);
         };
         initAuthToken();
     }, []);
@@ -442,22 +473,31 @@ const App: React.FC = () => {
         }
     };
 
-    const handleRemoteOpening = async () => {
-        if (!user) return;
+    const handleRemoteOpening = async (): Promise<boolean> => {
+        const token = localStorage.getItem('gypri_auth_token');
+        const currentUser = user || getInitialStoredUser();
+        if (!currentUser) {
+            throw new Error('Nepřihlášený uživatel');
+        }
         try {
             const res = await fetch(`${API_BASE_URL}/api/remote-opening`, {
                 method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ username: user.username })
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ username: currentUser.username })
             });
             if (!res.ok) {
-                const err = await parseResponseError(res, 'Door unlock failed');
+                const err = await parseResponseError(res, 'Chyba při odemykání dveří');
                 throw new Error(err);
             }
             showToast('Dveře byly na dálku odemknuty!', 'success');
-            await fetchAllData();
+            fetchAllData(true);
+            return true;
         } catch (e: any) {
             showToast(e.message || 'Chyba při otvírání dveří.', 'error');
+            throw e;
         }
     };
 
@@ -842,6 +882,7 @@ const App: React.FC = () => {
                         showToast={showToast}
                         queueCount={printQueue.length}
                         onOpenPrintQueue={() => setIsPrintQueueOpen(true)}
+                        onOpenSettings={() => setIsUserSettingsOpen(true)}
                     />
                     <div className="flex-1 md:pl-64 w-full flex flex-col items-center">
                         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -868,6 +909,17 @@ const App: React.FC = () => {
                         />
                     )}
                 </div>
+            ) : isAuthChecking ? (
+                <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center p-4 relative z-10 select-none">
+                    <div className="flex flex-col items-center gap-4 animate-pulse">
+                        <div className="p-4 bg-brand-teal/10 rounded-2xl border border-brand-teal/30">
+                            <Logo variant="light" className="h-12 w-auto" />
+                        </div>
+                        <span className="font-black text-xl tracking-tight lowercase">
+                            <span className="text-white">gypri</span> <span className="text-brand-teal">dílna</span>
+                        </span>
+                    </div>
+                </div>
             ) : (
                 <div className="relative z-10">
                     <Login onLoginSuccess={handleLoginSuccess} />
@@ -879,11 +931,10 @@ const App: React.FC = () => {
                 isOpen={isQuickUnlockOpen}
                 user={user}
                 isAuthenticated={isAuthenticated}
+                isAuthChecking={isAuthChecking}
+                triggerKey={quickUnlockKey}
                 onClose={() => setIsQuickUnlockOpen(false)}
-                onRemoteOpen={async () => {
-                    await handleRemoteOpening();
-                    return true;
-                }}
+                onRemoteOpen={handleRemoteOpening}
                 onRequireLogin={() => {
                     setIsQuickUnlockOpen(false);
                 }}

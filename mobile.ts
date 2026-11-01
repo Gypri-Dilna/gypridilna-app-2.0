@@ -207,8 +207,19 @@ export const soundEffects = new AudioSynth();
 
 // Setup Deep Link Listener for Mobile and Web
 export const setupDeepLinkListener = (onQuickUnlock: () => void) => {
-    // 1. Check current URL query / path on initial load (Web or PWA)
+    // 1. Expose function and event listener directly on window
     if (typeof window !== 'undefined') {
+        (window as any).triggerQuickUnlock = () => {
+            console.log('[mobile.ts] triggerQuickUnlock invoked directly');
+            onQuickUnlock();
+        };
+
+        window.addEventListener('gypri-quick-unlock', () => {
+            console.log('[mobile.ts] gypri-quick-unlock custom event received');
+            onQuickUnlock();
+        });
+
+        // 2. Check current URL query / path on initial load (Web or PWA)
         const urlParams = new URLSearchParams(window.location.search);
         const path = window.location.pathname;
         const hash = window.location.hash;
@@ -223,11 +234,12 @@ export const setupDeepLinkListener = (onQuickUnlock: () => void) => {
         }
     }
 
-    // 2. Listen to Capacitor Native App URL Open events (e.g. gypridilna://unlock)
+    // 3. Listen to Capacitor Native App URL Open events (e.g. gypridilna://unlock)
     if (isNativeMobileApp()) {
         try {
             CapApp.addListener('appUrlOpen', (event) => {
                 const url = event.url || '';
+                console.log('[mobile.ts] CapApp appUrlOpen:', url);
                 if (url.includes('unlock') || url.includes('quick-unlock')) {
                     onQuickUnlock();
                 }
@@ -235,6 +247,7 @@ export const setupDeepLinkListener = (onQuickUnlock: () => void) => {
 
             CapApp.getLaunchUrl().then((launchUrl) => {
                 if (launchUrl && launchUrl.url) {
+                    console.log('[mobile.ts] CapApp launchUrl:', launchUrl.url);
                     if (launchUrl.url.includes('unlock') || launchUrl.url.includes('quick-unlock')) {
                         onQuickUnlock();
                     }
