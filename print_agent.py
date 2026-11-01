@@ -9,6 +9,9 @@ import sys
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+import struct
+import platform
+
 # Import win32com for Windows b-PAC COM Automation
 try:
     import win32com.client
@@ -27,14 +30,57 @@ def show_windows_error_dialog(title: str, message: str):
 def check_bpac_com_available() -> tuple[bool, str]:
     """
     Checks if Brother b-PAC 3.x COM Automation server ("bpac.Document") is registered in Windows.
+    Provides targeted diagnostics for bitness mismatch, missing MSI installation, or missing pywin32.
     """
     if not HAS_PYWIN32:
-        return False, "Chybí Python balíček 'pywin32'. Nainstalujte v terminálu: pip install pywin32"
+        return False, (
+            "Chyba: Chybí Python balíček 'pywin32'!\n\n"
+            "ŘEŠENÍ: Otevřete terminál a nainstalujte jej příkazem:\n"
+            "pip install pywin32\n"
+            "(nebo spusťte přiložený skript '2_Instalovat_Python_Knihovny.bat')."
+        )
+
+    python_bits = struct.calcsize("P") * 8
+    is_os_64bit = platform.machine().endswith('64') or '64' in platform.architecture()[0]
+
+    # Check known b-PAC DLL installation locations
+    bpac64_path = r"C:\Program Files\Common Files\Brother\b-PAC\bpac.dll"
+    bpac32_path = r"C:\Program Files (x86)\Common Files\Brother\b-PAC\bpac.dll"
+    has_bpac64 = os.path.exists(bpac64_path)
+    has_bpac32 = os.path.exists(bpac32_path)
+
     try:
         doc = win32com.client.Dispatch("bpac.Document")
-        return True, "b-PAC 3.x COM Component Registered & Ready."
+        return True, f"b-PAC 3.x COM Component Registered & Ready ({python_bits}-bit Python)."
     except Exception as e:
-        return False, f"Ovladač / SDK Brother b-PAC není nainstalován v systému Windows!\n\nStáhněte 'b-PAC Client Component' ze stránek Brother.\nDetail: {str(e)}"
+        err_str = str(e)
+
+        # 1. Architecture mismatch (32-bit Python trying to use 64-bit b-PAC)
+        if python_bits == 32 and (has_bpac64 or is_os_64bit):
+            return False, (
+                "KRITICKÁ CHYBA: Spouštíte 32-bitový Python na 64-bitovém systému!\n\n"
+                "Brother b-PAC 3.4 je 64-bitová knihovna. 32-bitový Python se k ní NEMŮŽE připojit přes COM.\n\n"
+                "ŘEŠENÍ: Odinstalujte 32-bitový Python a nainstalujte standardní 64-bitový Python z www.python.org.\n\n"
+                f"Technický detail: {err_str}"
+            )
+
+        # 2. b-PAC Client Component was never installed
+        if not has_bpac64 and not has_bpac32:
+            return False, (
+                "Ovladač / SDK Brother b-PAC není nainstalován v systému Windows!\n\n"
+                "ŘEŠENÍ:\n"
+                "Ve složce tohoto balíčku spusťte:\n"
+                "-> 'Instalovat_bPAC.exe' (nebo 'bPAC3CCISetup_64.msi')\n\n"
+                "V instalačním průvodci stačí kliknout na Next -> Install -> Finish.\n\n"
+                f"Technický detail: {err_str}"
+            )
+
+        # 3. DLL is present but COM ProgID registration failed
+        return False, (
+            "Knihovna Brother b-PAC je na disku, ale COM komponenta 'bpac.Document' není zaregistrována.\n\n"
+            "ŘEŠENÍ: Spusťte znovu 'Instalovat_bPAC.exe' nebo 'bPAC3CCISetup_64.msi' pro opravu registrace.\n\n"
+            f"Technický detail: {err_str}"
+        )
 
 PRINTER_PORT = 5001
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")

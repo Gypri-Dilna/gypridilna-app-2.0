@@ -1,0 +1,35 @@
+====================================================================
+  GYPRI DÍLNA - TISKOVÝ AGENT BROTHER PT-D460BTVP (POSTUP ZPROVOZNĚNÍ)
+====================================================================
+
+Tento balíček slouží ke zprovoznění tiskového agenta na počítači
+připojeném k tiskárně štítků Brother.
+
+KROKY INSTALACE:
+----------------
+1. KROK - INSTALACE BROTHER b-PAC:
+   Spusťte: "Instalovat_bPAC.exe"  (nebo poklikejte na "bPAC3CCISetup_64.msi")
+   V otevřeném okně instalátoru klikněte na: Next -> Install -> Finish.
+   (Tento krok nainstaluje systémovou knihovnu Brother pro tisk).
+
+2. KROK - INSTALACE PYTHON KNIHOVEN:
+   Ujistěte se, že máte nainstalovaný 64-bitový Python (z www.python.org).
+   Spusťte: "2_Instalovat_Python_Knihovny.bat" (nainstaluje pywin32).
+
+3. KROK - TEST A PRVNÍ SPUŠTĚNÍ:
+   Spusťte: "3_Spustit_PrintAgent.bat"
+   Měli byste vidět: "Brother b-PAC SDK COM Status: READY"
+   a "Listening on http://0.0.0.0:5001".
+
+4. KROK - AUTOMATICKÝ START PO ZAPNUTÍ PC (VOLITELNÉ):
+   Pokud chcete, aby se tiskový agent spouštěl automaticky při každém
+   startu Windows na pozadí, spusťte:
+   "setup_autostart.bat"
+
+--------------------------------------------------------------------
+ČASTÉ CHYBY:
+- "b-PAC není nainstalovaný" i po instalaci:
+  Zkontrolujte, zda máte 64-bitový Python. Pokud máte nainstalovaný
+  32-bitový Python, nemůže komunikovat s 64-bitovým b-PAC.
+  Nainstalujte 64-bitový Python z www.python.org.
+====================================================================
