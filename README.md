@@ -1,5 +1,23 @@
 # 🛠️ Gypri Dílna 2.0 — Platforma pro správu dílny a přístupový systém
 
+<div align="center">
+
+[![Stáhnout mobilní aplikaci pro Android](https://img.shields.io/badge/📱_Stáhnout_Android_Aplikaci-APK_(16.9_MB)-00C853?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Gypri-Dilna/gypridilna-app-2.0/raw/main/Gypri_Dilna_MobileApp.apk)
+&nbsp;
+[![Platforma Android](https://img.shields.io/badge/Platforma-Android_8.0+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Gypri-Dilna/gypridilna-app-2.0/raw/main/Gypri_Dilna_MobileApp.apk)
+&nbsp;
+[![Bleskové NFC Otevírání](https://img.shields.io/badge/NFC_Unlock-Podporováno-3aa398?style=for-the-badge&logo=contactless-payment&logoColor=white)](https://github.com/Gypri-Dilna/gypridilna-app-2.0/raw/main/Gypri_Dilna_MobileApp.apk)
+
+<br/>
+
+### 📲 **[👉 KLIKNĚTE ZDE PRO STAŽENÍ MOBILNÍ APLIKACE (Gypri_Dilna_MobileApp.apk) 👈](https://github.com/Gypri-Dilna/gypridilna-app-2.0/raw/main/Gypri_Dilna_MobileApp.apk)**
+*Nativní mobilní aplikace s podporou bleskového NFC odemykání brány a čtením RFID karet pro správce.*
+
+<hr/>
+
+</div>
+
+
 Ucelená, vysoce výkonná webová platforma pro komplexní řízení dílny vyvinutá pro **Gypri Dílnu**. Integruje **RFID přístupový systém vstupní brány**, **SQL inventář zásob a nářadí**, **vektorový interaktivní SVG plán dílny**, **automatizovaný tiskový engine štítků Brother PT-D460BTVP**, **mobilní QR skener s živým propojením na PC relaci** a **Google OAuth 2.0 přihlašování**.
 
 ---
@@ -51,7 +69,14 @@ Ucelená, vysoce výkonná webová platforma pro komplexní řízení dílny vyv
   - `erase_logs` — Mazání historie logů
   - `inventory_edit` — Editace položek ve skladu dílny
 
+### 6. 📱 Nativní Mobilní Aplikace (Android APK & NFC)
+- **Instalační balíček**: Přímo ke stažení **[Gypri_Dilna_MobileApp.apk](https://github.com/Gypri-Dilna/gypridilna-app-2.0/raw/main/Gypri_Dilna_MobileApp.apk)** (16.9 MB) pro telefony se systémem Android.
+- **Rychlé NFC odemčení brány (Quick NFC Door Unlock)**: Přiložením odemčeného telefonu k NFC štítku na krabičce se automaticky probudí nativní aplikace, odešle autorizovaný signál k odemčení brány, přehraje animaci a zavibruje.
+- **Skenování RFID čipů telefonem pro administrátory**: V modulu Správa čipů stačí přiložit novou kartu nebo přívěsek k zádům telefonu – aplikace automaticky přečte UID přes NFC bez nutnosti cokoli přepisovat ručně.
+- **Uživatelská konfigurace**: Možnost nastavit adresu serveru dílny, otestovat konektivitu a zapnout/vypnout NFC funkce.
+
 ---
+
 
 ## 🖨️ Brother b-PAC Tiskový Agent (PT-D460BTVP)
 
