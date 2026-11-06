@@ -466,12 +466,12 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                         {!isScanning && (
                             <div className="p-6 text-center space-y-3 absolute inset-0 bg-brand-darker flex flex-col items-center justify-center">
                                 <QrCodeIcon className="h-10 w-10 text-brand-teal animate-pulse" />
-                                <p className="text-xs font-semibold text-gray-300">Camera Feed Idle or Permission Required</p>
+                                <p className="text-xs font-semibold text-gray-300">Fotoaparát je neaktivní nebo vyžaduje oprávnění</p>
                                 <button
                                     onClick={startCamera}
                                     className="px-4 py-2 bg-brand-teal text-black font-bold text-xs rounded-xl hover:bg-brand-teal-hover transition shadow"
                                 >
-                                    Enable Camera Access
+                                    Povolit přístup k fotoaparátu
                                 </button>
                             </div>
                         )}
@@ -484,7 +484,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                                 type="text"
                                 value={manualCode}
                                 onChange={(e) => setManualCode(e.target.value)}
-                                placeholder="Enter location ID (e.g. 12-0001)..."
+                                placeholder="Zadejte kód umístění (např. 12-0001)..."
                                 className="w-full pl-10 pr-4 py-2 bg-brand-darker border border-brand-border rounded-xl text-xs text-white focus:outline-none focus:border-brand-teal font-mono"
                             />
                         </div>
@@ -492,7 +492,7 @@ const QrScannerInner: React.FC<QrScannerProps> = ({ onLookupItem, onSelectItem, 
                             type="submit"
                             className="px-4 py-2 bg-brand-teal hover:bg-brand-teal-hover text-black font-bold rounded-xl text-xs transition"
                         >
-                            Lookup
+                            Vyhledat
                         </button>
                     </form>
                 </div>

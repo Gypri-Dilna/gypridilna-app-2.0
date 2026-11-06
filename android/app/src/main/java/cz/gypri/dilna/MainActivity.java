@@ -1,12 +1,15 @@
 package cz.gypri.dilna;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -14,6 +17,8 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -26,15 +31,25 @@ import com.google.android.gms.tasks.Task;
 public class MainActivity extends BridgeActivity {
     private static final String TAG = "MainActivity";
     private static final int RC_SIGN_IN = 9001;
+    private static final int RC_CAMERA_PERMISSION = 9002;
     private static final String DEFAULT_WEB_CLIENT_ID = "1012530250854-aa1at0dleklpc133vd0841l2g9jn9ne6.apps.googleusercontent.com";
 
     private GoogleSignInClient googleSignInClient;
     private boolean pendingQuickUnlock = false;
+    private PermissionRequest pendingPermissionRequest = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         checkAndTriggerQuickUnlock(getIntent());
+        requestCameraPermissionIfNeeded();
+    }
+
+    private void requestCameraPermissionIfNeeded() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Requesting CAMERA permission on first launch");
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, RC_CAMERA_PERMISSION);
+        }
     }
 
     @Override
@@ -122,13 +137,48 @@ public class MainActivity extends BridgeActivity {
             // 3. Register Native Google Auth Interface into WebView JavaScript
             webView.addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
 
-            // 4. WebChromeClient: If a web Google button opens popup, launch native Google Sign-In
+            // 4. WebChromeClient: Handle Google Sign-In popup & WebRTC/Camera permissions
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
                     Log.d(TAG, "onCreateWindow intercepted -> launching native Google Sign-In bottom sheet");
                     startGoogleSignIn(DEFAULT_WEB_CLIENT_ID);
                     return false;
+                }
+
+                @Override
+                public void onPermissionRequest(final PermissionRequest request) {
+                    Log.d(TAG, "WebChromeClient onPermissionRequest for resources: " + java.util.Arrays.toString(request.getResources()));
+                    MainActivity.this.runOnUiThread(() -> {
+                        boolean needsCamera = false;
+                        for (String r : request.getResources()) {
+                            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r)) {
+                                needsCamera = true;
+                                break;
+                            }
+                        }
+
+                        if (needsCamera) {
+                            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                Log.d(TAG, "Camera permission already granted -> granting WebView request");
+                                request.grant(request.getResources());
+                            } else {
+                                Log.d(TAG, "Camera permission not granted -> requesting runtime permission");
+                                pendingPermissionRequest = request;
+                                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, RC_CAMERA_PERMISSION);
+                            }
+                        } else {
+                            request.grant(request.getResources());
+                        }
+                    });
+                }
+
+                @Override
+                public void onPermissionRequestCanceled(PermissionRequest request) {
+                    super.onPermissionRequestCanceled(request);
+                    if (pendingPermissionRequest == request) {
+                        pendingPermissionRequest = null;
+                    }
                 }
             });
 
@@ -250,6 +300,35 @@ public class MainActivity extends BridgeActivity {
                         );
                     }
                 });
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == RC_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Camera permission granted by user via native dialog");
+                if (pendingPermissionRequest != null) {
+                    runOnUiThread(() -> {
+                        if (pendingPermissionRequest != null) {
+                            pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
+                            pendingPermissionRequest = null;
+                        }
+                    });
+                }
+            } else {
+                Log.w(TAG, "Camera permission denied by user via native dialog");
+                if (pendingPermissionRequest != null) {
+                    runOnUiThread(() -> {
+                        if (pendingPermissionRequest != null) {
+                            pendingPermissionRequest.deny();
+                            pendingPermissionRequest = null;
+                        }
+                    });
+                }
             }
         }
     }

@@ -245,9 +245,12 @@ const App: React.FC = () => {
     }, []);
 
     const checkServerHealth = useCallback(async (): Promise<boolean> => {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            return false;
+        }
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
             const res = await fetch(`${API_BASE_URL}/api/config`, {
                 cache: 'no-cache',
                 signal: controller.signal
@@ -258,32 +261,6 @@ const App: React.FC = () => {
             return false;
         }
     }, []);
-
-    // Continuous background health polling when server is unavailable
-    useEffect(() => {
-        if (isServerAvailable) return;
-
-        const interval = setInterval(async () => {
-            const ok = await checkServerHealth();
-            if (ok) {
-                setIsServerAvailable(true);
-            }
-        }, 3500);
-
-        const handleOnline = async () => {
-            const ok = await checkServerHealth();
-            if (ok) {
-                setIsServerAvailable(true);
-            }
-        };
-
-        window.addEventListener('online', handleOnline);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('online', handleOnline);
-        };
-    }, [isServerAvailable, checkServerHealth]);
 
     // Verify authentication token with backend server on app startup
     const initAuthToken = useCallback(async () => {
@@ -441,6 +418,58 @@ const App: React.FC = () => {
             return () => clearInterval(interval);
         }
     }, [isAuthenticated, fetchAllData]);
+    // Continuous real-time server connectivity heartbeat & offline event listener
+    const fetchAllDataRef = useRef(fetchAllData);
+    fetchAllDataRef.current = fetchAllData;
+    const initAuthTokenRef = useRef(initAuthToken);
+    initAuthTokenRef.current = initAuthToken;
+    const isAuthenticatedRef = useRef(isAuthenticated);
+    isAuthenticatedRef.current = isAuthenticated;
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        const checkHealth = async () => {
+            const ok = await checkServerHealth();
+            if (isCancelled) return;
+            setIsServerAvailable(prev => {
+                if (prev !== ok) {
+                    if (ok) {
+                        // Server restored: refresh user data or verify session
+                        if (isAuthenticatedRef.current) {
+                            fetchAllDataRef.current(true);
+                        } else {
+                            initAuthTokenRef.current();
+                        }
+                    }
+                    return ok;
+                }
+                return prev;
+            });
+        };
+
+        const handleOffline = () => {
+            setIsServerAvailable(false);
+        };
+
+        const handleOnline = () => {
+            checkHealth();
+        };
+
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('online', handleOnline);
+
+        // Active continuous ping every 3.5 seconds
+        const interval = setInterval(checkHealth, 3500);
+
+        return () => {
+            isCancelled = true;
+            clearInterval(interval);
+            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, [checkServerHealth]);
+
 
     // Tab switcher always clears open item view
     const handleTabChange = (tab: TabType) => {
